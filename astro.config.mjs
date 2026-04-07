@@ -37,6 +37,7 @@ export default defineConfig({
           { label: 'Configuration', link: '/reference/configuration/' },
           { label: 'REST API', link: '/reference/api/' },
           { label: 'Self-Hosting', link: '/self-hosting/' },
+          { label: 'Troubleshooting', link: '/troubleshooting/' },
         ]},
       ],
     }),
