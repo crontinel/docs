@@ -10,7 +10,7 @@ export default defineConfig({
         github: 'https://github.com/HarunRRayhan/crontinel',
       },
       editLink: {
-        baseUrl: 'https://github.com/HarunRRayhan/crontinel/edit/main/docs/',
+        baseUrl: 'https://github.com/HarunRRayhan/crontinel-docs/edit/main/src/content/docs/',
       },
       customCss: ['./src/styles/custom.css'],
       sidebar: [

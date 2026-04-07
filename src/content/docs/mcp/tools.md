@@ -14,11 +14,15 @@ description: All tools exposed by the Crontinel MCP server
 
 ## `list_scheduled_jobs`
 
-No required parameters. Returns all commands tracked by Crontinel with their most recent status.
+**Parameters:**
+- `app_slug` (required) — app slug from your Crontinel dashboard
+
+Returns all commands tracked by Crontinel for that app with their most recent status.
 
 ## `get_cron_status`
 
 **Parameters:**
+- `app_slug` (required) — app slug
 - `command` (required) — command name or partial match
 
 Returns: command name, last status, exit code, duration, started_at, output.
@@ -26,17 +30,22 @@ Returns: command name, last status, exit code, duration, started_at, output.
 ## `get_queue_status`
 
 **Parameters:**
+- `app_slug` (required) — app slug
 - `queue` (optional) — queue name. Returns all queues if omitted.
 
 Returns: queue name, depth, failed count, oldest job age in seconds.
 
 ## `get_horizon_status`
 
-No required parameters. Returns: overall status, paused indicator, supervisors list, failed jobs per minute.
+**Parameters:**
+- `app_slug` (required) — app slug
+
+Returns: overall status, paused indicator, supervisors list, failed jobs per minute.
 
 ## `list_recent_alerts`
 
 **Parameters:**
+- `app_slug` (required) — app slug
 - `hours` (optional, default 24) — look-back window
 
 Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
@@ -44,6 +53,7 @@ Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
 ## `acknowledge_alert`
 
 **Parameters:**
+- `app_slug` (required) — app slug
 - `alert_key` (required) — e.g. `horizon:paused`, `queue:emails:depth`
 
-Marks the alert as resolved.
+Marks the alert as acknowledged.
