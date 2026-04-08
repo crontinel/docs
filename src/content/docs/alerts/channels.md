@@ -16,9 +16,28 @@ description: Configuring Slack, email, PagerDuty, and webhook alerts
 
 ### Slack
 
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+Or directly in `config/crontinel.php` under the `alerts` key.
+
 Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack app, then add the channel in the Crontinel dashboard with config key `webhook_url`.
 
 ### Email
+
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_EMAIL=you@example.com
+CRONTINEL_FROM_EMAIL=crontinel@yourdomain.com
+```
 
 Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend — no SMTP setup required on your end.
 
