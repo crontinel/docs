@@ -43,6 +43,14 @@ Add an email channel with config key `to` set to the recipient address. Crontine
 
 ### PagerDuty
 
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=pagerduty
+CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here
+```
+
 1. In PagerDuty, create a service with the **Events API v2** integration.
 2. Copy the **Integration Key** (routing key).
 3. Add a PagerDuty channel in the Crontinel dashboard with config key `routing_key`.
@@ -50,6 +58,14 @@ Add an email channel with config key `to` set to the recipient address. Crontine
 Crontinel uses `dedup_key = crontinel:{app_id}:{alert_key}` — so PagerDuty automatically correlates fire and resolve events into a single incident.
 
 ### Webhook
+
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=webhook
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
+```
 
 Add a webhook channel with config key `url`. Crontinel sends a POST with:
 
