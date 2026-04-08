@@ -19,7 +19,7 @@ Self-hosting requires you to manage upgrades, backups, and queue workers yoursel
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/HarunRRayhan/crontinel-app.git
+git clone https://github.com/crontinel/app.git
 cd crontinel-app
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
