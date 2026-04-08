@@ -11,6 +11,7 @@ description: All tools exposed by the Crontinel MCP server
 | `get_horizon_status` | Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |
 | `acknowledge_alert` | Dismiss an active alert by its key |
+| `create_alert` | Create a new alert channel (Slack, email, or webhook) for an app |
 
 ## `list_scheduled_jobs`
 
@@ -57,3 +58,36 @@ Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
 - `alert_key` (required) — e.g. `horizon:paused`, `queue:emails:depth`
 
 Marks the alert as acknowledged.
+
+## `create_alert`
+
+:::note
+Requires a **Pro or Team plan**. Returns an error on free accounts.
+:::
+
+**Parameters:**
+- `app_slug` (required) — app slug
+- `type` (required) — `slack`, `email`, or `webhook`
+- `config` (required) — channel-specific config object (see below)
+
+**Config by type:**
+
+| type | required fields |
+|---|---|
+| `slack` | `webhook_url` — Incoming Webhook URL |
+| `email` | `address` — recipient email address |
+| `webhook` | `url` — endpoint URL, optionally `secret` for HMAC signing |
+
+**Example — create a Slack alert:**
+
+```json
+{
+  "app_slug": "my-app",
+  "type": "slack",
+  "config": {
+    "webhook_url": "https://hooks.slack.com/services/T000/B000/xxxx"
+  }
+}
+```
+
+Returns the new alert channel ID on success.
