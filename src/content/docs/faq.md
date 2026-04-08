@@ -1,68 +1,72 @@
 ---
 title: FAQ
-description: Frequently asked questions about Crontinel.
+description: "Common questions about Crontinel: installation, plans, data privacy, supported versions, and more."
 ---
-
-## What does the free plan include?
-
-The free plan covers up to 5 monitored cron jobs with email alerts and the local `/crontinel` dashboard. You get the same core monitoring, just with a cap on the number of jobs.
-
-## What does Pro add?
-
-Pro removes the job limit and adds Slack/Discord notifications, team members, and longer data retention on app.crontinel.com. Check the pricing page for the current plan details.
-
-## Can I use Crontinel without the SaaS?
-
-Yes. The open-source package works entirely standalone. The local dashboard at `/crontinel` runs in your own app with no external calls required. Just set `'saas' => ['enabled' => false]` in `config/crontinel.php` and you have a fully self-hosted monitoring setup.
-
-## What data does the package send to app.crontinel.com?
-
-When SaaS mode is enabled, each ping includes the command name, exit code, run duration, and the run timestamp. That is the full payload.
-
-## Is my cron output or logs sent to the SaaS?
-
-No. Command output, log messages, and exception traces are never sent to app.crontinel.com by default. All of that stays on your server.
-
-## Does Crontinel work with Laravel Octane?
-
-Yes. The package is compatible with Laravel Octane. Monitoring hooks attach to the scheduler, which runs in its own process outside the Octane worker lifecycle.
-
-## Do I need Horizon?
-
-No. Horizon is optional. If you are not using it, set `'horizon' => ['enabled' => false]` in `config/crontinel.php` to hide the Horizon panel from the dashboard.
-
-## Which queue drivers are supported?
-
-Any queue driver that Laravel supports will work, including database, Redis, SQS, and Beanstalkd. The package dispatches standard Laravel jobs with no driver-specific code.
-
-## What happens to alerts if app.crontinel.com goes down?
-
-SaaS alert delivery pauses until the service recovers. Your local `/crontinel` dashboard continues to record runs and display status regardless of SaaS availability. Pings that fail are retried on the next scheduled run.
-
-## How often does the package ping the SaaS?
-
-A ping fires after every scheduled command execution. There is no separate polling interval; the package hooks into the scheduler's `after` callback.
-
-## Will I get spammed with repeated alerts?
-
-No. Alert deduplication prevents the same alert from re-firing for 5 minutes. If a job keeps failing on a one-minute schedule, you receive one alert, then silence until the cooldown expires.
 
 ## Which versions of Laravel are supported?
 
-Laravel 10 and above. The package relies on scheduler APIs introduced in Laravel 10.
+Crontinel supports Laravel 11, 12, and 13. It relies on scheduler event APIs that shipped in Laravel 11, so older versions won't work. If you're on Laravel 10 and can't upgrade yet, you'll need to stay on the local dashboard without the scheduler event tracking.
 
 ## Which PHP versions are supported?
 
-PHP 8.1 and above. This matches the minimum required by Laravel 10+.
+PHP 8.2, 8.3, and 8.4 are supported. This matches the minimum PHP version required by Laravel 11. If you're running PHP 8.1, you'll need to upgrade before installing the package.
 
-## How do I remove Crontinel from my app?
+## Can I use Crontinel without the SaaS?
 
-Run `composer remove crontinel/crontinel`, delete the migration file from `database/migrations`, and remove `config/crontinel.php`. Standard Laravel package removal steps.
+Yes, the open-source package works entirely standalone. Install it, run the migrations, and you get a full monitoring dashboard at `/crontinel` in your own app. No account, no API key, no external calls. Set `'api_key' => null` in `config/crontinel.php` (or just don't set `CRONTINEL_API_KEY`) and it stays fully local.
+
+The SaaS at app.crontinel.com is optional. It adds hosted history, multi-app dashboards, team access, and managed alert routing, but none of that is required for the core monitoring to work.
+
+## Do I need Horizon?
+
+No. Horizon is completely optional. If you're not using it, set `'horizon' => ['enabled' => false]` in `config/crontinel.php` and the Horizon panel won't show up in the dashboard at all. Queue and cron monitoring work independently of Horizon. You only need Horizon if you want the supervisor-level health data, like detecting when a specific supervisor crashes while others stay running.
+
+## Which queue drivers are supported?
+
+The queue monitor works with `redis` and `database` drivers. It reads queue depths directly from Redis or queries the `jobs` and `failed_jobs` tables. If your `QUEUE_CONNECTION` is `sync`, there's nothing to monitor because jobs run inline. SQS and other drivers aren't supported for depth monitoring, though the cron monitor works regardless of queue driver.
+
+## What data does the package send to app.crontinel.com?
+
+When SaaS mode is active, each scheduler event sends the command name, exit code, run duration, and the run timestamp. That's it. No environment variables, no database contents, no application code. The payload is small and intentionally narrow.
+
+## Is my cron output or logs sent to the SaaS?
+
+No. Command output and log messages stay on your server. The SaaS never receives stdout, stderr, exception traces, or any log data. If you want to inspect command output, you'll find it in the local dashboard's cron run detail view.
+
+## How often does the package ping the SaaS?
+
+A ping fires after every scheduled command execution. There's no separate polling loop. The package attaches to Laravel's `ScheduledTaskFinished` and `ScheduledTaskFailed` events, so a ping goes out each time the scheduler finishes running a command. On a one-minute scheduler interval with five commands registered, you'd get five pings per minute.
+
+## Will I get spammed with repeated alerts?
+
+No. Crontinel deduplicates alerts with a 5-minute cooldown window. If a queue stays above its depth threshold all morning, you get one Slack message when it first fires, then silence until the cooldown expires. The alert fires again if the condition is still active after 5 minutes. You get clear signal without noise.
+
+When the condition clears, Crontinel sends a resolved notification. So you'll see a "firing" message and then a "resolved" message for each incident, not a stream of repeated fires.
+
+## What happens to alerts if app.crontinel.com goes down?
+
+Your local `/crontinel` dashboard keeps running regardless. It records every scheduler run and queue depth reading from your own database, so you don't lose monitoring data during a SaaS outage. Alert delivery via the SaaS pauses until the service recovers. Pings that fail during an outage are retried on the next scheduler tick.
+
+## Does Crontinel work with Laravel Octane?
+
+Yes. The package attaches to the Laravel scheduler, which runs in its own process outside the Octane worker pool. Octane workers handle incoming HTTP requests; the scheduler runs separately via `php artisan schedule:run` on a cron. There's no conflict.
+
+## What does the free plan include?
+
+The free plan gives you the local dashboard at `/crontinel` with full cron, queue, and Horizon monitoring. You can also connect to app.crontinel.com with basic history and a limited number of monitored jobs. Check the [pricing page](https://crontinel.com/pricing) for the current job limit, since it changes as the product is in early access.
+
+## What does Pro add?
+
+Pro removes the job limit and extends history retention on the SaaS. You also get Slack, PagerDuty, and webhook alert channels through the SaaS dashboard, team member access, and per-app threshold overrides. The OSS package itself doesn't change between plans. Pro is about the hosted dashboard features on top of it.
 
 ## Is the package or dashboard open source?
 
-The core `crontinel/crontinel` package is open source under the MIT license. The SaaS dashboard at app.crontinel.com is proprietary.
+The `crontinel/laravel` package is MIT licensed and fully open source. The SaaS dashboard at app.crontinel.com is proprietary. You can self-host the full backend by following the [self-hosting guide](/self-hosting/), but the source for the hosted SaaS isn't public.
+
+## How do I remove Crontinel from my app?
+
+Run `composer remove crontinel/laravel`, then delete `config/crontinel.php` and the published migration files from `database/migrations`. Run `php artisan migrate:rollback` first if you want to drop the Crontinel tables cleanly. After that, there's nothing left in your app.
 
 ## What is the MCP server?
 
-Crontinel ships an MCP server that exposes your monitoring data to AI assistants. Tools like Claude Code can read job status, recent failures, and alert history directly through the MCP protocol.
+Crontinel ships an optional `@crontinel/mcp-server` npm package that exposes your monitoring data to AI coding assistants. With it installed, Claude Code (or any MCP-compatible assistant) can answer questions like "did my cron jobs run last night?" or "what's the queue depth right now?" inline in your chat, without you opening the dashboard. It proxies tool calls to `app.crontinel.com/api/mcp` using your API key. See the [MCP setup guide](/mcp/claude-code/) for configuration details.
