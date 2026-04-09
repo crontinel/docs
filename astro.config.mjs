@@ -36,6 +36,7 @@ export default defineConfig({
         { label: 'Reference', items: [
           { label: 'Configuration', link: '/reference/configuration/' },
           { label: 'REST API', link: '/reference/api/' },
+          { label: 'Security', link: '/security/' },
           { label: 'Self-Hosting', link: '/self-hosting/' },
           { label: 'Troubleshooting', link: '/troubleshooting/' },
           { label: 'FAQ', link: '/faq/' },

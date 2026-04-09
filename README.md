@@ -1,6 +1,6 @@
 # Crontinel Docs
 
-Documentation site for [Crontinel](https://crontinel.com) — background job and cron monitoring for Laravel apps. Built with [Astro Starlight](https://starlight.astro.build) and deployed to Cloudflare Pages at [docs.crontinel.com](https://docs.crontinel.com).
+Documentation site for [Crontinel](https://crontinel.com), focused on background job and cron monitoring for Laravel apps. Built with [Astro Starlight](https://starlight.astro.build) and deployed to Cloudflare Pages at [docs.crontinel.com](https://docs.crontinel.com).
 
 ## Local development
 
