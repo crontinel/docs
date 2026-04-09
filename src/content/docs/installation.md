@@ -66,3 +66,61 @@ CRONTINEL_WEBHOOK_URL=
 CRONTINEL_API_KEY=
 CRONTINEL_API_URL=https://app.crontinel.com
 ```
+
+## Upgrading
+
+Pull the latest version through Composer:
+
+```bash
+composer update crontinel/laravel
+```
+
+If you want to pin a specific version, use `composer require crontinel/laravel:^2.0` instead.
+
+### Run new migrations
+
+New releases sometimes add or modify tables. After updating, always run:
+
+```bash
+php artisan migrate
+```
+
+The package uses its own migration files, so this is safe to run alongside your app migrations. Check the release notes if you're curious what changed.
+
+### Config changes
+
+If a new version introduces config options, your existing `config/crontinel.php` won't have them. You've got two choices:
+
+1. Re-publish and diff manually:
+
+```bash
+php artisan vendor:publish --tag=crontinel-config
+```
+
+This will ask to overwrite your existing file. Say no, then compare the new defaults with your current config.
+
+2. Check the changelog for new keys and add them yourself. This is usually faster if only one or two options were added.
+
+### Check for breaking changes
+
+Before upgrading across major versions, read the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md). Major releases may rename config keys, drop support for older Laravel/PHP versions, or change method signatures. In practice, minor and patch releases won't break anything.
+
+### Verify the upgrade
+
+Once you've migrated and updated your config, run the health check:
+
+```bash
+php artisan crontinel:check
+```
+
+This confirms your database tables are current, the API key is valid, and the agent can reach the Crontinel servers. If something's off, it'll tell you exactly what failed.
+
+So, the full upgrade sequence looks like this:
+
+```bash
+composer update crontinel/laravel
+php artisan migrate
+php artisan crontinel:check
+```
+
+Three commands, done in under a minute.
