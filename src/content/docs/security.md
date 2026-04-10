@@ -77,7 +77,7 @@ $schedule->command('report:send --api-key=sk_live_abc123')->hourly();
 $schedule->command('report:send')->hourly();
 ```
 
-Review what your dashboard actually shows. Run `php artisan crontinel:status` to see the same data the dashboard renders. If anything there makes you uncomfortable, refactor those commands before going live.
+Review what your dashboard actually shows. Run `php artisan crontinel:check` to see the same data the dashboard renders. If anything there makes you uncomfortable, refactor those commands before going live.
 
 ## Webhook HMAC verification
 
@@ -128,7 +128,7 @@ Crontinel sends exactly four fields per cron run:
 
 It doesn't read or transmit `.env` values, log files, command output, or database contents. Just those four fields.
 
-If you want to verify this yourself, check the `SaasReporter` class in the package source. The payload is a plain JSON object with those four keys. You can also inspect outgoing requests by pointing `CRONTINEL_SAAS_URL` to a local endpoint or a request inspection tool like Requestbin during development.
+If you want to verify this yourself, check the `SaasReporter` class in the package source. The payload is a plain JSON object with those four keys. You can also inspect outgoing requests by pointing `CRONTINEL_API_URL` to a local endpoint or a request inspection tool like Requestbin during development.
 
 ## Production checklist
 
@@ -138,7 +138,7 @@ Before deploying Crontinel to production, run through these steps:
 - Audit your scheduled commands for sensitive data in arguments or names
 - Set `CRONTINEL_WEBHOOK_SECRET` in your `.env` and verify signatures on the receiving end
 - Change the default dashboard path from `/crontinel` to something less guessable if you're not behind a VPN: set `CRONTINEL_PATH` in your `.env`
-- Review `php artisan crontinel:status` output to confirm nothing unexpected is exposed
+- Review `php artisan crontinel:check` output to confirm nothing unexpected is exposed
 - If you don't need the SaaS reporter, disable it in `config/crontinel.php` to keep all data on your server
 - Test your Gate/middleware by logging in as a non-admin user and confirming the dashboard returns a 403
 - Set your webhook endpoints to HTTPS only, never plain HTTP
