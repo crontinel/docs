@@ -231,6 +231,71 @@ CRONTINEL_API_URL=https://crontinel.internal.yourcompany.com  # Required environ
 
 The default is `https://app.crontinel.com`, so you only need this if you're running your own backend.
 
+## Dashboard is completely empty after install
+
+You installed the package, ran migrations, opened `/crontinel`, and every section is blank. No cron data, no queue data, nothing.
+
+### Nothing has run yet
+
+Crontinel does not generate synthetic data. It only shows real activity from your app. If your scheduler has not executed since install, the cron section will be empty. If your queues have no pending jobs, the queue section will show zeros. This is correct behavior.
+
+To seed initial data, trigger a scheduler tick:
+
+```bash
+php artisan schedule:run
+```
+
+Or, for local development, start the scheduler worker:
+
+```bash
+php artisan schedule:work
+```
+
+Queue data appears as soon as jobs are dispatched. Push a test job to confirm:
+
+```bash
+php artisan tinker --execute="dispatch(fn() => logger('test'));"
+```
+
+Refresh the dashboard after each step. Data should appear within a few seconds.
+
+### Service provider not registered
+
+If the dashboard route exists but shows a blank page with no data at all, the service provider may not be loading. Verify it is discovered:
+
+```bash
+php artisan about | grep -i crontinel
+```
+
+If Crontinel does not appear in the output, check that `composer require` completed successfully and that you are not blocking auto-discovery in your `composer.json` `extra.laravel.dont-discover` array.
+
+## Cron runs recorded but alerts are not firing
+
+The cron section shows runs (including failures or late tasks), but you never receive an alert. This is different from the "alerts not firing" section above, which covers channel configuration. Here the channel is set up, but specific cron thresholds are not.
+
+### Late-run threshold not configured
+
+Crontinel only fires a "late cron" alert when a task exceeds the `late_alert_after_seconds` value. If this is set too high (or left at the default), tasks that are a few minutes late won't trigger anything. Check your config:
+
+```php
+// config/crontinel.php
+'cron' => [
+    'enabled' => true,
+    'late_alert_after_seconds' => 120,  // fires if a task is >2 minutes late
+    'retain_days' => 30,
+],
+```
+
+Lower the value if you need tighter alerting. For example, setting it to `60` will fire alerts for tasks that are more than one minute late.
+
+### Failed-run alerts require the alert channel
+
+Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured. If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
+
+### Dedup window hiding repeated failures
+
+If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; subsequent failures within that window are suppressed. If you missed the initial alert, check your Slack channel history or email spam folder. The next alert will fire after the dedup window expires.
+
 ## Still stuck?
 
 Run the full diagnostics:
