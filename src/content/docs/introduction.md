@@ -3,7 +3,7 @@ title: Introduction
 description: What Crontinel is and why it exists
 ---
 
-Crontinel monitors your background jobs, queue depths, and cron schedules. It reads framework internals — not just HTTP pings — so you know what's actually happening inside your app.
+Crontinel monitors your background jobs, queue depths, and cron schedules. It reads framework internals  –  not just HTTP pings  –  so you know what's actually happening inside your app.
 
 ## The problem
 

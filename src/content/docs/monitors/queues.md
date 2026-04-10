@@ -5,14 +5,14 @@ description: Monitoring queue depths, failed counts, and wait times
 
 ## What it monitors
 
-- **Depth** — number of pending jobs in each queue
-- **Failed count** — jobs in the failed jobs table or dead-letter list
-- **Oldest job age** — how long the oldest waiting job has been sitting
+- **Depth**  –  number of pending jobs in each queue
+- **Failed count**  –  jobs in the failed jobs table or dead-letter list
+- **Oldest job age**  –  how long the oldest waiting job has been sitting
 
 ## Supported drivers
 
-- `redis` — queries queue lengths from Redis directly
-- `database` — queries the `jobs` and `failed_jobs` tables
+- `redis`  –  queries queue lengths from Redis directly
+- `database`  –  queries the `jobs` and `failed_jobs` tables
 
 ## Configuration
 

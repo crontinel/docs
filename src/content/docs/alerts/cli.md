@@ -8,8 +8,8 @@ php artisan crontinel:check
 ```
 
 Prints a table of all monitor statuses and exits:
-- `0` — all monitors healthy
-- `1` — one or more alerts active
+- `0`  –  all monitors healthy
+- `1`  –  one or more alerts active
 
 ## JSON output
 

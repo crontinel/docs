@@ -21,7 +21,7 @@ This publishes `config/crontinel.php` and runs the required database migrations.
 
 Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
 
-> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once — this is normal. After the first scheduler tick (or after running `schedule:work` locally), your registered commands will appear.
+> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once  –  this is normal. After the first scheduler tick (or after running `schedule:work` locally), your registered commands will appear.
 
 ## 4. Run your scheduler
 

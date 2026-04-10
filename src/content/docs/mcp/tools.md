@@ -16,46 +16,46 @@ description: All tools exposed by the Crontinel MCP server
 ## `list_scheduled_jobs`
 
 **Parameters:**
-- `app_slug` (required) — app slug from your Crontinel dashboard
+- `app_slug` (required)  –  app slug from your Crontinel dashboard
 
 Returns all commands tracked by Crontinel for that app with their most recent status.
 
 ## `get_cron_status`
 
 **Parameters:**
-- `app_slug` (required) — app slug
-- `command` (required) — command name or partial match
+- `app_slug` (required)  –  app slug
+- `command` (required)  –  command name or partial match
 
 Returns: command name, last status, exit code, duration, started_at, output.
 
 ## `get_queue_status`
 
 **Parameters:**
-- `app_slug` (required) — app slug
-- `queue` (optional) — queue name. Returns all queues if omitted.
+- `app_slug` (required)  –  app slug
+- `queue` (optional)  –  queue name. Returns all queues if omitted.
 
 Returns: queue name, depth, failed count, oldest job age in seconds.
 
 ## `get_horizon_status`
 
 **Parameters:**
-- `app_slug` (required) — app slug
+- `app_slug` (required)  –  app slug
 
 Returns: overall status, paused indicator, supervisors list, failed jobs per minute.
 
 ## `list_recent_alerts`
 
 **Parameters:**
-- `app_slug` (required) — app slug
-- `hours` (optional, default 24) — look-back window
+- `app_slug` (required)  –  app slug
+- `hours` (optional, default 24)  –  look-back window
 
 Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
 
 ## `acknowledge_alert`
 
 **Parameters:**
-- `app_slug` (required) — app slug
-- `alert_key` (required) — e.g. `horizon:paused`, `queue:emails:depth`
+- `app_slug` (required)  –  app slug
+- `alert_key` (required)  –  e.g. `horizon:paused`, `queue:emails:depth`
 
 Marks the alert as acknowledged.
 
@@ -66,19 +66,19 @@ Requires a **Pro or Team plan**. Returns an error on free accounts.
 :::
 
 **Parameters:**
-- `app_slug` (required) — app slug
-- `type` (required) — `slack`, `email`, or `webhook`
-- `config` (required) — channel-specific config object (see below)
+- `app_slug` (required)  –  app slug
+- `type` (required)  –  `slack`, `email`, or `webhook`
+- `config` (required)  –  channel-specific config object (see below)
 
 **Config by type:**
 
 | type | required fields |
 |---|---|
-| `slack` | `webhook_url` — Incoming Webhook URL |
-| `email` | `address` — recipient email address |
-| `webhook` | `url` — endpoint URL, optionally `secret` for HMAC signing |
+| `slack` | `webhook_url`  –  Incoming Webhook URL |
+| `email` | `address`  –  recipient email address |
+| `webhook` | `url`  –  endpoint URL, optionally `secret` for HMAC signing |
 
-**Example — create a Slack alert:**
+**Example  –  create a Slack alert:**
 
 ```json
 {

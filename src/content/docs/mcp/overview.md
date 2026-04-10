@@ -3,7 +3,7 @@ title: MCP Integration Overview
 description: Using Crontinel with AI assistants via Model Context Protocol
 ---
 
-Crontinel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI coding assistants can query your monitoring data inline — without opening a browser.
+Crontinel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI coding assistants can query your monitoring data inline  –  without opening a browser.
 
 ## Example
 

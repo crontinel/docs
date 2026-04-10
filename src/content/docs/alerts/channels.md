@@ -39,7 +39,7 @@ CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
 CRONTINEL_FROM_EMAIL=crontinel@yourdomain.com  # Required environment variable
 ```
 
-Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend — no SMTP setup required on your end.
+Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
 
 ### PagerDuty
 
@@ -55,7 +55,7 @@ CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here  # Required environmen
 2. Copy the **Integration Key** (routing key).
 3. Add a PagerDuty channel in the Crontinel dashboard with config key `routing_key`.
 
-Crontinel uses `dedup_key = crontinel:{app_id}:{alert_key}` — so PagerDuty automatically correlates fire and resolve events into a single incident.
+Crontinel uses `dedup_key = crontinel:{app_id}:{alert_key}`  –  so PagerDuty automatically correlates fire and resolve events into a single incident.
 
 ### Webhook
 
@@ -81,7 +81,7 @@ Add a webhook channel with config key `url`. Crontinel sends a POST with:
 
 ## Alert deduplication
 
-The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start — not one every poll cycle.
+The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start  –  not one every poll cycle.
 
 ## Auto-resolution
 

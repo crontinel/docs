@@ -55,7 +55,7 @@ All Crontinel `.env` variables:
 # Dashboard
 CRONTINEL_PATH=crontinel  # Required environment variable
 
-# Alerts — set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, pagerduty, webhook
+# Alerts  –  set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, pagerduty, webhook
 CRONTINEL_ALERT_CHANNEL=  # Required environment variable
 CRONTINEL_SLACK_WEBHOOK=  # Required environment variable
 CRONTINEL_ALERT_EMAIL=  # Required environment variable
