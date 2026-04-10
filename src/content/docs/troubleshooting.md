@@ -21,7 +21,7 @@ php artisan route:clear
 If you're still getting a 404, check whether something else is already using the `/crontinel` path. Another package or a custom route can shadow it. Change the path in your `.env`:
 
 ```env
-CRONTINEL_PATH=monitoring
+CRONTINEL_PATH=monitoring  # Required environment variable
 ```
 
 ### Auth middleware blocking access
@@ -141,15 +141,15 @@ You've set thresholds, something is clearly broken, but no Slack message. No ema
 Crontinel needs to know where to send alerts. Check that you've set the channel in your `.env`:
 
 ```env
-CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/T00/B00/xxx
+CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/T00/B00/xxx  # Required environment variable
 ```
 
 Or for email:
 
 ```env
-CRONTINEL_ALERT_CHANNEL=mail
-CRONTINEL_ALERT_EMAIL=ops@yourapp.com
+CRONTINEL_ALERT_CHANNEL=mail  # Required environment variable
+CRONTINEL_ALERT_EMAIL=ops@yourapp.com  # Required environment variable
 ```
 
 If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn't send notifications anywhere.
@@ -206,7 +206,7 @@ If you're using the hosted version at app.crontinel.com and your app isn't showi
 Your `.env` needs the API key from your Crontinel SaaS dashboard:
 
 ```env
-CRONTINEL_API_KEY=cnt_live_xxxxxxxxxxxxxxxx
+CRONTINEL_API_KEY=cnt_live_xxxxxxxxxxxxxxxx  # Required environment variable
 ```
 
 If the key is missing or wrong, the package falls back to local-only mode silently. No errors in your logs, just no data on the SaaS dashboard.
@@ -226,7 +226,7 @@ You should get a `200` response. If you get a timeout or connection refused, you
 If you're self-hosting the Crontinel backend, make sure the URL points to your instance:
 
 ```env
-CRONTINEL_API_URL=https://crontinel.internal.yourcompany.com
+CRONTINEL_API_URL=https://crontinel.internal.yourcompany.com  # Required environment variable
 ```
 
 The default is `https://app.crontinel.com`, so you only need this if you're running your own backend.

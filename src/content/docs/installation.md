@@ -23,7 +23,7 @@ After running the installer, `config/crontinel.php` is published to your project
 By default the dashboard is at `/crontinel`. To change it:
 
 ```env
-CRONTINEL_PATH=monitoring
+CRONTINEL_PATH=monitoring  # Required environment variable
 ```
 
 ## Middleware
@@ -53,17 +53,17 @@ All Crontinel `.env` variables:
 
 ```env
 # Dashboard
-CRONTINEL_PATH=crontinel
+CRONTINEL_PATH=crontinel  # Required environment variable
 
 # Alerts — set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, pagerduty, webhook
-CRONTINEL_ALERT_CHANNEL=
-CRONTINEL_SLACK_WEBHOOK=
-CRONTINEL_ALERT_EMAIL=
-CRONTINEL_PAGERDUTY_ROUTING_KEY=
-CRONTINEL_WEBHOOK_URL=
+CRONTINEL_ALERT_CHANNEL=  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=  # Required environment variable
+CRONTINEL_ALERT_EMAIL=  # Required environment variable
+CRONTINEL_PAGERDUTY_ROUTING_KEY=  # Required environment variable
+CRONTINEL_WEBHOOK_URL=  # Required environment variable
 
 # SaaS (optional)
-CRONTINEL_API_KEY=
+CRONTINEL_API_KEY=  # Required environment variable
 CRONTINEL_API_URL=https://app.crontinel.com
 ```
 

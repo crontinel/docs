@@ -20,8 +20,8 @@ description: Configuring Slack, email, PagerDuty, and webhook alerts
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL  # Required environment variable
 ```
 
 Or directly in `config/crontinel.php` under the `alerts` key.
@@ -34,8 +34,8 @@ Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your S
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=email
-CRONTINEL_ALERT_EMAIL=you@example.com
+CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
+CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
 CRONTINEL_FROM_EMAIL=crontinel@yourdomain.com
 ```
 
@@ -47,8 +47,8 @@ Add an email channel with config key `to` set to the recipient address. Crontine
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=pagerduty
-CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here
+CRONTINEL_ALERT_CHANNEL=pagerduty  # Required environment variable
+CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here  # Required environment variable
 ```
 
 1. In PagerDuty, create a service with the **Events API v2** integration.
@@ -63,8 +63,8 @@ Crontinel uses `dedup_key = crontinel:{app_id}:{alert_key}` — so PagerDuty aut
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=webhook
-CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
+CRONTINEL_ALERT_CHANNEL=webhook  # Required environment variable
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel  # Required environment variable
 ```
 
 Add a webhook channel with config key `url`. Crontinel sends a POST with:

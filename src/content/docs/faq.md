@@ -9,11 +9,11 @@ The free plan gives you the local dashboard at `/crontinel` with full cron, queu
 
 ## What does Pro add?
 
-Pro removes the job limit and extends history retention on the SaaS. You also get Slack, PagerDuty, and webhook alert channels through the hosted dashboard, team member access, and per-app threshold overrides. The OSS package itself doesn't change between plans. Pro is about the hosted features on top of what the package already does locally.
+Pro removes the job limit and extends history retention on the SaaS. You also get Slack, email, PagerDuty, and webhook alert channels through the hosted dashboard, team member access, and per-app threshold overrides. The OSS package itself doesn't change between plans. Pro is about the hosted features on top of what the package already does locally.
 
 ## Can I use Crontinel without the SaaS?
 
-Yes, the open-source package works entirely standalone. Install it, run the migrations, and you get a full monitoring dashboard at `/crontinel` in your own app. No account, no API key, no external calls. Set `'api_key' => null` in `config/crontinel.php` (or just don't set `CRONTINEL_API_KEY`) and it stays fully local:
+Yes, the open-source package works entirely standalone. Install it, run the migrations, and you get a full monitoring dashboard at `/crontinel` (configurable via the `CRONTINEL_PATH` env variable) in your own app. No account, no API key, no external calls. Set `'api_key' => null` in `config/crontinel.php` (or just don't set `CRONTINEL_API_KEY`) and it stays fully local:
 
 ```php
 // config/crontinel.php
@@ -52,7 +52,7 @@ The queue monitor works with `redis` and `database` drivers. It reads queue dept
 
 ## What happens to alerts if app.crontinel.com goes down?
 
-Your local `/crontinel` dashboard keeps running regardless. It records every scheduler run and queue depth reading from your own database, so you don't lose monitoring data during a SaaS outage. Alert delivery via the SaaS pauses until the service recovers. Pings that fail during an outage are retried on the next scheduler tick, so you won't have gaps in your history once the service comes back.
+Your local `/crontinel` dashboard keeps running regardless. It records every scheduler run and queue depth reading from your own database, so you don't lose monitoring data during a SaaS outage. Alert delivery via the SaaS pauses until the service recovers. Pings that fail during an outage are retried on the next scheduler tick, so you won't have gaps in your history once the service comes back. You can also run `php artisan crontinel:check` in your deploy pipeline or a separate cron: it exits 0 when everything is healthy and 1 when alerts are active, so you have a local health check that doesn't depend on the SaaS at all.
 
 ## How often does the package ping the SaaS?
 

@@ -43,8 +43,8 @@ php artisan schedule:work
 In `.env`:
 
 ```env
-CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
+CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...  # Required environment variable
 ```
 
 > **Not using Horizon?** Set `'horizon' => ['enabled' => false]` in `config/crontinel.php` to hide the Horizon panel.
@@ -58,5 +58,5 @@ The Crontinel SaaS (app.crontinel.com) is currently in early access. [Join the w
 Once you have access, create a free account, create an app, and add your API key:
 
 ```env
-CRONTINEL_API_KEY=your-api-key-here
+CRONTINEL_API_KEY=your-api-key-here  # Required environment variable
 ```
