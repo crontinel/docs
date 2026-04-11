@@ -148,8 +148,8 @@ CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/T00/B00/xxx  # Required
 Or for email:
 
 ```env
-CRONTINEL_ALERT_CHANNEL=mail  # Required environment variable
-CRONTINEL_ALERT_EMAIL=ops@yourapp.com  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=mail
+CRONTINEL_ALERT_EMAIL=ops@yourapp.com
 ```
 
 If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn't send notifications anywhere.

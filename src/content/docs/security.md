@@ -110,7 +110,8 @@ public function handleCrontinelWebhook(Request $request): Response
 Two things to note. Use `hash_equals()` instead of `===` to prevent timing attacks. And store your webhook secret in your `.env` file, not in version control:
 
 ```env
-CRONTINEL_WEBHOOK_SECRET=your-random-secret-here  # Required environment variable
+# Generate with: php artisan tinker --execute="echo bin2hex(random_bytes(32));"
+CRONTINEL_WEBHOOK_SECRET=your-random-secret-here
 ```
 
 Generate a strong secret with `php artisan tinker --execute="echo bin2hex(random_bytes(32));"` and set the same value both in your Crontinel config and on the receiving server.

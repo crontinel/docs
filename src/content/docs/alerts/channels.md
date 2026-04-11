@@ -36,7 +36,6 @@ In your `.env`:
 ```env
 CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
 CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
-CRONTINEL_FROM_EMAIL=crontinel@yourdomain.com  # Required environment variable
 ```
 
 Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
@@ -55,7 +54,7 @@ CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here  # Required environmen
 2. Copy the **Integration Key** (routing key).
 3. Add a PagerDuty channel in the Crontinel dashboard with config key `routing_key`.
 
-Crontinel uses `dedup_key = crontinel:{app_id}:{alert_key}`  –  so PagerDuty automatically correlates fire and resolve events into a single incident.
+> **Note:** PagerDuty is planned for a future release. The `pagerduty` channel and `CRONTINEL_PAGERDUTY_ROUTING_KEY` env var are documented ahead of implementation.
 
 ### Webhook
 

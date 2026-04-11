@@ -53,18 +53,21 @@ All Crontinel `.env` variables:
 
 ```env
 # Dashboard
-CRONTINEL_PATH=crontinel  # Required environment variable
+CRONTINEL_PATH=crontinel
 
-# Alerts  –  set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, pagerduty, webhook
-CRONTINEL_ALERT_CHANNEL=  # Required environment variable
-CRONTINEL_SLACK_WEBHOOK=  # Required environment variable
-CRONTINEL_ALERT_EMAIL=  # Required environment variable
-CRONTINEL_PAGERDUTY_ROUTING_KEY=  # Required environment variable
-CRONTINEL_WEBHOOK_URL=  # Required environment variable
+# Horizon (optional – set to false if you don't use Horizon)
+CRONTINEL_HORIZON=true
+CRONTINEL_HORIZON_CONNECTION=horizon
 
-# SaaS (optional)
-CRONTINEL_API_KEY=  # Required environment variable
-CRONTINEL_API_URL=https://app.crontinel.com  # Required environment variable
+# Alerts – set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, webhook
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
+CRONTINEL_ALERT_EMAIL=
+CRONTINEL_WEBHOOK_URL=
+
+# SaaS (optional – omit for local-only monitoring)
+CRONTINEL_API_KEY=
+CRONTINEL_API_URL=https://app.crontinel.com
 ```
 
 ## Upgrading

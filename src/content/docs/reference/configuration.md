@@ -43,10 +43,10 @@ return [
     */
 
     'horizon' => [
-        'enabled' => true,
+        'enabled' => env('CRONTINEL_HORIZON', true),
         'supervisor_alert_after_seconds' => 60,
         'failed_jobs_per_minute_threshold' => 5,
-        'connection' => 'horizon',
+        'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
     ],
 
     /*
@@ -76,10 +76,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Alerts
+    | Alert Channels
     |--------------------------------------------------------------------------
     |
-    | Supported channels: "slack", "mail", "pagerduty", "webhook"
+    | Supported channels: "slack", "mail", "webhook", null
     |
     */
 
@@ -92,10 +92,6 @@ return [
 
         'slack' => [
             'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
-        ],
-
-        'pagerduty' => [
-            'routing_key' => env('CRONTINEL_PAGERDUTY_ROUTING_KEY'),
         ],
 
         'webhook' => [
@@ -113,8 +109,8 @@ return [
     |
     */
 
-    'api_key' => env('CRONTINEL_API_KEY'),
-    'api_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
+    'saas_key' => env('CRONTINEL_API_KEY'),
+    'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
 
 ];
 ```
@@ -145,14 +141,14 @@ Controls Horizon integration. If you don't use Horizon, set `enabled` to `false`
 
 ```php
 'horizon' => [
-    'enabled' => true,
+    'enabled' => env('CRONTINEL_HORIZON', true),
     'supervisor_alert_after_seconds' => 60,    // how long before a dead supervisor fires an alert
     'failed_jobs_per_minute_threshold' => 5,   // alert when failed rate exceeds this
-    'connection' => 'horizon',                  // Redis connection Horizon uses
+    'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'), // Redis connection used by Horizon
 ],
 ```
 
-`connection` should match the connection name in your `config/horizon.php`. Most apps leave this as `horizon`.
+`connection` should match the connection name in your `config/horizon.php`. Most apps leave this as `horizon`. The connection name can be customized via the `CRONTINEL_HORIZON_CONNECTION` environment variable.
 
 ## `queues`
 
@@ -183,11 +179,13 @@ When `watch` is an empty array, Crontinel auto-discovers all active queues. If y
 
 ## `alerts`
 
-Crontinel supports four alert channels: `slack`, `mail`, `pagerduty`, and `webhook`. Set the channel via `CRONTINEL_ALERT_CHANNEL` in your `.env`.
+Crontinel supports three alert channels: `slack`, `mail`, and `webhook`. Set the channel via `CRONTINEL_ALERT_CHANNEL` in your `.env`.
+
+> **Note:** PagerDuty is planned for a future release. The `pagerduty` channel and `CRONTINEL_PAGERDUTY_ROUTING_KEY` env var are documented ahead of implementation.
 
 ```php
 'alerts' => [
-    'channel' => env('CRONTINEL_ALERT_CHANNEL'), // 'slack', 'mail', 'pagerduty', or 'webhook'
+    'channel' => env('CRONTINEL_ALERT_CHANNEL'), // 'slack', 'mail', or 'webhook'
 
     'mail' => [
         'to' => env('CRONTINEL_ALERT_EMAIL'),
@@ -195,10 +193,6 @@ Crontinel supports four alert channels: `slack`, `mail`, `pagerduty`, and `webho
 
     'slack' => [
         'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
-    ],
-
-    'pagerduty' => [
-        'routing_key' => env('CRONTINEL_PAGERDUTY_ROUTING_KEY'),
     ],
 
     'webhook' => [
@@ -211,8 +205,6 @@ Crontinel supports four alert channels: `slack`, `mail`, `pagerduty`, and `webho
 
 **Mail** uses your app's default mail driver. The `to` address receives all alerts.
 
-**PagerDuty** fires events via the Events API v2. The routing key comes from your PagerDuty service integration. Crontinel sends `trigger` events with severity based on the alert type.
-
 **Webhook** sends a JSON POST to any URL you provide. Useful for connecting to custom internal tools, Zapier, or any HTTP endpoint that accepts JSON payloads.
 
 ## Environment variables
@@ -220,10 +212,11 @@ Crontinel supports four alert channels: `slack`, `mail`, `pagerduty`, and `webho
 | Variable | Default | Description |
 |---|---|---|
 | `CRONTINEL_PATH` | `crontinel` | Dashboard URL path |
-| `CRONTINEL_ALERT_CHANNEL` | `null` | Alert channel: `slack`, `mail`, `pagerduty`, or `webhook` |
+| `CRONTINEL_HORIZON` | `true` | Enable Horizon integration |
+| `CRONTINEL_HORIZON_CONNECTION` | `horizon` | Redis connection name for Horizon |
+| `CRONTINEL_ALERT_CHANNEL` | `null` | Alert channel: `slack`, `mail`, or `webhook` |
 | `CRONTINEL_SLACK_WEBHOOK` | `null` | Slack incoming webhook URL |
 | `CRONTINEL_ALERT_EMAIL` | `null` | Email alert recipient |
-| `CRONTINEL_PAGERDUTY_ROUTING_KEY` | `null` | PagerDuty Events API v2 routing key |
 | `CRONTINEL_WEBHOOK_URL` | `null` | Custom webhook endpoint URL |
 | `CRONTINEL_API_KEY` | `null` | SaaS API key (optional) |
 | `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS endpoint URL |

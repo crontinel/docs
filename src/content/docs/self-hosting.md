@@ -52,9 +52,9 @@ REDIS_HOST=127.0.0.1
 MAIL_MAILER=smtp
 MAIL_FROM_ADDRESS=alerts@your-domain.com
 
-# Alert channels (Slack, email, and webhook all work in self-hosted mode)
-CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+# Alert channels (email and webhook both work in self-hosted mode)
+CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_EMAIL=alerts@your-domain.com
 ```
 
 ## 3. Database
@@ -112,6 +112,8 @@ server {
 Replace the `ssl_certificate` and `ssl_certificate_key` paths with your actual cert and key. If you use Certbot, the paths are typically `/etc/letsencrypt/live/your-domain.com/fullchain.pem` and `privkey.pem`.
 
 ## 6. Queue workers
+
+> **Note:** PagerDuty is planned for a future release. The `pagerduty` alert channel is documented here ahead of implementation.
 
 Crontinel needs two persistent workers: one for alert evaluation, one for Horizon ingest.
 
