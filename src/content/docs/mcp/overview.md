@@ -23,5 +23,5 @@ In Claude Code:
 ## Requirements
 
 - Node.js 18+
-- A Crontinel account with an API key
+- A Crontinel account with an API key (**Pro or Team plan**; MCP access is not available on the free plan)
 - An AI assistant that supports MCP (Claude Code, Cursor, etc.)
