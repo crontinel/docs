@@ -59,4 +59,5 @@ Once you have access, create a free account, create an app, and add your API key
 
 ```env
 CRONTINEL_API_KEY=your-api-key-here  # Required environment variable
+CRONTINEL_API_URL=https://app.crontinel.com
 ```
