@@ -18,6 +18,16 @@ php artisan migrate
 
 After running the installer, `config/crontinel.php` is published to your project. Review it to set the dashboard path, middleware, and alert thresholds. See the [configuration reference](/reference/configuration) for all available options.
 
+> **Using Horizon?** Set `'horizon' => ['enabled' => true]` in `config/crontinel.php`. If you're not using Horizon, set it to `false` to hide the Horizon panel.
+
+## Requirements check
+
+Run the health check to confirm everything is wired up correctly:
+
+```bash
+php artisan crontinel:check
+```
+
 ## Dashboard path
 
 By default the dashboard is at `/crontinel`. To change it:
@@ -49,26 +59,29 @@ php artisan crontinel:check --format=json
 
 ## Environment variables
 
-All Crontinel `.env` variables:
+All Crontinel environment variables and their defaults. Set these in `.env` or directly in `config/crontinel.php`:
 
 ```env
-# Dashboard
+# Dashboard path (default: /crontinel)
 CRONTINEL_PATH=crontinel
 
-# Horizon (optional – set to false if you don't use Horizon)
-CRONTINEL_HORIZON=true
+# Horizon integration (set to false if you don't use Horizon)
+CRONTINEL_HORIZON_ENABLED=true
 CRONTINEL_HORIZON_CONNECTION=horizon
 
-# Alerts – set CRONTINEL_ALERT_CHANNEL to one of: slack, mail, webhook
+# Alert channel (slack, email, webhook, pagerduty)
 CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
-CRONTINEL_ALERT_EMAIL=
-CRONTINEL_WEBHOOK_URL=
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+CRONTINEL_ALERT_EMAIL=alerts@example.com
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
+CRONTINEL_PAGERDUTY_ROUTING_KEY=
 
-# SaaS (optional – omit for local-only monitoring)
+# SaaS reporting (optional — omit for local-only monitoring)
 CRONTINEL_API_KEY=
 CRONTINEL_API_URL=https://app.crontinel.com
 ```
+
+See the [configuration reference](/reference/configuration) for all options including thresholds, retention, and middleware.
 
 ## Upgrading
 
