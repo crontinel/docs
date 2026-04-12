@@ -150,7 +150,16 @@ declare module 'astro:content' {
 	>;
 
 	type ContentEntryMap = {
-		"docs": {
+		"blog": {
+"cron-monitoring-for-laravel-developers.md": {
+	id: "cron-monitoring-for-laravel-developers.md";
+  slug: "cron-monitoring-for-laravel-developers";
+  body: string;
+  collection: "blog";
+  data: any
+} & { render(): Render[".md"] };
+};
+"docs": {
 "alerts/channels.md": {
 	id: "alerts/channels.md";
   slug: "alerts/channels";
@@ -263,9 +272,23 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"status-page.md": {
+	id: "status-page.md";
+  slug: "status-page";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "troubleshooting.md": {
 	id: "troubleshooting.md";
   slug: "troubleshooting";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"upgrading.md": {
+	id: "upgrading.md";
+  slug: "upgrading";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
