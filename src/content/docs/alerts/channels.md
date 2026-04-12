@@ -55,9 +55,9 @@ CRONTINEL_PAGERDUTY_ROUTING_KEY=your-integration-key-here  # Required environmen
 
 1. In PagerDuty, create a service with the **Events API v2** integration.
 2. Copy the **Integration Key** (routing key).
-3. Add a PagerDuty channel in the Crontinel dashboard with config key `routing_key`.
+3. Add a PagerDuty channel with the integration key as the `routing_key`.
 
-> **Note:** PagerDuty is planned for a future release. The `pagerduty` channel and `CRONTINEL_PAGERDUTY_ROUTING_KEY` env var are documented ahead of implementation.
+> **Note:** PagerDuty is available on Pro and Team plans.
 
 ### Webhook
 
