@@ -8,13 +8,23 @@
 | **AnswerThePublic** | answerthepublic.com | Question-format keywords from autocomplete (limited free searches/day) |
 | **Ubersuggest** | ubersuggest.com | Volume, SEO difficulty, keyword ideas (limited free) |
 | **Google Trends** | trends.google.com | Relative interest over time, breakout queries |
+| **Google Search Console** | search.google.com/search-console | Your actual ranking queries once site is live |
 | **Ahrefs Free Keyword Generator** | ahrefs.com/keyword-generator | 150 keyword ideas per search, shows volume + KD |
 | **Answer Socrates** | answersocrates.com | Question keywords from Google autocomplete |
-| **Soovle** | soovle.com | Autocomplete suggestions across Google, Bing, YouTube, Amazon |
+| **Soovle** | soovle.com | Autocomplete suggestions across Google, Bing, YouTube, Amazon, Wikipedia |
 | **Keyword Sheeter** | keywordsheeter.com | Bulk autocomplete keyword extraction (free tier) |
-| **Keyworddit** | keywordtool.io (free version) | Reddit/community keyword ideas from subreddits |
+| **Keyworddit** | keyworddit.com | Keyword ideas from Reddit subreddits |
+| **Also Asked** | alsoasked.com | People Also Ask questions from Google SERPs |
+| **Question Samurai** | questionsamurai.com | Long-tail question keywords from Google autocomplete |
+| **ChatGPT / Gemini** | chat.openai.com / gemini.google.com | Seed keyword brainstorming, intent classification |
 
-**Best free workflow:** Ubersuggest for volume/difficulty → AnswerThePublic for question keywords → Google autocomplete for long-tail variations
+**Best free workflow:**
+1. Start with seed keywords → **Ubersuggest** for volume/difficulty
+2. Feed keywords into **AnswerThePublic** for question keywords
+3. Check **Google Trends** for relative interest and breakout queries
+4. Mine **Also Asked** / **Answer Socrates** for People Also Ask data
+5. Paste top keywords into **Keyword Sheeter** for bulk variations
+6. Once live: **Google Search Console** reveals actual search queries
 
 ---
 
@@ -30,9 +40,7 @@
 - `cronitor alternative laravel`
 - `dead manssnitch alternative laravel`
 - `healthchecks alternative laravel`
-- `better stack alternative laravel`
 - `laravel cron job monitoring pricing`
-- `cronitor alternative free`
 - `laravel scheduler monitoring tool`
 - `laravel background job monitoring`
 - `laravel failed job alert`
