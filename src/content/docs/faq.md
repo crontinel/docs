@@ -88,7 +88,7 @@ No user data, passwords, or business logic is transmitted. All data is encrypted
 
 ### The Cron section is empty
 
-The scheduler must run at least once before cron entries appear. Run `php artisan schedule:work` locally, or ensure your server cron is executing `schedule:run`. See the [quick start](/docs/quick-start) for the full crontab entry.
+The scheduler must run at least once before cron entries appear. Run `php artisan schedule:work` locally, or ensure your server cron is executing `schedule:run`. See the [quick start](/quick-start/) for the full crontab entry.
 
 ### The Queue section shows no data
 
@@ -101,4 +101,4 @@ Check:
 2. The condition threshold is actually being breached (check the monitor's last known values)
 3. Alert deduplication hasn't suppressed the notification (5-minute window)
 
-See [troubleshooting](/docs/troubleshooting) for detailed steps.
+See [troubleshooting](/troubleshooting/) for detailed steps.
