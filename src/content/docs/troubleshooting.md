@@ -304,4 +304,4 @@ Run the full diagnostics:
 php artisan crontinel:check --format=json
 ```
 
-If the output doesn't point you to the issue, open a GitHub issue on [crontinel/oss](https://github.com/crontinel/oss/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.
+If the output doesn't point you to the issue, open a GitHub issue on [crontinel/app](https://github.com/crontinel/app/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.

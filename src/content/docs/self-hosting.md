@@ -9,22 +9,22 @@ Self-hosting requires you to manage upgrades, backups, and queue workers yoursel
 
 Self-hosted Crontinel works fully standalone. You do not need a crontinel.com account or API key. The dashboard, alerts, and all monitoring features run entirely on your server.
 
-> **Note:** The self-hosted app (`crontinel/app`) is available to Pro and Team plan users. [See pricing](https://crontinel.com/pricing) for plan details.
+> **Note:** The self-hosted app (`crontinel/app`) is available to Pro and Team plan subscribers. [See pricing](https://crontinel.com/pricing) for plan details.
 
 ## Requirements
 
 | Component | Minimum version |
 |---|---|
-| PHP | 8.2 |
-| MySQL / MariaDB | 8.0 / 10.6 |
-| Redis | 6.0 |
-| Node.js | 18 |
+| PHP | 8.5 |
+| PostgreSQL | 15 |
+| Node.js | 20 |
+| Redis | Optional — queue driver can be `database` or `sync` instead |
 
 ## 1. Clone and install
 
 ```bash
 git clone https://github.com/crontinel/app.git
-cd crontinel-app
+cd app
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
 ```
@@ -43,15 +43,17 @@ APP_URL=https://your-domain.com
 APP_ENV=production
 APP_DEBUG=false
 
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
+DB_PORT=5432
 DB_DATABASE=crontinel
-DB_USERNAME=crontinel
+DB_USERNAME=postgres
 DB_PASSWORD=
+DB_SSLMODE=require
 
 REDIS_HOST=127.0.0.1
 
-MAIL_MAILER=smtp
+MAIL_MAILER=resend
 MAIL_FROM_ADDRESS=alerts@your-domain.com
 
 # Alert channels (email and webhook both work in self-hosted mode)
@@ -80,8 +82,8 @@ Caddy is the simplest option here. It provisions TLS certificates automatically 
 
 ```
 your-domain.com {
-    root * /var/www/crontinel/public
-    php_fastcgi unix//var/run/php/php8.2-fpm.sock
+    root * /var/www/crontinel-app/public
+    php_fastcgi unix//var/run/php/php8.5-fpm.sock
     file_server
 }
 ```
@@ -96,7 +98,7 @@ server {
     ssl_certificate     /etc/ssl/certs/your-domain.com.pem;
     ssl_certificate_key /etc/ssl/private/your-domain.com.key;
 
-    root /var/www/crontinel/public;
+    root /var/www/crontinel-app/public;
     index index.php;
 
     location / {
@@ -104,7 +106,7 @@ server {
     }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.5-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -115,16 +117,14 @@ Replace the `ssl_certificate` and `ssl_certificate_key` paths with your actual c
 
 ## 6. Queue workers
 
-> **Note:** PagerDuty is planned for a future release. The `pagerduty` alert channel is documented here ahead of implementation.
-
-Crontinel needs two persistent workers: one for alert evaluation, one for Horizon ingest.
+Crontinel needs a persistent queue worker to process ping events, alerts, and Horizon data.
 
 Create a Supervisor config at `/etc/supervisor/conf.d/crontinel.conf`:
 
 ```ini
 [program:crontinel-worker]
-command=php /var/www/crontinel/artisan queue:work redis --queue=crontinel,default --sleep=3 --tries=3 --max-time=3600
-directory=/var/www/crontinel
+command=php /var/www/crontinel-app/artisan queue:work redis --queue=crontinel,default --sleep=3 --tries=3 --max-time=3600
+directory=/var/www/crontinel-app
 user=www-data
 numprocs=2
 autostart=true
@@ -149,7 +149,7 @@ supervisorctl start crontinel-worker:*
 Add the Laravel scheduler to cron for `www-data`:
 
 ```bash
-* * * * * cd /var/www/crontinel && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/crontinel-app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ## 8. Verify

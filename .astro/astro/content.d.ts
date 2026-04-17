@@ -158,6 +158,13 @@ declare module 'astro:content' {
   collection: "blog";
   data: any
 } & { render(): Render[".md"] };
+"laravel-queue-monitoring-catch-failures.md": {
+	id: "laravel-queue-monitoring-catch-failures.md";
+  slug: "laravel-queue-monitoring-catch-failures";
+  body: string;
+  collection: "blog";
+  data: any
+} & { render(): Render[".md"] };
 };
 "docs": {
 "alerts/channels.md": {
