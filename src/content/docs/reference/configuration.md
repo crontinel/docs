@@ -3,23 +3,23 @@ title: Configuration Reference
 description: Complete reference for all Crontinel configuration options, environment variables, and self-hosting setup
 ---
 
-This page documents every configuration option available in Crontinel. Most options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some, particularly database, Redis, and mail, are standard Laravel env vars in your `.env` file.
+This page documents every configuration option available in Crontinel. Options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some — particularly database, Redis, and mail — are standard Laravel `.env` vars.
 
-## Quick reference — all environment variables
+## Environment variable quick reference
 
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_PATH` | `crontinel` | URL path for the dashboard |
-| `CRONTINEL_HORIZON` | `true` | Enable Horizon integration |
-| `CRONTINEL_HORIZON_CONNECTION` | `horizon` | Redis connection name for Horizon |
-| `CRONTINEL_ALERT_CHANNEL` | `null` | Alert channel: `slack`, `mail`, or `webhook` |
-| `CRONTINEL_SLACK_WEBHOOK` | `null` | Slack incoming webhook URL |
-| `CRONTINEL_ALERT_EMAIL` | `null` | Email alert recipient |
-| `CRONTINEL_WEBHOOK_URL` | `null` | Custom webhook endpoint URL |
-| `CRONTINEL_WEBHOOK_SECRET` | `null` | HMAC secret for webhook signature verification |
-| `CRONTINEL_API_KEY` | `null` | SaaS API key (optional) |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS endpoint URL |
-| `ADMIN_EMAILS` | `null` | Comma-separated admin emails for Horizon gate access |
+| Variable | Config key | Default | Description |
+|---|---|---|---|
+| `CRONTINEL_PATH` | `path` | `crontinel` | URL path for the dashboard |
+| `CRONTINEL_HORIZON` | `horizon.enabled` | `true` (auto) | Enable Horizon integration |
+| `CRONTINEL_HORIZON_CONNECTION` | `horizon.connection` | `horizon` | Redis connection name for Horizon |
+| `CRONTINEL_ALERT_CHANNEL` | `alerts.channel` | _(none)_ | Alert channel: `slack`, `mail`, or `webhook` |
+| `CRONTINEL_ALERT_EMAIL` | `alerts.mail.to` | _(none)_ | Email alert recipient |
+| `CRONTINEL_SLACK_WEBHOOK` | `alerts.slack.webhook_url` | _(none)_ | Slack incoming webhook URL |
+| `CRONTINEL_WEBHOOK_URL` | `alerts.webhook.url` | _(none)_ | Custom webhook endpoint URL |
+| `CRONTINEL_WEBHOOK_HEADERS` | `alerts.webhook.headers` | _(none)_ | JSON object of extra HTTP headers |
+| `CRONTINEL_WEBHOOK_TIMEOUT` | `alerts.webhook.timeout` | `10` | Webhook request timeout in seconds |
+| `CRONTINEL_API_KEY` | `saas_key` | _(none)_ | API key for the hosted dashboard |
+| `CRONTINEL_API_URL` | `saas_url` | `https://app.crontinel.com` | SaaS endpoint URL |
 
 ---
 
@@ -33,7 +33,7 @@ Dashboard URL path. Default: `crontinel`
 'path' => env('CRONTINEL_PATH', 'crontinel'),
 ```
 
-Controls where the dashboard is mounted. If set to `monitoring`, the dashboard lives at `yourdomain.com/monitoring`.
+If set to `monitoring`, the dashboard lives at `yourdomain.com/monitoring`.
 
 ### `middleware`
 
@@ -43,7 +43,7 @@ Middleware applied to all dashboard routes. Default: `['web', 'auth']`
 'middleware' => ['web', 'auth'],
 ```
 
-You almost certainly want `'web'` and `'auth'` here. Add a Gate check or role middleware to restrict access:
+You almost certainly want `'web'` and `'auth'`. Add a role or ability check to restrict access:
 
 ```php
 'middleware' => ['web', 'auth', 'can:viewCrontinel'],
@@ -57,11 +57,11 @@ Crontinel reads Horizon's Redis keys directly — the same data source the Horiz
 
 ### `horizon.enabled`
 
-Enable or disable Horizon monitoring. Default: `true`
+Enable or disable Horizon monitoring. Default: `true` (auto-detected)
 
 ```php
 'horizon' => [
-    'enabled' => env('CRONTINEL_HORIZON', true),
+    'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
 ],
 ```
 
@@ -151,7 +151,7 @@ Alert when the oldest waiting job has been in the queue longer than this. Defaul
 'wait_time_alert_seconds' => 300,
 ```
 
-### Threshold lookup order (SaaS)
+### Threshold lookup order (hosted dashboard)
 
 On the hosted dashboard, threshold lookups resolve in this order:
 
@@ -193,7 +193,7 @@ How long to keep cron run history in the database. Default: `30`
 'retain_days' => 30,
 ```
 
-Crontinel prunes old records automatically via `crontinel:prune`. Run it daily with the scheduler:
+Crontinel prunes old records automatically. Schedule the prune command daily:
 
 ```php
 $schedule->command('crontinel:prune')->daily();
@@ -257,12 +257,13 @@ Uses your app's configured mail driver (set `MAIL_MAILER` in `.env`). Works with
 ```env
 CRONTINEL_ALERT_CHANNEL=webhook
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/alerts
-CRONTINEL_WEBHOOK_SECRET=your-random-secret-here
 ```
 
 ```php
 'webhook' => [
     'url' => env('CRONTINEL_WEBHOOK_URL'),
+    'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),   // optional JSON object
+    'timeout' => env('CRONTINEL_WEBHOOK_TIMEOUT', 10), // seconds
 ],
 ```
 
@@ -270,15 +271,30 @@ Sends a JSON POST to your endpoint:
 
 ```json
 {
-  "app": "my-app",
-  "alert_key": "queue:default:depth",
-  "message": "Queue 'default' depth is 1500 (threshold: 1000)",
-  "state": "firing",
-  "fired_at": "2026-04-07T08:00:00Z"
+  "title": "Queue [default] alert",
+  "message": "• Queue depth: 1500 jobs (threshold: 1000)",
+  "level": "warning",
+  "resolved": false,
+  "fired_at": "2026-04-07T08:00:00+00:00",
+  "source": "crontinel"
 }
 ```
 
-**Verify webhook signatures** using the `X-Crontinel-Signature` header (HMAC-SHA256). See the [Security doc](/security) for the verification code.
+#### Custom headers
+
+If your endpoint requires authentication headers, set `CRONTINEL_WEBHOOK_HEADERS` as a JSON object:
+
+```env
+CRONTINEL_WEBHOOK_HEADERS={"Authorization": "Bearer your-token", "X-Custom": "my-header"}
+```
+
+#### Request timeout
+
+The default timeout is 10 seconds. Adjust with:
+
+```env
+CRONTINEL_WEBHOOK_TIMEOUT=30
+```
 
 ### Alert deduplication
 
@@ -286,52 +302,13 @@ The same alert condition won't re-fire for 5 minutes. If a queue stays above thr
 
 ### Auto-resolution
 
-When the condition clears, Crontinel sends a "resolved" notification with `"state": "resolved"`. You get clear start and end signals for every incident.
-
-### Future channels (roadmap)
-
-- **PagerDuty** — IT alert routing and incident management. Planned.
-- **SMS** — Direct text message alerts. Planned.
-- **OpsGenie** — IT alert routing and on-call management. Planned.
-
----
-
-## Notification routing rules
-
-You can route alerts differently based on the alert type, monitor name, or severity. Configure routing in `config/crontinel.php`:
-
-```php
-'notification_routing' => [
-    // Route queue depth alerts to Slack
-    [
-        'condition' => ['type' => 'queue_depth'],
-        'channel' => 'slack',
-        'slack_webhook' => env('CRONTINEL_SLACK_WEBHOOK'),
-    ],
-
-    // Route failed cron jobs to email
-    [
-        'condition' => ['type' => 'cron_failed'],
-        'channel' => 'mail',
-        'mail_to' => env('CRONTINEL_ALERT_EMAIL'),
-    ],
-
-    // Route Horizon supervisor down to webhook
-    [
-        'condition' => ['type' => 'horizon_supervisor_down'],
-        'channel' => 'webhook',
-        'webhook_url' => env('CRONTINEL_WEBHOOK_URL'),
-    ],
-],
-```
-
-Without explicit routing rules, Crontinel uses the default `alerts.channel` for all alerts.
+When the condition clears, Crontinel sends a "resolved" notification with `"resolved": true`. You get clear start and end signals for every incident.
 
 ---
 
 ## SaaS connection (optional)
 
-If you're using the hosted dashboard at app.crontinel.com, set your API key here. Leave null to use the local dashboard only.
+Connect this self-hosted app to the hosted dashboard at app.crontinel.com.
 
 ### `saas_key`
 
@@ -339,19 +316,21 @@ If you're using the hosted dashboard at app.crontinel.com, set your API key here
 'saas_key' => env('CRONTINEL_API_KEY'),
 ```
 
+Set `CRONTINEL_API_KEY` to your dashboard API key. When set, Crontinel reports cron run summaries and status every minute.
+
 ### `saas_url`
 
 ```php
 'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
 ```
 
-When `saas_key` is null, no data is sent to the SaaS. When set, Crontinel reports cron run summaries (command name, exit code, duration, timestamp) to the dashboard.
+Override the SaaS endpoint for self-hosted dashboard instances.
 
 ---
 
 ## Database (self-hosting)
 
-Crontinel uses PostgreSQL. Standard Laravel database env vars:
+Crontinel uses your app's existing database connection. Standard Laravel database env vars:
 
 ```env
 DB_CONNECTION=pgsql
@@ -363,7 +342,7 @@ DB_PASSWORD=your-password
 DB_SSLMODE=require
 ```
 
-For local development with Docker/Valet, `DB_HOST=127.0.0.1` is typical. On Railway or other PaaS, use the provided host/port/credentials.
+For local development with Docker or Laravel Valet, `DB_HOST=127.0.0.1` is typical. On Railway or other PaaS, use the host/port/credentials provided by the platform.
 
 ---
 
@@ -378,9 +357,9 @@ REDIS_PASSWORD=null
 REDIS_PORT=6379
 ```
 
-`REDIS_CLIENT` should match your PHP Redis extension (`phpredis` requires the PHP Redis extension; `predis` is the pure-PHP client). The connection name used by Horizon is configured separately in `horizon.connection`.
+`REDIS_CLIENT` must match your PHP Redis extension — `phpredis` requires the PHP extension; `predis` is the pure-PHP client.
 
-If you use a different Redis connection for Horizon, ensure that connection is defined in `config/database.php` under `redis`:
+The connection used by Horizon is configured separately via `horizon.connection` (default: `horizon`). Ensure that connection name is defined in `config/database.php` under `redis`:
 
 ```php
 'redis' => [
@@ -429,14 +408,20 @@ After `php artisan crontinel:install`, `config/crontinel.php` is published with 
 ```php
 <?php
 
+declare(strict_types=1);
+use Laravel\Horizon\Horizon;
+
 return [
 
     'path' => env('CRONTINEL_PATH', 'crontinel'),
 
     'middleware' => ['web', 'auth'],
 
+    'saas_key' => env('CRONTINEL_API_KEY'),
+    'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
+
     'horizon' => [
-        'enabled' => env('CRONTINEL_HORIZON', true),
+        'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
         'supervisor_alert_after_seconds' => 60,
         'failed_jobs_per_minute_threshold' => 5,
         'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
@@ -468,15 +453,10 @@ return [
 
         'webhook' => [
             'url' => env('CRONTINEL_WEBHOOK_URL'),
+            'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),
+            'timeout' => env('CRONTINEL_WEBHOOK_TIMEOUT', 10),
         ],
     ],
-
-    'notification_routing' => [
-        // Add routing rules here
-    ],
-
-    'saas_key' => env('CRONTINEL_API_KEY'),
-    'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
 
 ];
 ```
