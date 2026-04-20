@@ -19,6 +19,17 @@ export default defineConfig({
           { label: 'Quick Start', link: '/quick-start/' },
           { label: 'Installation', link: '/installation/' },
         ]},
+        { label: 'SDKs & Packages', items: [
+          { label: 'Overview', link: '/sdks/' },
+          { label: 'Node.js / TypeScript', link: '/sdks/node/' },
+          { label: 'Python', link: '/sdks/python/' },
+          { label: 'Go', link: '/sdks/go/' },
+          { label: 'Rust', link: '/sdks/rust/' },
+          { label: 'PHP', link: '/sdks/php/' },
+          { label: 'Ruby', link: '/sdks/ruby/' },
+          { label: 'Ruby on Rails', link: '/sdks/rails/' },
+          { label: 'CLI / Docker', link: '/sdks/cli/' },
+        ]},
         { label: 'Monitors', items: [
           { label: 'Horizon Monitor', link: '/monitors/horizon/' },
           { label: 'Queue Monitor', link: '/monitors/queues/' },
