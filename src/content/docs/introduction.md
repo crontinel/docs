@@ -25,6 +25,14 @@ The OSS package (`crontinel/laravel`) installs in your Laravel app and:
 
 The optional SaaS at [app.crontinel.com](https://app.crontinel.com) gives you a hosted multi-app dashboard, longer history retention, team access, and alerts.
 
+## Plans and pricing
+
+Crontinel has a generous free tier: **one app, up to 5 monitors, 7-day history**. No credit card required.
+
+Paid plans unlock additional apps, longer history (30–90 days), team collaboration, and priority support. See the [full pricing page](/pricing) for details.
+
+The self-hosted package is MIT licensed and free for unlimited use — no SaaS required.
+
 ## Open source first
 
 The core package is MIT licensed. Install it in two commands and get a full dashboard with no account required:
