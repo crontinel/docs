@@ -123,7 +123,4 @@ var client = new CrontinelClient(new CrontinelOptions
 
 ## Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+The .NET SDK does not read environment variables automatically. Pass values explicitly via `CrontinelOptions` or set them in your app's configuration and inject them at construction time.
