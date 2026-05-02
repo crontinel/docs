@@ -19,45 +19,79 @@ description: Configuring Slack, email, PagerDuty, and webhook alerts
 
 ### Slack
 
-**OSS: configure via environment variables**
+**`.env` (self-hosted / OSS)**
 
-In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 ```
 
-Or directly in `config/crontinel.php` under the `alerts` key.
+**`config/crontinel.php`**
 
-Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack app, then add the channel in the Crontinel dashboard with config key `webhook_url`.
+```php
+'alerts' => [
+    'channel' => 'slack',
+    'slack' => [
+        'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
+    ],
+],
+```
+
+Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack workspace, then paste the URL into the env var above.
+
+**SaaS:** add the channel through the Crontinel dashboard with config key `webhook_url`.
+
+---
 
 ### Email
 
-**OSS: configure via environment variables**
+**`.env` (self-hosted / OSS)**
 
-In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
-CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_EMAIL=you@example.com
 ```
 
-Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
+**`config/crontinel.php`**
 
-### PagerDuty (coming soon)
+```php
+'alerts' => [
+    'channel' => 'email',
+    'mail' => [
+        'to' => env('CRONTINEL_ALERT_EMAIL'),
+    ],
+],
+```
 
-> **Note:** PagerDuty integration is planned and will be available in a future release.
+Uses your app's configured mail driver (`MAIL_MAILER`). Works with SMTP, Resend, Mailgun, or any Laravel-compatible driver.
+
+**SaaS:** add an email channel in the dashboard with config key `to` set to the recipient address.
+
+---
 
 ### Webhook
 
-**OSS: configure via environment variables**
+**`.env` (self-hosted / OSS)**
 
-In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=webhook  # Required environment variable
-CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=webhook
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
 ```
 
-Add a webhook channel with config key `url`. Crontinel sends a POST with:
+**`config/crontinel.php`**
+
+```php
+'alerts' => [
+    'channel' => 'webhook',
+    'webhook' => [
+        'url'     => env('CRONTINEL_WEBHOOK_URL'),
+        'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),  // optional JSON object
+        'timeout' => env('CRONTINEL_WEBHOOK_TIMEOUT', 10),
+    ],
+],
+```
+
+Crontinel sends a POST with a JSON body:
 
 ```json
 {
@@ -69,9 +103,19 @@ Add a webhook channel with config key `url`. Crontinel sends a POST with:
 }
 ```
 
+**SaaS:** add a webhook channel in the dashboard with config key `url`.
+
+---
+
+### PagerDuty (coming soon)
+
+> **Note:** PagerDuty integration is planned and will be available in a future release.
+
+---
+
 ## Alert deduplication
 
-The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start  –  not one every poll cycle.
+The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start — not one every poll cycle.
 
 ## Auto-resolution
 
