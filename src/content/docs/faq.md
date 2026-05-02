@@ -3,102 +3,101 @@ title: FAQ
 description: Frequently asked questions about Crontinel
 ---
 
-## General
+## Do I need a crontinel.com account to use Crontinel?
 
-### What is Crontinel?
+No. The OSS package (`crontinel/laravel`) works entirely standalone. Install it, run `php artisan crontinel:install`, and your local dashboard is available at `/crontinel` with no account, API key, or external connection required.
 
-Crontinel monitors your Laravel application's cron jobs, scheduled tasks, and background queues. Where generic uptime tools only check if a server is reachable, Crontinel watches what those tools miss — failed cron runs, late executions, queue bottlenecks, and dead Horizon supervisors.
-
-### What does Crontinel monitor?
-
-- **Cron/scheduler**: Every `schedule:run` execution is recorded with exit code, duration, and output
-- **Laravel Horizon**: Per-supervisor status, failed job rates, queue depth
-- **Queue workers**: Job backlogs, wait times, failed job counts
-- **Custom health**: Define your own `/up` endpoint and alert on its conditions
-
-### What is the difference between Crontinel and generic uptime monitoring?
-
-Generic tools (Pingdom, UptimeRobot) check if a URL or port responds. They can't tell you that your hourly invoice cron failed silently, or that your `emails` queue is 3,000 jobs deep. Crontinel integrates directly with Laravel to surface the failures that matter.
+A crontinel.com account is optional — it gives you a hosted dashboard, cross-app visibility, and alerting without managing your own server. If you want local-only monitoring, you never need to sign up.
 
 ---
 
-## Plans and Billing
+## Will Crontinel slow down my application?
 
-### Is there a free plan?
+No. All monitoring work happens asynchronously through Laravel's event system. Crontinel listens to scheduler events (`ScheduledTaskStarting`, `ScheduledTaskFinished`, `ScheduledTaskFailed`) and dispatches jobs to record the data. The job dispatch is non-blocking — your scheduled tasks run at full speed.
 
-Yes. The free plan includes:
-- 1 app
-- 5 monitors
-- 7-day history
-- Email + Slack alerts
-
-### What does Pro include?
-
-Pro ($8/month) adds:
-- Unlimited apps and monitors
-- 30-day history
-- Custom branding for status pages
-- Priority support
-- Webhook and PagerDuty alerts
-
-### What happens if Crontinel SaaS goes down?
-
-Your Laravel app keeps running — Crontinel only sends alerts. If the SaaS is unreachable, you'll miss notifications until it recovers, but your local dashboard continues to work.
-
-For self-hosted users, no SaaS dependency at all.
+The only synchronous overhead is a tiny event listener registration at app boot, which is negligible.
 
 ---
 
-## Installation
+## Does Crontinel work with Laravel Octane?
 
-### Do I need Horizon to use Crontinel?
+Yes. Crontinel is compatible with Laravel Octane (Swoole and RoadRunner). The package uses standard Laravel service provider and event patterns that Octane respects. There are no static state issues because all data is stored in the database, not in-memory.
 
-No. Horizon is optional. If you're not using Horizon, set `'horizon' => ['enabled' => false]` in `config/crontinel.php` and the Horizon panel will be hidden.
+If you run Octane, make sure your queue worker is separate from your Octane server — this is the standard Laravel recommendation and applies to Crontinel like any other queued job.
 
-### Does Crontinel work with Octane?
+---
 
-Yes. Crontinel hooks into Laravel's scheduler and queue events, which are Octane-compatible. The only requirement is that your scheduler still fires `schedule:run` via cron.
+## What happens if app.crontinel.com goes down?
 
-### How do I upgrade Crontinel?
+Nothing breaks locally. Your self-hosted dashboard continues working independently. Crontinel reports data to the SaaS endpoint only if `CRONTINEL_API_KEY` is set — and only when a connection is available. If the SaaS is unreachable, the package logs a warning and continues without blocking your app.
+
+Your scheduler runs, your jobs execute, and your local `/crontinel` dashboard stays current regardless of SaaS availability.
+
+---
+
+## What data does the package send to the SaaS?
+
+Nothing is sent unless you set `CRONTINEL_API_KEY`. When the key is present, the package sends:
+
+- Cron run summaries: command name, status (`completed`/`failed`/`late`), duration, exit code
+- Queue depth snapshots: queue name, depth count, failed job count
+- Horizon status: running/paused, failed-per-minute rate, supervisor count
+
+**No application data, no user data, no request payloads, and no environment variables are ever sent.**
+
+---
+
+## What are the Free plan limits?
+
+The Free plan on app.crontinel.com includes:
+
+- **1 app**
+- **7-day history**
+- **1 team member**
+- **No alert channels**
+
+For alert channels, team collaboration, and longer history, see the [pricing page](https://crontinel.com/pricing) for Pro and Team plan details.
+
+---
+
+## How do I upgrade to a new version?
 
 ```bash
 composer update crontinel/laravel
 php artisan migrate
+php artisan crontinel:check
+```
+
+Migrations are always additive — running `php artisan migrate` is safe alongside your existing app migrations. Check the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md) before upgrading across major versions.
+
+If a new release adds config options, re-publish the config file to see the new defaults:
+
+```bash
 php artisan vendor:publish --tag=crontinel-config --force
 ```
 
-Review the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md) for breaking changes between versions.
+Compare the output with your existing `config/crontinel.php` and add any new keys you need.
 
 ---
 
-## Data and Privacy
+## How do I configure alert channels in the OSS version?
 
-### What data does Crontinel SaaS send?
+Set the channel and credentials in `.env`:
 
-When using the hosted SaaS, your app sends:
-- Cron run records (command name, exit code, duration, timestamps)
-- Queue metrics (depth, wait time, failed count)
-- Horizon metrics (supervisor status, failed job rate)
+```env
+# Slack
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 
-No user data, passwords, or business logic is transmitted. All data is encrypted in transit and at rest.
+# Email
+CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_EMAIL=you@example.com
 
----
+# Webhook
+CRONTINEL_ALERT_CHANNEL=webhook
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/alerts
+```
 
-## Troubleshooting
+Only one channel is active at a time (set by `CRONTINEL_ALERT_CHANNEL`). For multiple channels simultaneously, use the hosted SaaS which supports per-app channel routing through the web UI.
 
-### The Cron section is empty
-
-The scheduler must run at least once before cron entries appear. Run `php artisan schedule:work` locally, or ensure your server cron is executing `schedule:run`. See the [quick start](/quick-start/) for the full crontab entry.
-
-### The Queue section shows no data
-
-Make sure your queue workers are running (`php artisan queue:work`) and that your Redis connection is configured correctly in `config/queue.php`.
-
-### Alerts are not firing
-
-Check:
-1. Your alert channel credentials are correct in `.env`
-2. The condition threshold is actually being breached (check the monitor's last known values)
-3. Alert deduplication hasn't suppressed the notification (5-minute window)
-
-See [troubleshooting](/troubleshooting/) for detailed steps.
+See [Alert Channels](/alerts/channels) for full configuration details including `config/crontinel.php` snippets.

@@ -3,145 +3,118 @@ title: Security
 description: Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
 ---
 
-## Dashboard access control
+## Dashboard hardening
 
-The Crontinel dashboard at `/crontinel` shows your cron schedules, queue depths, job names, and error counts. That's internal operational data you don't want exposed to every authenticated user.
+### Restrict access with middleware
 
-By default, the package applies `['web', 'auth']` middleware. That checks whether someone is logged in, but it doesn't check _who_ they are. Any authenticated user in your app can see the dashboard. In most production apps, that's not what you want.
-
-### Gate-based authorization
-
-The simplest fix is a Laravel Gate. Register it in your `AppServiceProvider`:
+By default, the dashboard uses `['web', 'auth']` middleware — any authenticated user can view it. For production, restrict access further:
 
 ```php
-use Illuminate\Support\Facades\Gate;
-
-public function boot(): void
-{
-    Gate::define('viewCrontinel', function ($user) {
-        return in_array($user->email, [
-            'you@yourcompany.com',
-            'ops-lead@yourcompany.com',
-        ]);
-    });
-}
-```
-
-Then add the gate check as middleware in `config/crontinel.php`:
-
-```php
+// config/crontinel.php
 'middleware' => ['web', 'auth', 'can:viewCrontinel'],
 ```
 
-Now only the users you've listed can access the dashboard. Everyone else gets a 403.
-
-### Custom middleware for roles
-
-If you're using Spatie Permission or a similar package, swap in a role check instead:
+Define the `viewCrontinel` gate in a service provider:
 
 ```php
-'middleware' => ['web', 'auth', 'role:admin'],
+Gate::define('viewCrontinel', function ($user) {
+    return in_array($user->email, explode(',', env('CRONTINEL_ADMIN_EMAILS', '')));
+});
 ```
 
-Or write your own middleware if you need something more specific. The `middleware` array in the config accepts anything you'd pass to a Laravel route group.
-
-### IP restriction
-
-For internal tools behind a VPN, you can restrict by IP:
+Or use a role check if you have a role system:
 
 ```php
-'middleware' => ['web', 'auth', \App\Http\Middleware\RestrictToVpn::class],
+Gate::define('viewCrontinel', fn ($user) => $user->hasRole('admin'));
 ```
 
-A quick middleware that checks `$request->ip()` against an allowlist does the job. In practice, combining IP restriction with role-based auth gives you two layers of protection.
+### Move the dashboard path
 
-## Sensitive data in cron output
+Change the default `/crontinel` path to something less predictable:
 
-Here's the thing: the dashboard displays your scheduled command names exactly as they appear in your `Kernel` or `routes/console.php`. If you're passing sensitive data as arguments, it shows up in the UI.
-
-For example, a command like this:
-
-```php
-$schedule->command('user:export --email=john@example.com')->daily();
+```env
+CRONTINEL_PATH=internal/ops/monitor
 ```
 
-That email address is now visible to anyone with dashboard access. Same goes for API keys, tokens, or internal IDs passed as command arguments.
+The dashboard is then at `/internal/ops/monitor`. Security through obscurity alone isn't sufficient — always require authentication — but an unusual path reduces automated scanning.
 
-The fix is simple. Pass sensitive values through config or environment variables instead of command arguments:
+### HTTPS only
 
-```php
-// Bad: sensitive data in the command string
-$schedule->command('report:send --api-key=sk_live_abc123')->hourly();
+The dashboard exposes operational data (job names, queue depths, failure rates). Always serve it over HTTPS in production. In Laravel, force HTTPS by setting `APP_URL` to an `https://` URL and using `URL::forceScheme('https')` in a service provider if your server terminates TLS upstream.
 
-// Good: read from env inside the command
-$schedule->command('report:send')->hourly();
+---
+
+## What data the package captures
+
+Crontinel records the following from your Laravel application:
+
+| Data type | What's captured | What's NOT captured |
+|---|---|---|
+| Cron runs | Command name, status, duration, exit code | Command arguments, output content |
+| Queue | Queue name, depth count, failed count | Job payloads, job class arguments |
+| Horizon | Status, supervisor count, failed/min rate | Job data, worker logs |
+
+**No user data, no request data, no environment variables, and no application secrets are captured.**
+
+Job output can optionally be captured if `'capture_output' => true` is set in `config/crontinel.php`, but this is disabled by default and should only be enabled if your job output contains no sensitive data.
+
+---
+
+## What data is sent to the SaaS
+
+**Nothing is sent unless `CRONTINEL_API_KEY` is set in your environment.**
+
+When the key is present, the package sends the data types listed above (cron summaries, queue snapshots, Horizon status) to `app.crontinel.com` over HTTPS. Data is transmitted as JSON in the request body.
+
+If you operate in an air-gapped or restricted environment, omit `CRONTINEL_API_KEY` entirely. The local dashboard works without it.
+
+---
+
+## Webhook HMAC signing
+
+When Crontinel fires an outbound webhook alert, it signs the request body with HMAC-SHA256 using a secret you define. This lets your endpoint verify the request came from Crontinel and wasn't tampered with.
+
+### Configuring the secret
+
+```env
+CRONTINEL_WEBHOOK_SECRET=your-signing-secret
 ```
 
-Review what your dashboard actually shows. Run `php artisan crontinel:check` to see the same data the dashboard renders. If anything there makes you uncomfortable, refactor those commands before going live.
+```php
+// config/crontinel.php
+'webhook' => [
+    'url'    => env('CRONTINEL_WEBHOOK_URL'),
+    'secret' => env('CRONTINEL_WEBHOOK_SECRET'),
+],
+```
 
-## Webhook HMAC verification
+### Verifying the signature
 
-When Crontinel sends alert payloads to your webhook URL, each request includes an `X-Crontinel-Signature` header. This is an HMAC-SHA256 hash of the request body, signed with your webhook secret.
+Crontinel adds an `X-Crontinel-Signature` header to every webhook request:
 
-You should verify this signature on the receiving end. Otherwise anyone who discovers your webhook URL can send fake alerts.
+```
+X-Crontinel-Signature: sha256=<hex_digest>
+```
+
+Verify it in your endpoint:
 
 ```php
-use Illuminate\Http\Request;
+$payload   = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_CRONTINEL_SIGNATURE'] ?? '';
+$expected  = 'sha256=' . hash_hmac('sha256', $payload, env('CRONTINEL_WEBHOOK_SECRET'));
 
-public function handleCrontinelWebhook(Request $request): Response
-{
-    $secret = config('crontinel.webhook_secret');
-    $payload = $request->getContent();
-    $signature = $request->header('X-Crontinel-Signature');
-
-    $expected = hash_hmac('sha256', $payload, $secret);
-
-    if (! hash_equals($expected, $signature)) {
-        abort(403, 'Invalid signature');
-    }
-
-    // Process the alert payload
-    $data = json_decode($payload, true);
-
-    return response('OK', 200);
+if (! hash_equals($expected, $signature)) {
+    http_response_code(401);
+    exit('Invalid signature');
 }
 ```
 
-Two things to note. Use `hash_equals()` instead of `===` to prevent timing attacks. And store your webhook secret in your `.env` file, not in version control:
+Use `hash_equals()` to prevent timing attacks.
 
-```env
-# Generate with: php artisan tinker --execute="echo bin2hex(random_bytes(32));"
-CRONTINEL_WEBHOOK_SECRET=your-random-secret-here
-```
+---
 
-Generate a strong secret with `php artisan tinker --execute="echo bin2hex(random_bytes(32));"` and set the same value both in your Crontinel config and on the receiving server.
+## Additional recommendations
 
-## SaaS data minimization
-
-If you connect Crontinel to the hosted dashboard at app.crontinel.com, you might wonder what data leaves your server. The answer: very little.
-
-Crontinel sends exactly four fields per cron run:
-
-- Command name (e.g., `schedule:run`, `horizon:snapshot`)
-- Exit code (0 for success, non-zero for failure)
-- Run duration in milliseconds
-- Timestamp of execution
-
-It doesn't read or transmit `.env` values, log files, command output, or database contents. Just those four fields.
-
-If you want to verify this yourself, check the `SaasReporter` class in the package source. The payload is a plain JSON object with those four keys. You can also inspect outgoing requests by pointing `CRONTINEL_API_URL` to a local endpoint or a request inspection tool like Requestbin during development.
-
-## Production checklist
-
-Before deploying Crontinel to production, run through these steps:
-
-- Replace the default `['web', 'auth']` middleware with a Gate or role check that limits dashboard access to ops/admin users
-- Audit your scheduled commands for sensitive data in arguments or names
-- Set `CRONTINEL_WEBHOOK_SECRET` in your `.env` and verify signatures on the receiving end
-- Change the default dashboard path from `/crontinel` to something less guessable if you're not behind a VPN: set `CRONTINEL_PATH` in your `.env`
-- Review `php artisan crontinel:check` output to confirm nothing unexpected is exposed
-- If you don't need the SaaS reporter, disable it in `config/crontinel.php` to keep all data on your server
-- Test your Gate/middleware by logging in as a non-admin user and confirming the dashboard returns a 403
-- Set your webhook endpoints to HTTPS only, never plain HTTP
-
-Get these right before your first deploy. Fixing auth gaps after something leaks is a lot less fun.
+- **Rotate `CRONTINEL_API_KEY` regularly** if you use the SaaS. Revoke and reissue from the app dashboard under Settings → API Keys.
+- **Use a dedicated alert email address** (`alerts@your-company.com`) rather than a personal inbox — this makes it easier to audit who receives operational alerts.
+- **Audit team members** on your Crontinel account periodically. Access is managed per-team; remove former employees from the dashboard team as part of your offboarding checklist.
