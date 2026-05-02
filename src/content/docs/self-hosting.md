@@ -9,7 +9,35 @@ Self-hosting requires you to manage upgrades, backups, and queue workers yoursel
 
 Self-hosted Crontinel works fully standalone. You do not need a crontinel.com account or API key. The dashboard, alerts, and all monitoring features run entirely on your server.
 
-> **Note:** The self-hosted app (`crontinel/app`) is available to Pro and Team plan subscribers. [See pricing](https://crontinel.com/pricing) for plan details.
+:::caution[Repository access]
+The `crontinel/app` repository requires an active **Pro or Team** plan subscription to clone. [See pricing](https://crontinel.com/pricing).
+
+If you don't have subscription access yet, you can run the **Docker image** instead — it's publicly available with no repo access required. See [Docker setup](#docker-setup) below.
+:::
+
+## Docker setup
+
+The fastest way to self-host without repository access. Pull and run the official image with Docker Compose:
+
+See the included [`docker-compose.yml`](https://github.com/crontinel/docs/blob/main/docker-compose.yml) for a complete stack (app + PostgreSQL + Redis + Nginx):
+
+```bash
+# Download and start
+curl -O https://raw.githubusercontent.com/crontinel/docs/main/docker-compose.yml
+cp .env.example .env   # edit APP_KEY, DB_PASSWORD, etc.
+docker compose up -d
+docker compose exec app php artisan migrate --force
+```
+
+Then visit `http://localhost:8080` (or your configured port).
+
+For full details on the Docker Compose file variables and customisation, see the [docker-compose.yml](https://github.com/crontinel/docs/blob/main/docker-compose.yml) in this repo.
+
+---
+
+## Manual install (requires repo access)
+
+The steps below walk through a full manual install on a bare server.
 
 ## Requirements
 
