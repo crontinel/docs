@@ -13,6 +13,19 @@ Crontinel hooks into three Laravel scheduler events:
 
 No code changes to your `schedule()` method are needed. Every command defined there is tracked automatically after installation.
 
+For example, a standard `routes/console.php` works without any modification:
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('emails:send')->hourly();
+Schedule::command('reports:generate')->dailyAt('02:00');
+Schedule::command('cache:prune')->everyFifteenMinutes();
+Schedule::job(new ProcessPayments)->weeklyOn(1, '08:00');
+```
+
+Crontinel hooks into Laravel's scheduler events (`ScheduledTaskStarting`, `ScheduledTaskFinished`, `ScheduledTaskFailed`) and records each run automatically. There is no `->monitor()` call or wrapper needed.
+
 ## What's recorded
 
 | Field | Description |
