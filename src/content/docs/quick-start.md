@@ -36,7 +36,17 @@ php artisan schedule:work
 
 Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
 
-> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once — this is normal. After the first scheduler tick (or after running `schedule:work` locally), your registered commands will appear.
+**What you should see on first open:**
+
+| Section | Populated immediately? | Notes |
+|---|---|---|
+| **Queue** | ✅ Yes | Reads queue depth from Redis/DB immediately |
+| **Horizon** | ✅ Yes (if installed) | Only appears when `laravel/horizon` is in your project |
+| **Cron** | ⏳ After first run | Empty until the scheduler fires at least one cycle |
+
+> **Cron section empty?** This is expected on a fresh install. Once your scheduler runs (either via `schedule:work` locally or the cron entry on your server), each registered command will appear after its first execution.
+
+> **Horizon section missing?** Horizon monitoring only shows up when `laravel/horizon` is installed. If you don't use Horizon, this is expected — it won't appear, and everything else still works normally. Set `'horizon' => ['enabled' => false]` in `config/crontinel.php` to explicitly disable the panel.
 
 ## 5. (Optional) Configure alerts
 
