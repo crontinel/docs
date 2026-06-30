@@ -1,6 +1,68 @@
 ---
 title: Installation
-description: Full installation and configuration guide
+description: Full installation and configuration guide for Laravel
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Quickstart
+
+Get from zero to your first cron data in under 3 minutes.
+
+### 1. Prerequisites
+
+- PHP 8.2+
+- Laravel 11, 12, or 13
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+
+### 2. Install
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+php artisan migrate
+```
+
+### 3. Configure
+
+By default the dashboard is at `/crontinel`. Optionally change it in your `.env`:
+
+```env
+CRONTINEL_PATH=crontinel
+```
+
+### 4. Open the dashboard
+
+Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
+
+> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once — this is normal.
+
+### 5. Run your scheduler
+
+For local development:
+
+```bash
+php artisan schedule:work
+```
+
+For production, add this to your server's crontab:
+
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### 6. Dashboard verification
+
+After the first scheduler tick:
+
+1. Go to `/crontinel` in your browser
+2. The **Cron** section now shows your registered scheduled commands
+3. Each command displays its last run time, exit code, and duration
+
+<Aside>
+The Laravel package works fully offline with no external API key required. To send data to the Crontinel SaaS, add `CRONTINEL_API_KEY` to your `.env`.
+</Aside>
+
 ---
 
 ## Requirements

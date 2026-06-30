@@ -3,6 +3,76 @@ title: Node.js / TypeScript
 description: Install and configure @crontinel/node for Node.js applications
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+## Quickstart
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Node.js 18+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+npm install @crontinel/node
+```
+
+Or with your preferred package manager:
+
+```bash
+# yarn
+yarn add @crontinel/node
+
+# pnpm
+pnpm add @crontinel/node
+```
+
+### 3. Configure
+
+Create a `quickstart.mjs` file:
+
+```javascript
+import Crontinel from '@crontinel/node';
+
+const crontinel = new Crontinel({
+  apiKey: process.env.CRONTINEL_API_KEY,
+  appName: 'my-first-app',
+});
+
+// Report a cron job run
+await crontinel.scheduleRun({
+  command: 'hello-from-node',
+  duration_ms: 100,
+  exit_code: 0,
+});
+
+console.log('Data sent to Crontinel!');
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+node quickstart.mjs
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-node` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
 ## Requirements
 
 - Node.js 18+

@@ -3,6 +3,73 @@ title: Python
 description: Install and configure crontinel for Python applications
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+## Quickstart
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Python 3.9+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+pip install crontinel
+```
+
+For async support with httpx:
+
+```bash
+pip install "crontinel[httpx]"
+```
+
+### 3. Configure
+
+Create a `quickstart.py` file:
+
+```python
+from crontinel import Crontinel
+import os
+
+client = Crontinel(
+    api_key=os.environ["CRONTINEL_API_KEY"],
+    app_name="my-first-app",
+)
+
+# Report a cron job run
+client.schedule_run(
+    command="hello-from-python",
+    duration_ms=100,
+    exit_code=0,
+)
+
+print("Data sent to Crontinel!")
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+python quickstart.py
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-python` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
 ## Requirements
 
 - Python 3.9+

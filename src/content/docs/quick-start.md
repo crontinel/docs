@@ -3,61 +3,45 @@ title: Quick Start
 description: Get Crontinel running in under 5 minutes
 ---
 
-## 1. Install the package
+Choose your stack below and follow the steps. Every quickstart follows the same flow:
 
-```bash
-composer require crontinel/laravel
-```
+<div class="grid cards" markdown>
 
-## 2. Run the installer
+| Package | What you'll do | Time |
+|---|---|---|
+| [CLI / Docker →](/sdks/cli/#quickstart) | `brew install` → first ping | ~2 min |
+| [Laravel →](/installation/#quickstart) | `composer require` → artisan install → first cron run | ~3 min |
+| [Node.js / TypeScript →](/sdks/node/#quickstart) | `npm install` → `npx tsx quickstart.ts` | ~3 min |
+| [Python →](/sdks/python/#quickstart) | `pip install` → `python quickstart.py` | ~3 min |
+| [Go →](/sdks/go/#quickstart) | `go get` → `go run quickstart.go` | ~3 min |
+| [Rust →](/sdks/rust/#quickstart) | `cargo add` → `cargo run` | ~3 min |
+| [PHP →](/sdks/php/#quickstart) | `composer require` → `php quickstart.php` | ~3 min |
+| [Ruby →](/sdks/ruby/#quickstart) | `gem install` → `ruby quickstart.rb` | ~3 min |
+| [Ruby on Rails →](/sdks/rails/#quickstart) | `bundle install` → auto-instrument | ~3 min |
+| [.NET →](/sdks/dotnet/#quickstart) | `dotnet add package` → `dotnet run` | ~3 min |
 
-```bash
-php artisan crontinel:install
-```
+</div>
 
-This publishes `config/crontinel.php` and runs the required database migrations.
+## Before you start
 
-## 3. Open the dashboard
+1. **Sign up** at [app.crontinel.com](https://app.crontinel.com/register) (free tier included).
+2. **Create an app** from the dashboard — give it a name (e.g. "my-first-app").
+3. **Copy your API key** (`crn_live_...`) from the app settings page.
 
-Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
+That's it — on to your package.
 
-> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once  –  this is normal. After the first scheduler tick (or after running `schedule:work` locally), your registered commands will appear.
+## Verify it works
 
-## 4. Run your scheduler
+After following your package's quickstart:
 
-Crontinel reads data from Laravel's scheduler. For the cron section to populate, your scheduler must be running:
+1. Go to **app.crontinel.com** → **Apps** → select your app
+2. Check the **Cron**, **Queue**, or **Events** sections — data should appear within 30 seconds.
+3. If you see your job run with exit codes and duration, you're all set.
 
-```bash
-# On your server: add this to crontab (crontab -e)
-* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
-```
+No data yet? Make sure `CRONTINEL_API_KEY` is set in the environment where your code runs, and that your app can reach `https://app.crontinel.com` (no firewall blocking).
 
-For local development, use the scheduler worker instead:
+## Next steps
 
-```bash
-php artisan schedule:work
-```
-
-## 5. (Optional) Configure alerts
-
-In `.env`:
-
-```env
-CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...  # Required environment variable
-```
-
-> **Not using Horizon?** Set `'horizon' => ['enabled' => false]` in `config/crontinel.php` to hide the Horizon panel.
-
-## 6. (Optional) Connect to the SaaS
-
-:::note
-The Crontinel SaaS is now in early access. [Create a free account](https://crontinel.com/register) to get started.
-:::
-
-Once you have access, create a free account, create an app, and add your API key:
-
-```env
-CRONTINEL_API_KEY=your-api-key-here  # Required environment variable
-CRONTINEL_API_URL=https://app.crontinel.com
-```
+- Set up [alerts](/alerts/channels/) to get notified when a job fails
+- Learn about [monitors](/monitors/cron/) for deeper insight
+- Connect your [self-hosted instance](/self-hosting/) to the SaaS
