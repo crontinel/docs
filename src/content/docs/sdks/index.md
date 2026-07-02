@@ -5,48 +5,48 @@ description: Official Crontinel monitoring packages for every runtime
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-Crontinel has official monitoring packages for every major runtime. Pick the one that matches your stack.
+Crontinel has official monitoring packages for every major runtime. Each page below has a **quickstart** you can follow from scratch to first data in under 5 minutes.
 
 <CardGrid>
   <Card title="@crontinel/node" icon="seti:nodejs">
     TypeScript/Node.js — BullMQ, Agenda, node-cron, workers
-    [Installation →](/sdks/node/)
+    [Quickstart →](/sdks/node/#quickstart)
   </Card>
   <Card title="crontinel/python" icon="seti:python">
     Python — Celery, RQ, Huey, APScheduler, Prefect, Dramatiq
-    [Installation →](/sdks/python/)
+    [Quickstart →](/sdks/python/#quickstart)
   </Card>
   <Card title="crontinel/go" icon="seti:go">
     Go — Asynq, Machinery, Temporal, gocron, native tickers
-    [Installation →](/sdks/go/)
+    [Quickstart →](/sdks/go/#quickstart)
   </Card>
   <Card title="crontinel/rust" icon="seti:rust">
     Rust — Tokio, async-std, apalis, tokio-cron-scheduler
-    [Installation →](/sdks/rust/)
+    [Quickstart →](/sdks/rust/#quickstart)
   </Card>
   <Card title="crontinel/php" icon="seti:php">
     PHP — Framework-agnostic library, Symfony Messenger + plain cron
-    [Installation →](/sdks/php/)
+    [Quickstart →](/sdks/php/#quickstart)
   </Card>
   <Card title="crontinel/laravel" icon="seti:laravel">
     Laravel — Horizon & scheduler, auto-detect, zero config
-    [Installation →](/installation/)
+    [Quickstart →](/installation/#quickstart)
   </Card>
   <Card title="crontinel/ruby" icon="seti:ruby">
     Ruby — Sidekiq, Resque, DelayedJob, Rake tasks
-    [Installation →](/sdks/ruby/)
+    [Quickstart →](/sdks/ruby/#quickstart)
   </Card>
   <Card title="crontinel/rails" icon="seti:rails">
     Rails — Auto-instruments ActiveJob and ActiveScheduler
-    [Installation →](/sdks/rails/)
+    [Quickstart →](/sdks/rails/#quickstart)
   </Card>
   <Card title="crontinel/cli" icon="seti:shell">
     CLI / Docker — Wrap any cron, Docker job, K8s CronJob
-    [Installation →](/sdks/cli/)
+    [Quickstart →](/sdks/cli/#quickstart)
   </Card>
   <Card title="Crontinel.NET" icon="seti:csharp">
     .NET / C# — Hangfire, Quartz.NET, TaskScheduler, Worker Service
-    [Installation →](/sdks/dotnet/)
+    [Quickstart →](/sdks/dotnet/#quickstart)
   </Card>
 </CardGrid>
 

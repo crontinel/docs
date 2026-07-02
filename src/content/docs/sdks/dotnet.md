@@ -3,6 +3,69 @@ title: .NET
 description: Install and configure the Crontinel .NET SDK for .NET applications
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+## Quickstart
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- .NET 8.0+ or .NET Standard 2.0
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+dotnet new console -n Quickstart
+cd Quickstart
+dotnet add package Crontinel
+```
+
+### 3. Configure
+
+Edit `Program.cs`:
+
+```csharp
+using Crontinel;
+using Crontinel.Models;
+
+var apiKey = Environment.GetEnvironmentVariable("CRONTINEL_API_KEY")
+    ?? throw new InvalidOperationException("CRONTINEL_API_KEY not set");
+
+var client = new CrontinelClient(apiKey);
+
+await client.ScheduleRunAsync(new ScheduleRunOptions
+{
+    Command = "hello-from-dotnet",
+    DurationMs = 100,
+    ExitCode = 0
+});
+
+Console.WriteLine("Data sent to Crontinel!");
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+dotnet run
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-dotnet` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
 ## Requirements
 
 - .NET 8.0+ or .NET Standard 2.0

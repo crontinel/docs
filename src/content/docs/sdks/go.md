@@ -3,6 +3,67 @@ title: Go
 description: Install and configure crontinel/go for Go applications
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
+## Quickstart
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Go 1.21+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+go get github.com/crontinel/go
+```
+
+### 3. Configure
+
+Create a `quickstart.go` file:
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+    "github.com/crontinel/go"
+)
+
+func main() {
+    apiKey := os.Getenv("CRONTINEL_API_KEY")
+    client := crontinel.NewClient(apiKey)
+
+    client.ScheduleRun("hello-from-go", 100, 0)
+
+    fmt.Println("Data sent to Crontinel!")
+}
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+go run quickstart.go
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-go` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
 ## Install
 
 ```bash

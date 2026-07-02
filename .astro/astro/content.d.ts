@@ -165,6 +165,13 @@ declare module 'astro:content' {
   collection: "blog";
   data: any
 } & { render(): Render[".md"] };
+"monitor-horizon-jobs-production.md": {
+	id: "monitor-horizon-jobs-production.md";
+  slug: "monitor-horizon-jobs-production";
+  body: string;
+  collection: "blog";
+  data: any
+} & { render(): Render[".md"] };
 };
 "docs": {
 "alerts/channels.md": {
@@ -198,6 +205,20 @@ declare module 'astro:content' {
 "introduction.md": {
 	id: "introduction.md";
   slug: "introduction";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"marketing/seo-writing.md": {
+	id: "marketing/seo-writing.md";
+  slug: "marketing/seo-writing";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"mcp/ai-agent-monitoring.md": {
+	id: "mcp/ai-agent-monitoring.md";
+  slug: "mcp/ai-agent-monitoring";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -261,6 +282,76 @@ declare module 'astro:content' {
 "reference/configuration.md": {
 	id: "reference/configuration.md";
   slug: "reference/configuration";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/cli.md": {
+	id: "sdks/cli.md";
+  slug: "sdks/cli";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/dotnet.md": {
+	id: "sdks/dotnet.md";
+  slug: "sdks/dotnet";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/go.md": {
+	id: "sdks/go.md";
+  slug: "sdks/go";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/index.md": {
+	id: "sdks/index.md";
+  slug: "sdks";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/node.md": {
+	id: "sdks/node.md";
+  slug: "sdks/node";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/php.md": {
+	id: "sdks/php.md";
+  slug: "sdks/php";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/python.md": {
+	id: "sdks/python.md";
+  slug: "sdks/python";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/rails.md": {
+	id: "sdks/rails.md";
+  slug: "sdks/rails";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/ruby.md": {
+	id: "sdks/ruby.md";
+  slug: "sdks/ruby";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/rust.md": {
+	id: "sdks/rust.md";
+  slug: "sdks/rust";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

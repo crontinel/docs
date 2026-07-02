@@ -29,6 +29,7 @@ export default defineConfig({
           { label: 'Ruby', link: '/sdks/ruby/' },
           { label: 'Ruby on Rails', link: '/sdks/rails/' },
           { label: 'CLI / Docker', link: '/sdks/cli/' },
+          { label: '.NET', link: '/sdks/dotnet/' },
         ]},
         { label: 'Monitors', items: [
           { label: 'Horizon Monitor', link: '/monitors/horizon/' },
