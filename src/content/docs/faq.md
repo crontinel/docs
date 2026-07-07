@@ -13,9 +13,9 @@ A crontinel.com account is optional — it gives you a hosted dashboard, cross-a
 
 ## Will Crontinel slow down my application?
 
-No. All monitoring work happens asynchronously through Laravel's event system. Crontinel listens to scheduler events (`ScheduledTaskStarting`, `ScheduledTaskFinished`, `ScheduledTaskFailed`) and dispatches jobs to record the data. The job dispatch is non-blocking — your scheduled tasks run at full speed.
+No. All monitoring work is dispatched through Laravel's event system. Crontinel listens to scheduler events (`ScheduledTaskStarting`, `ScheduledTaskFinished`, `ScheduledTaskFailed`) and records the data. The event listener and database write have negligible overhead — your scheduled tasks run at full speed.
 
-The only synchronous overhead is a tiny event listener registration at app boot, which is negligible.
+When `CRONTINEL_API_KEY` is configured, the package sends run results to `app.crontinel.com` via a direct HTTP call. This call includes a short timeout (5s) and a failure does not affect your task execution, but it does add a small amount of synchronous latency if the SaaS endpoint is slow or unreachable. For zero external latency, omit the API key and use only the local dashboard.
 
 ---
 
@@ -90,7 +90,7 @@ CRONTINEL_ALERT_CHANNEL=slack
 CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 
 # Email
-CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_CHANNEL=mail
 CRONTINEL_ALERT_EMAIL=you@example.com
 
 # Webhook

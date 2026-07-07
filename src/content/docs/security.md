@@ -50,11 +50,15 @@ Crontinel records the following from your Laravel application:
 
 | Data type | What's captured | What's NOT captured |
 |---|---|---|
-| Cron runs | Command name, status, duration, exit code | Command arguments, output content |
+| Cron runs | Command name, status, duration, exit code | Command arguments (see note) |
 | Queue | Queue name, depth count, failed count | Job payloads, job class arguments |
 | Horizon | Status, supervisor count, failed/min rate | Job data, worker logs |
 
 **No user data, no request data, no environment variables, and no application secrets are captured.**
+
+> **Note on command arguments:** The package resolves the scheduled task's command string via Laravel's `Command` class, which includes arguments passed to the Artisan command. If your scheduled task commands contain secrets (API keys, passwords) as arguments, those values will be recorded. Avoid passing secrets as command arguments in scheduled tasks.
+>
+> **Note on output:** When a scheduled task fails, the exception message is stored as `output`. If the exception message contains sensitive data, it will be captured.
 
 Job output can optionally be captured if `'capture_output' => true` is set in `config/crontinel.php`, but this is disabled by default and should only be enabled if your job output contains no sensitive data.
 
