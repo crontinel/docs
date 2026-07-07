@@ -30,7 +30,7 @@ Crontinel has official monitoring packages for every major runtime. Pick the one
   </Card>
   <Card title="crontinel/laravel" icon="seti:laravel">
     Laravel — Horizon & scheduler, auto-detect, zero config
-    [Installation →](/installation/)
+    [Installation →](/sdks/laravel/)
   </Card>
   <Card title="crontinel/ruby" icon="seti:ruby">
     Ruby — Sidekiq, Resque, DelayedJob, Rake tasks

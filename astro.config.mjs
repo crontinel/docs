@@ -21,6 +21,7 @@ export default defineConfig({
         ]},
         { label: 'SDKs & Packages', items: [
           { label: 'Overview', link: '/sdks/' },
+          { label: 'Laravel', link: '/sdks/laravel/' },
           { label: 'Node.js / TypeScript', link: '/sdks/node/' },
           { label: 'Python', link: '/sdks/python/' },
           { label: 'Go', link: '/sdks/go/' },
@@ -43,6 +44,9 @@ export default defineConfig({
           { label: 'Overview', link: '/mcp/overview/' },
           { label: 'Claude Code Setup', link: '/mcp/claude-code/' },
           { label: 'Available Tools', link: '/mcp/tools/' },
+        ]},
+        { label: 'Agent', items: [
+          { label: 'Agent Guide', link: '/agent/guide/' },
         ]},
         { label: 'Reference', items: [
           { label: 'Configuration', link: '/reference/configuration/' },
