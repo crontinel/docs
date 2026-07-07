@@ -1,0 +1,15 @@
+{
+  "project": "Crontinel MVP",
+  "worker_name": "Crontinel Supervisor T",
+  "status": "healthy",
+  "worker_mode": "always-on",
+  "health_check_schedule": "every 15m",
+  "restart_pending": false,
+  "current_item": "No further viable MVP implementation task remains; PR 246 squash-merged as 19c1a10; live app.crontinel.com health, login, and ingest auth verified; Feature 10 release verification and handoff is implementation-complete",
+  "last_completed_task": "Fixed Pint class_attributes_separation in tests/Feature/AlertEvaluatorTest.php on the feature/mvp-failure-alerts branch (007590e), pushed the fix, verified PR 246 GitHub CI passing, squash-merged PR 246 into main as 19c1a10, fast-forwarded the local app main, re-ran the local sqlite Feature suite (298 tests passing), and verified live app.crontinel.com health, login, and ingest auth endpoints",
+  "last_blocker": null,
+  "last_refresh_at": "2026-06-10T07:38:00Z",
+  "workdir": "/Users/ray/Work/crontinel",
+  "top_impediments": [],
+  "needs_attention": []
+}
