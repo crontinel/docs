@@ -1,0 +1,3 @@
+# Redirect wrong sitemap paths (GSC may have old submissions)
+/sitemap.xml  /sitemap-index.xml  301
+
