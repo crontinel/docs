@@ -100,7 +100,7 @@ Alert when the failed jobs-per-minute rate exceeds this. Default: `5`
 Access to the Horizon panel within Crontinel is gated by the `ADMIN_EMAILS` env var (checked via `Gate::before()` in `HorizonServiceProvider`). Set it to a comma-separated list of admin email addresses:
 
 ```env
-ADMIN_EMAILS=harun@toolblip.com,ops@toolblip.com
+ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
 ```
 
 Users whose logged-in email matches one of these addresses can access Horizon. If `ADMIN_EMAILS` is not set, access is denied to everyone.

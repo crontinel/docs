@@ -173,4 +173,4 @@ end
 | Variable | Default | Description |
 |---|---|---|
 | `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
-| `CRONTINEL_ENDPOINT` | `https://app.crontinel.com/api/v1` | SaaS or self-hosted endpoint |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |

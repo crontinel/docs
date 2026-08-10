@@ -92,7 +92,7 @@ This is the first stable release. No upgrade path needed; install from scratch u
 ### Requirements
 
 - PHP 8.2, 8.3, 8.4, or 8.5
-- Laravel 11 or 12
+- Laravel 11, 12, or 13
 
 ### Included
 
