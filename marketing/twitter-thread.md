@@ -33,7 +33,7 @@ Start free. No credit card.
 app.crontinel.com
 
 Docs: docs.crontinel.com
-GitHub (MIT): github.com/crontinel/crontinel
+GitHub (MIT): github.com/crontinel/laravel
 
 Tweet 5 ( differentiation / open source):
 Also released today: an MCP server for your AI coding tools.

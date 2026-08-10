@@ -7,7 +7,7 @@ export default defineConfig({
       title: 'Crontinel Docs',
       description: 'Documentation for Crontinel — background job and cron monitoring',
       social: {
-        github: 'https://github.com/crontinel/crontinel',
+        github: 'https://github.com/crontinel/laravel',
       },
       editLink: {
         baseUrl: 'https://github.com/crontinel/docs/edit/main/src/content/docs/',

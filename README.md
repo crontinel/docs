@@ -34,7 +34,7 @@ Deployed automatically via Cloudflare Pages on push to `main`. The production si
 ## Repos
 
 - App (SaaS): [crontinel/app](https://github.com/crontinel/app)
-- OSS Laravel package: [crontinel/laravel](https://github.com/crontinel/crontinel)
+- OSS Laravel package: [crontinel/laravel](https://github.com/crontinel/laravel)
 - PHP library: [crontinel/php](https://github.com/crontinel/php)
 - MCP server: [crontinel/mcp-server](https://github.com/crontinel/mcp-server)
 - Landing: [crontinel/landing](https://github.com/crontinel/landing)
