@@ -32,7 +32,7 @@ npx @crontinel/mcp-server
 ```
 
 Docs: https://docs.crontinel.com
-GitHub (MIT licensed, self-host for free): https://github.com/crontinel/crontinel
+GitHub (MIT licensed, self-host for free): https://github.com/crontinel/laravel
 
 Would love to hear what you think. Reply to this email or ping me on Twitter/X.
 

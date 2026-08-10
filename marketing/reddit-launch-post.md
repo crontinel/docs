@@ -46,7 +46,7 @@ Currently in public beta. Free tier covers 1 app, 5 monitors, 7-day history.
 
 Links:
 - Landing: https://crontinel.com
-- GitHub (MIT): https://github.com/crontinel/crontinel
+- GitHub (MIT): https://github.com/crontinel/laravel
 - Docs: https://docs.crontinel.com
 
 Would love feedback from the community, especially on whether the install process is clear and if there are features you would want to see.
