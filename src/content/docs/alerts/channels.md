@@ -1,6 +1,6 @@
 ---
 title: Alert Channels
-description: Configuring Slack, email, PagerDuty, and webhook alerts
+description: Configuring Slack, email, and webhook alerts
 ---
 
 ## Available channels
@@ -9,8 +9,8 @@ description: Configuring Slack, email, PagerDuty, and webhook alerts
 |---|---|---|
 | Slack | `webhook_url` | Incoming webhook URL |
 | Email | `to` | Recipient email address |
-| PagerDuty | `routing_key` | Events API v2 routing key (coming soon) |
 | Webhook | `url` | Any HTTPS endpoint |
+| PagerDuty | — | Coming soon |
 | SMS | — | Coming soon |
 | OpsGenie | — | Future roadmap |
 | VictorOps | — | Future roadmap |

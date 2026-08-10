@@ -5,6 +5,15 @@ description: Crontinel REST API for Pro and Team plan users
 
 The REST API is available on Pro and Team plans. All endpoints require an API key.
 
+## SDK transport: REST vs. MCP
+
+Not every Crontinel SDK talks to this REST API directly. Two SDKs use a different transport:
+
+- **REST to `/api/v1`** — `crontinel/php`, `crontinel/go`, `crontinel/rust`, `@crontinel/node`, and `crontinel/python` send plain HTTPS requests to the endpoints documented on this page.
+- **MCP protocol** — `crontinel/ruby` and `crontinel/cli` instead speak the [Model Context Protocol](https://modelcontextprotocol.io), using `notify/*` notifications and `tools/call` requests over the MCP transport rather than calling `/api/v1` REST routes directly.
+
+Both transports report the same underlying data (runs, alerts, status), so nothing in this split changes what you can monitor — it only changes what's on the wire. If you're switching between SDKs and a request you expected to see in HTTP logs isn't there, check whether that language's SDK uses the MCP transport instead.
+
 ## Authentication
 
 Pass your API key as a Bearer token:

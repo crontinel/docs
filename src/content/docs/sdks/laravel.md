@@ -6,7 +6,7 @@ description: Install and configure crontinel/laravel for Laravel applications
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11+
+- Laravel 11, 12, or 13
 - Composer 2+
 
 ## Install

@@ -52,7 +52,7 @@ Crontinel has official monitoring packages for every major runtime. Each page be
 
 ## How it works
 
-Every SDK shares the same wire format — report what your jobs, queues, and schedulers are doing via a simple API call. Crontinel records every run and alerts you when something goes wrong.
+Every SDK reports the same kind of data — what your jobs, queues, and schedulers are doing — via a simple API call. Crontinel records every run and alerts you when something goes wrong. Most SDKs (node, python, go, rust, php) send plain REST requests; the Ruby and CLI SDKs instead use the MCP protocol. See [REST vs. MCP](/reference/api/#sdk-transport-rest-vs-mcp) for details.
 
 All packages are MIT licensed and work with the open-source Crontinel dashboard or the hosted SaaS at [app.crontinel.com](https://app.crontinel.com).
 
