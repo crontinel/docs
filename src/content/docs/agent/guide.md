@@ -12,10 +12,19 @@ By default the agent refuses to run **any** command. You must explicitly configu
 ## How It Works
 
 1. The agent registers with Crontinel Cloud using your API key and app ID
-2. It polls `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds
+2. It connects to receive commands — see [Connection Method](#connection-method) below, since this differs by runtime
 3. When a trigger is scheduled from the dashboard, the agent checks the command against your configured allowlist
 4. If allowed, it executes the command and reports the result (success/failure, output, duration) back to the cloud; if not allowed, it reports a rejection and does **not** run it
-5. A heartbeat is sent every 60 seconds to keep the connection alive
+5. A heartbeat is sent every 60 seconds to confirm the agent is alive
+
+### Connection Method
+
+The Laravel agent and the Node.js/Python agents use different transports to receive commands:
+
+- **Laravel** opens a persistent SSE (Server-Sent Events) connection to `/v1/agent/stream` and receives commands as they're dispatched, with no polling interval. Heartbeats are sent separately via `/v1/agent/heartbeat` every 60 seconds.
+- **Node.js and Python** poll `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds, and send heartbeats via `/api/v1/agents/heartbeat` every 60 seconds.
+
+Both approaches deliver the same behavior from your perspective — commands run within seconds of being scheduled — the underlying connection just differs by runtime.
 
 ## Laravel Agent
 
