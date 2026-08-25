@@ -8,7 +8,6 @@
 - `docs/plans/mvp/progress.md`
 - `docs/plans/mvp/implementation-tracker.md`
 - `docs/plans/mvp/runtime/supervisor-t.json`
-- `~/.hermes/cron/jobs.json`
 
 ## To do
 - [x] Capture the always-on worker rules in the master plan and tracker.
@@ -23,7 +22,7 @@
 
 ## Implementation steps
 1. Re-read `docs/plans/mvp/master-plan.md`, `docs/plans/mvp/progress.md`, `docs/plans/mvp/implementation-tracker.md`, and `docs/plans/mvp/runtime/supervisor-t.json` before making any edits.
-2. Check `~/.hermes/cron/jobs.json` to confirm the live schedules still match the written worker contract.
+2. Check `docs/plans/mvp/runtime/supervisor-t.json` to confirm the live schedules still match the written worker contract.
 3. Compare the current worker rules against the runtime file and note any mismatch in cadence, restart timing, or morning-report behavior.
 4. Update `progress.md` so the summary counts, current focus, and Stage 1 status reflect the latest plan split.
 5. Add or refresh the tracker note that Stage 1 baseline verification is the next implementation step.
