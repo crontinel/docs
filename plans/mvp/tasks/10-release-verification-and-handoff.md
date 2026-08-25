@@ -8,7 +8,6 @@
 - `docs/plans/mvp/progress.md`
 - `docs/plans/mvp/implementation-tracker.md`
 - `docs/plans/mvp/runtime/supervisor-t.json`
-- `~/.hermes/cron/jobs.json`
 
 ## To do
 - [x] Enforce isolated worktree plus feature branch before implementation.
@@ -24,7 +23,7 @@
 
 ## Implementation steps
 1. Re-read the master plan, progress tracker, implementation tracker, and runtime state before doing any release work.
-2. Check `~/.hermes/cron/jobs.json` to confirm the live worker cadence still matches the written contract.
+2. Check `docs/plans/mvp/runtime/supervisor-t.json` to confirm the live worker cadence still matches the written contract.
 3. Confirm that implementation work is expected to happen in a feature branch and isolated worktree rather than on main.
 4. Record the review order as Codex first, then Claude Code, then live verification.
 5. Define the release verification step as a real environment or browser check before anything is marked done.
