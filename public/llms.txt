@@ -4,51 +4,63 @@
 
 ## Start
 
-- [Introduction](https://docs.crontinel.com/introduction/): What Crontinel monitors and how it differs from HTTP pings
-- [Quick Start](https://docs.crontinel.com/quick-start/): Shortest path to a monitored app
-- [Installation](https://docs.crontinel.com/installation/): Install the package for your stack
+- [Docs home](https://docs.crontinel.com/): Documentation for installing and operating Crontinel
+
+## Guides
+
+- [Billing & Plans](https://docs.crontinel.com/billing/): What each Crontinel plan includes, free tier limits, and how to upgrade
+- [FAQ](https://docs.crontinel.com/faq/): Frequently asked questions about Crontinel
+- [Installation](https://docs.crontinel.com/installation/): Planned feature. Not available in a released package yet.
+- [Introduction](https://docs.crontinel.com/introduction/): What Crontinel is and why it exists
+- [Quick Start](https://docs.crontinel.com/quick-start/): Get Crontinel running in under 5 minutes
+- [Security](https://docs.crontinel.com/security/): Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
+- [Self-Hosting](https://docs.crontinel.com/self-hosting/): Run the Crontinel SaaS stack on your own server
+- [Status Pages](https://docs.crontinel.com/status-page/): Give your users a public status page showing real-time uptime, incident history, and per-monitor health — included free with every Crontinel account.
+- [Troubleshooting](https://docs.crontinel.com/troubleshooting/): Fixes for common Crontinel issues with the dashboard, cron monitor, queue monitor, Horizon, alerts, CLI, and SaaS connection
+- [Upgrading](https://docs.crontinel.com/upgrading/): How to upgrade between Crontinel versions, including breaking changes and config updates
 
 ## SDKs
 
-- [Overview](https://docs.crontinel.com/sdks/)
-- [Laravel](https://docs.crontinel.com/sdks/laravel/)
-- [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/)
-- [Python](https://docs.crontinel.com/sdks/python/)
-- [Go](https://docs.crontinel.com/sdks/go/)
-- [Rust](https://docs.crontinel.com/sdks/rust/)
-- [PHP](https://docs.crontinel.com/sdks/php/)
-- [Ruby](https://docs.crontinel.com/sdks/ruby/)
-- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/)
-- [CLI / Docker](https://docs.crontinel.com/sdks/cli/)
-- [.NET](https://docs.crontinel.com/sdks/dotnet/)
+- [SDKs & Packages](https://docs.crontinel.com/sdks/): Official Crontinel monitoring packages for every runtime
+- [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Monitor any cron job, Docker container, or Kubernetes CronJob with the Crontinel CLI
+- [.NET](https://docs.crontinel.com/sdks/dotnet/): Install and configure the Crontinel .NET SDK for .NET applications
+- [Go](https://docs.crontinel.com/sdks/go/): Install and configure crontinel/go for Go applications
+- [Laravel](https://docs.crontinel.com/sdks/laravel/): Install and configure crontinel/laravel for Laravel applications
+- [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Install and configure @crontinel/node for Node.js applications
+- [PHP](https://docs.crontinel.com/sdks/php/): Install and configure crontinel/php for any PHP application
+- [Python](https://docs.crontinel.com/sdks/python/): Install and configure crontinel for Python applications
+- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Auto-instrument ActiveJob and ActiveScheduler with crontinel-rails
+- [Ruby](https://docs.crontinel.com/sdks/ruby/): Install and configure crontinel for Ruby applications
+- [Rust](https://docs.crontinel.com/sdks/rust/): Install and configure crontinel-rust for Rust applications
 
-## Monitors and alerts
+## Monitors
 
-- [Horizon](https://docs.crontinel.com/monitors/horizon/)
-- [Queues](https://docs.crontinel.com/monitors/queues/)
-- [Cron](https://docs.crontinel.com/monitors/cron/)
-- [Alert channels](https://docs.crontinel.com/alerts/channels/)
-- [CLI health check](https://docs.crontinel.com/alerts/cli/)
+- [Cron Monitor](https://docs.crontinel.com/monitors/cron/): Recording every scheduled command run with exit code and duration
+- [Horizon Monitor](https://docs.crontinel.com/monitors/horizon/): Monitoring Laravel Horizon internals with Crontinel
+- [Queue Monitor](https://docs.crontinel.com/monitors/queues/): Monitoring queue depths, failed counts, and wait times
+
+## Alerts
+
+- [Alert Channels](https://docs.crontinel.com/alerts/channels/): Planned feature. Not available in a released package yet.
+- [CLI Health Check](https://docs.crontinel.com/alerts/cli/): Using php artisan crontinel:check in CI and monitoring pipelines
 
 ## AI clients
 
-- [MCP overview](https://docs.crontinel.com/mcp/overview/)
-- [Claude Code setup](https://docs.crontinel.com/mcp/claude-code/)
-- [MCP tools](https://docs.crontinel.com/mcp/tools/)
-- [Agent guide](https://docs.crontinel.com/agent/guide/)
+- [AI Agent Monitoring](https://docs.crontinel.com/mcp/ai-agent-monitoring/): Planned feature. Not available in a released package yet.
+- [Claude Code Setup](https://docs.crontinel.com/mcp/claude-code/): Connecting Crontinel to Claude Code via MCP
+- [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Using Crontinel with AI assistants via Model Context Protocol
+- [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): All tools exposed by the Crontinel MCP server
+
+## Agent
+
+- [Agent Guide](https://docs.crontinel.com/agent/guide/): Install and run the Crontinel agent daemon for remote command execution
 
 ## Reference
 
-- [Configuration](https://docs.crontinel.com/reference/configuration/)
-- [REST API](https://docs.crontinel.com/reference/api/)
-- [Security](https://docs.crontinel.com/security/)
-- [Self-hosting](https://docs.crontinel.com/self-hosting/)
-- [Status page](https://docs.crontinel.com/status-page/)
-- [Upgrading](https://docs.crontinel.com/upgrading/)
-- [Troubleshooting](https://docs.crontinel.com/troubleshooting/)
-- [FAQ](https://docs.crontinel.com/faq/)
+- [REST API Reference](https://docs.crontinel.com/reference/api/): Crontinel REST API for Pro and Team plan users
+- [Configuration Reference](https://docs.crontinel.com/reference/configuration/): Complete reference for all Crontinel configuration options, environment variables, and self-hosting setup
 
 ## Product
 
-- [Marketing site summary for assistants](https://crontinel.com/llms.txt)
-- [Hosted app](https://app.crontinel.com/)
+- [Marketing site guide for assistants](https://crontinel.com/llms.txt): Public pages on crontinel.com
+- [Hosted app](https://app.crontinel.com/): Sign in to the hosted monitor. Customer data is not part of this guide.
