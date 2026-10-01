@@ -33,3 +33,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_KEY: ${{ secrets.CF_API_KEY }}
           CLOUDFLARE_EMAIL: Info@crontinel.com
+
+      - name: Tell Bing about changed URLs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/ping-indexnow.mjs --host docs.crontinel.com --sitemap https://docs.crontinel.com/sitemap-index.xml --key-file public/b7e2c4a91f6d4c0e8a3b5d7f9c1e2a40.txt

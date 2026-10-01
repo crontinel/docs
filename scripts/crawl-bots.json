@@ -1,0 +1,31 @@
+{
+  "ai": [
+    "GPTBot",
+    "ChatGPT-User",
+    "OAI-SearchBot",
+    "ClaudeBot",
+    "Claude-SearchBot",
+    "Claude-User",
+    "anthropic-ai",
+    "PerplexityBot",
+    "Perplexity-User",
+    "Google-Extended",
+    "Applebot-Extended",
+    "CCBot",
+    "Amazonbot",
+    "Meta-ExternalAgent",
+    "FacebookBot",
+    "Bytespider",
+    "cohere-ai",
+    "YouBot",
+    "DuckAssistBot",
+    "Diffbot"
+  ],
+  "search": [
+    "Googlebot",
+    "Bingbot",
+    "DuckDuckBot",
+    "Applebot",
+    "Slurp"
+  ]
+}
