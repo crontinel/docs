@@ -8,7 +8,7 @@ const llms = readFileSync(new URL('../public/llms.txt', import.meta.url), 'utf8'
 
 test('docs robots allows named AI crawlers and points at llms.txt', () => {
   for (const bot of ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Bingbot', 'Google-Extended']) {
-    assert.match(robots, new RegExp(`User-agent: ${bot}\\nAllow: /`));
+    assert.match(robots, new RegExp(`User-agent: ${bot}\\nContent-Signal: search=yes, ai-train=yes, ai-input=yes\\nAllow: /`));
   }
   assert.match(robots, /Sitemap: https:\/\/docs\.crontinel\.com\/sitemap-index\.xml/);
   assert.match(robots, /LLMs\.txt: https:\/\/docs\.crontinel\.com\/llms\.txt/);
