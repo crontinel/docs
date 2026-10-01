@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/attach-crawl-worker.mjs",
+    "test": "node --test tests/crawl-policy.test.mjs",
     "preview": "astro preview"
   },
   "dependencies": {

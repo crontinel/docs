@@ -1,0 +1,54 @@
+# Crontinel docs
+
+> Documentation for Crontinel, monitoring for cron jobs, queues, workers, and background tasks.
+
+## Start
+
+- [Introduction](https://docs.crontinel.com/introduction/): What Crontinel monitors and how it differs from HTTP pings
+- [Quick Start](https://docs.crontinel.com/quick-start/): Shortest path to a monitored app
+- [Installation](https://docs.crontinel.com/installation/): Install the package for your stack
+
+## SDKs
+
+- [Overview](https://docs.crontinel.com/sdks/)
+- [Laravel](https://docs.crontinel.com/sdks/laravel/)
+- [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/)
+- [Python](https://docs.crontinel.com/sdks/python/)
+- [Go](https://docs.crontinel.com/sdks/go/)
+- [Rust](https://docs.crontinel.com/sdks/rust/)
+- [PHP](https://docs.crontinel.com/sdks/php/)
+- [Ruby](https://docs.crontinel.com/sdks/ruby/)
+- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/)
+- [CLI / Docker](https://docs.crontinel.com/sdks/cli/)
+- [.NET](https://docs.crontinel.com/sdks/dotnet/)
+
+## Monitors and alerts
+
+- [Horizon](https://docs.crontinel.com/monitors/horizon/)
+- [Queues](https://docs.crontinel.com/monitors/queues/)
+- [Cron](https://docs.crontinel.com/monitors/cron/)
+- [Alert channels](https://docs.crontinel.com/alerts/channels/)
+- [CLI health check](https://docs.crontinel.com/alerts/cli/)
+
+## AI clients
+
+- [MCP overview](https://docs.crontinel.com/mcp/overview/)
+- [Claude Code setup](https://docs.crontinel.com/mcp/claude-code/)
+- [MCP tools](https://docs.crontinel.com/mcp/tools/)
+- [Agent guide](https://docs.crontinel.com/agent/guide/)
+
+## Reference
+
+- [Configuration](https://docs.crontinel.com/reference/configuration/)
+- [REST API](https://docs.crontinel.com/reference/api/)
+- [Security](https://docs.crontinel.com/security/)
+- [Self-hosting](https://docs.crontinel.com/self-hosting/)
+- [Status page](https://docs.crontinel.com/status-page/)
+- [Upgrading](https://docs.crontinel.com/upgrading/)
+- [Troubleshooting](https://docs.crontinel.com/troubleshooting/)
+- [FAQ](https://docs.crontinel.com/faq/)
+
+## Product
+
+- [Marketing site summary for assistants](https://crontinel.com/llms.txt)
+- [Hosted app](https://app.crontinel.com/)
