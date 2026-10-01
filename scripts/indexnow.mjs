@@ -46,7 +46,7 @@ export async function collectUrls(sitemapUrl, fetchImpl = fetch) {
   return pages;
 }
 
-export async function pingIndexNow({ host, key, urls, fetchImpl = fetch }) {
+export async function pingIndexNow({ host, key, urls, fetchImpl = fetch, wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) }) {
   const body = buildIndexNowBody({ host, key, urls });
   let lastStatus = 0;
 
@@ -60,6 +60,10 @@ export async function pingIndexNow({ host, key, urls, fetchImpl = fetch }) {
 
     if (response.status === 200 || response.status === 202) {
       return { status: response.status, count: body.urlList.length };
+    }
+
+    if (attempt < 2) {
+      await wait(2000);
     }
   }
 
