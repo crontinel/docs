@@ -1,6 +1,6 @@
 ---
 title: CLI Health Check
-description: Run php artisan crontinel:check in CI or from an external monitor so a failed cron or a stalled queue fails the pipeline.
+description: "Run php artisan crontinel:check in CI or from an external monitor so a failed cron or a stalled queue fails the pipeline."
 ---
 
 ```bash

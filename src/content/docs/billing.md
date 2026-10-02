@@ -1,6 +1,6 @@
 ---
 title: Billing & Plans
-description: What the Free, Pro, and Team plans include: how many apps, how long history is kept, and how to upgrade off the free tier.
+description: "What the Free, Pro, and Team plans include: how many apps, how long history is kept, and how to upgrade off the free tier."
 ---
 
 Crontinel offers three plans. The OSS package is always free to use locally without any account.

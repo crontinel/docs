@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install crontinel/laravel with Composer, run php artisan crontinel:install, and open the local dashboard. A hosted account is optional.
+description: "Install crontinel/laravel with Composer, run php artisan crontinel:install, and open the local dashboard. A hosted account is optional."
 ---
 
 import { Aside } from '@astrojs/starlight/components';
