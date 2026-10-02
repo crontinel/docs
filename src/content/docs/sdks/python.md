@@ -1,6 +1,6 @@
 ---
 title: Python
-description: Install and configure crontinel for Python applications
+description: Install the Crontinel Python package and report cron and background job runs from a Python application to your dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

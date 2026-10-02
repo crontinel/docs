@@ -1,6 +1,6 @@
 ---
 title: CLI / Docker
-description: Monitor any cron job, Docker container, or Kubernetes CronJob with the Crontinel CLI
+description: Use the Crontinel CLI to send a success or failure ping after a cron job, Docker container, or Kubernetes CronJob finishes.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

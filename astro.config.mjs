@@ -5,7 +5,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Crontinel Docs',
-      description: 'Documentation for Crontinel — background job and cron monitoring',
+      description: 'Docs for Crontinel. Install the package, watch cron runs, queue depth, and Horizon from inside the app, and alert when a job fails.',
       social: {
         github: 'https://github.com/crontinel/laravel',
       },

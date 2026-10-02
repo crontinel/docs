@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference
-description: Complete reference for all Crontinel configuration options, environment variables, and self-hosting setup
+description: Environment variables and config keys for the Laravel package, the connection to the hosted app, and a self-hosted install.
 ---
 
 This page documents every configuration option available in Crontinel. Options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some — particularly database, Redis, and mail — are standard Laravel `.env` vars.

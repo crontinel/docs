@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: What Crontinel is and why it exists
+description: Crontinel watches cron runs, queue depth, and Horizon from inside the app, so a failed job shows up even when the site still returns 200.
 ---
 
 Crontinel monitors your background jobs, queue depths, and cron schedules. It reads framework internals  –  not just HTTP pings  –  so you know what's actually happening inside your app.

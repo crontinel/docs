@@ -1,6 +1,6 @@
 ---
 title: Status Pages
-description: Give your users a public status page showing real-time uptime, incident history, and per-monitor health — included free with every Crontinel account.
+description: Give your users a public status page showing real-time uptime, incident history, and per-monitor health, included free with every Crontinel account.
 ---
 
 ## Why a status page

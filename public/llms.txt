@@ -8,57 +8,57 @@
 
 ## Guides
 
-- [Billing & Plans](https://docs.crontinel.com/billing/): What each Crontinel plan includes, free tier limits, and how to upgrade
-- [FAQ](https://docs.crontinel.com/faq/): Frequently asked questions about Crontinel
+- [Billing & Plans](https://docs.crontinel.com/billing/): What the Free, Pro, and Team plans include: how many apps, how long history is kept, and how to upgrade off the free tier.
+- [FAQ](https://docs.crontinel.com/faq/): Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
 - [Installation](https://docs.crontinel.com/installation/): Planned feature. Not available in a released package yet.
-- [Introduction](https://docs.crontinel.com/introduction/): What Crontinel is and why it exists
-- [Quick Start](https://docs.crontinel.com/quick-start/): Get Crontinel running in under 5 minutes
+- [Introduction](https://docs.crontinel.com/introduction/): Crontinel watches cron runs, queue depth, and Horizon from inside the app, so a failed job shows up even when the site still returns 200.
+- [Quick Start](https://docs.crontinel.com/quick-start/): Install a Crontinel package and record the first run. Laravel, Node, Python, Go, Ruby, and the CLI each have a short path.
 - [Security](https://docs.crontinel.com/security/): Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
-- [Self-Hosting](https://docs.crontinel.com/self-hosting/): Run the Crontinel SaaS stack on your own server
-- [Status Pages](https://docs.crontinel.com/status-page/): Give your users a public status page showing real-time uptime, incident history, and per-monitor health — included free with every Crontinel account.
+- [Self-Hosting](https://docs.crontinel.com/self-hosting/): Run the Crontinel hosted stack on a server you control when you don't want the dashboard to live only on app.crontinel.com.
+- [Status Pages](https://docs.crontinel.com/status-page/): Give your users a public status page showing real-time uptime, incident history, and per-monitor health, included free with every Crontinel account.
 - [Troubleshooting](https://docs.crontinel.com/troubleshooting/): Fixes for common Crontinel issues with the dashboard, cron monitor, queue monitor, Horizon, alerts, CLI, and SaaS connection
-- [Upgrading](https://docs.crontinel.com/upgrading/): How to upgrade between Crontinel versions, including breaking changes and config updates
+- [Upgrading](https://docs.crontinel.com/upgrading/): How to move between Crontinel versions, including breaking changes and which config keys you need to update after the upgrade.
 
 ## SDKs
 
-- [SDKs & Packages](https://docs.crontinel.com/sdks/): Official Crontinel monitoring packages for every runtime
-- [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Monitor any cron job, Docker container, or Kubernetes CronJob with the Crontinel CLI
-- [.NET](https://docs.crontinel.com/sdks/dotnet/): Install and configure the Crontinel .NET SDK for .NET applications
-- [Go](https://docs.crontinel.com/sdks/go/): Install and configure crontinel/go for Go applications
-- [Laravel](https://docs.crontinel.com/sdks/laravel/): Install and configure crontinel/laravel for Laravel applications
-- [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Install and configure @crontinel/node for Node.js applications
-- [PHP](https://docs.crontinel.com/sdks/php/): Install and configure crontinel/php for any PHP application
-- [Python](https://docs.crontinel.com/sdks/python/): Install and configure crontinel for Python applications
-- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Auto-instrument ActiveJob and ActiveScheduler with crontinel-rails
-- [Ruby](https://docs.crontinel.com/sdks/ruby/): Install and configure crontinel for Ruby applications
-- [Rust](https://docs.crontinel.com/sdks/rust/): Install and configure crontinel-rust for Rust applications
+- [SDKs & Packages](https://docs.crontinel.com/sdks/): Official packages for Laravel, Node, Python, Go, Rust, PHP, Ruby, Rails, and .NET, plus a CLI for cron jobs and containers.
+- [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Use the Crontinel CLI to send a success or failure ping after a cron job, Docker container, or Kubernetes CronJob finishes.
+- [.NET](https://docs.crontinel.com/sdks/dotnet/): Install the Crontinel .NET SDK and report cron and background job runs from a .NET application to your Crontinel dashboard.
+- [Go](https://docs.crontinel.com/sdks/go/): Install crontinel/go and report cron and background job runs from a Go app to a hosted or self-hosted Crontinel dashboard.
+- [Laravel](https://docs.crontinel.com/sdks/laravel/): Install crontinel/laravel to monitor Horizon, queues, and scheduled commands from inside a Laravel app, with or without a hosted account.
+- [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Install @crontinel/node and report cron and background job runs from a Node.js or TypeScript app to your Crontinel dashboard.
+- [PHP](https://docs.crontinel.com/sdks/php/): Install crontinel/php and report cron and background job runs from a PHP application that does not use the Laravel package.
+- [Python](https://docs.crontinel.com/sdks/python/): Install the Crontinel Python package and report cron and background job runs from a Python application to your dashboard.
+- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Install crontinel-rails so ActiveJob and scheduled jobs are reported to Crontinel without a manual heartbeat in each job.
+- [Ruby](https://docs.crontinel.com/sdks/ruby/): Install the Crontinel Ruby gem and report cron and background job runs from a Ruby application to your Crontinel dashboard.
+- [Rust](https://docs.crontinel.com/sdks/rust/): Install crontinel-rust and report cron and background job runs from a Rust app to a hosted or self-hosted Crontinel dashboard.
 
 ## Monitors
 
-- [Cron Monitor](https://docs.crontinel.com/monitors/cron/): Recording every scheduled command run with exit code and duration
-- [Horizon Monitor](https://docs.crontinel.com/monitors/horizon/): Monitoring Laravel Horizon internals with Crontinel
-- [Queue Monitor](https://docs.crontinel.com/monitors/queues/): Monitoring queue depths, failed counts, and wait times
+- [Cron Monitor](https://docs.crontinel.com/monitors/cron/): Record every scheduled command's exit code and duration, including runs that fail while the scheduler process itself stays up.
+- [Horizon Monitor](https://docs.crontinel.com/monitors/horizon/): Read Laravel Horizon supervisor status, paused queues, and worker health from inside the app, instead of checking whether a URL returns 200.
+- [Queue Monitor](https://docs.crontinel.com/monitors/queues/): Watch Laravel queue depth, failed jobs, and wait time, and see when a queue climbs or a worker stops processing new jobs.
 
 ## Alerts
 
 - [Alert Channels](https://docs.crontinel.com/alerts/channels/): Planned feature. Not available in a released package yet.
-- [CLI Health Check](https://docs.crontinel.com/alerts/cli/): Using php artisan crontinel:check in CI and monitoring pipelines
+- [CLI Health Check](https://docs.crontinel.com/alerts/cli/): Run php artisan crontinel:check in CI or from an external monitor so a failed cron or a stalled queue fails the pipeline.
 
 ## AI clients
 
 - [AI Agent Monitoring](https://docs.crontinel.com/mcp/ai-agent-monitoring/): Planned feature. Not available in a released package yet.
-- [Claude Code Setup](https://docs.crontinel.com/mcp/claude-code/): Connecting Crontinel to Claude Code via MCP
-- [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Using Crontinel with AI assistants via Model Context Protocol
-- [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): All tools exposed by the Crontinel MCP server
+- [Claude Code Setup](https://docs.crontinel.com/mcp/claude-code/): Add the Crontinel MCP server to Claude Code so the assistant can read cron, queue, and Horizon status without leaving the editor.
+- [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Connect an AI assistant to Crontinel with the Model Context Protocol and read cron, queue, and Horizon status from the editor.
+- [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, and creating or dismissing alerts.
 
 ## Agent
 
-- [Agent Guide](https://docs.crontinel.com/agent/guide/): Install and run the Crontinel agent daemon for remote command execution
+- [Agent Guide](https://docs.crontinel.com/agent/guide/): The Crontinel agent is a daemon on your server. It runs only allowlisted commands from the dashboard and reports the result.
 
 ## Reference
 
-- [REST API Reference](https://docs.crontinel.com/reference/api/): Crontinel REST API for Pro and Team plan users
-- [Configuration Reference](https://docs.crontinel.com/reference/configuration/): Complete reference for all Crontinel configuration options, environment variables, and self-hosting setup
+- [REST API Reference](https://docs.crontinel.com/reference/api/): HTTP API for Pro and Team plans. Send a Bearer API key, then list monitors and read recent cron and queue run history from the app.
+- [Configuration Reference](https://docs.crontinel.com/reference/configuration/): Environment variables and config keys for the Laravel package, the connection to the hosted app, and a self-hosted install.
 
 ## Product
 

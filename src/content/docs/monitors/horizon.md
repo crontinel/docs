@@ -1,6 +1,6 @@
 ---
 title: Horizon Monitor
-description: Monitoring Laravel Horizon internals with Crontinel
+description: Read Laravel Horizon supervisor status, paused queues, and worker health from inside the app, instead of checking whether a URL returns 200.
 ---
 
 The Horizon monitor reads Horizon's Redis keys directly  –  the same data source the Horizon dashboard uses.

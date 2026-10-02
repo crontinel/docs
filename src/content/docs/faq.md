@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: Frequently asked questions about Crontinel
+description: Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
 ---
 
 ## Do I need a crontinel.com account to use Crontinel?

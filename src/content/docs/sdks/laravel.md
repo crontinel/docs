@@ -1,6 +1,6 @@
 ---
 title: Laravel
-description: Install and configure crontinel/laravel for Laravel applications
+description: Install crontinel/laravel to monitor Horizon, queues, and scheduled commands from inside a Laravel app, with or without a hosted account.
 ---
 
 ## Requirements

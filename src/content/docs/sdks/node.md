@@ -1,6 +1,6 @@
 ---
 title: Node.js / TypeScript
-description: Install and configure @crontinel/node for Node.js applications
+description: Install @crontinel/node and report cron and background job runs from a Node.js or TypeScript app to your Crontinel dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

@@ -1,6 +1,6 @@
 ---
 title: MCP Integration Overview
-description: Using Crontinel with AI assistants via Model Context Protocol
+description: Connect an AI assistant to Crontinel with the Model Context Protocol and read cron, queue, and Horizon status from the editor.
 ---
 
 Crontinel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI coding assistants can query your monitoring data inline  –  without opening a browser.

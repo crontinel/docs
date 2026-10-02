@@ -1,6 +1,6 @@
 ---
 title: Agent Guide
-description: Install and run the Crontinel agent daemon for remote command execution
+description: The Crontinel agent is a daemon on your server. It runs only allowlisted commands from the dashboard and reports the result.
 ---
 
 The Crontinel agent is a lightweight daemon that runs on your server, connects to `app.crontinel.com`, and polls for remote commands. It enables cloud-triggered cron execution — schedule a command from the dashboard and the agent runs it on your server.

@@ -1,6 +1,6 @@
 ---
 title: Cron Monitor
-description: Recording every scheduled command run with exit code and duration
+description: "Record every scheduled command's exit code and duration, including runs that fail while the scheduler process itself stays up."
 ---
 
 ## How it works

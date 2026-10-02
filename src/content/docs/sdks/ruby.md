@@ -1,6 +1,6 @@
 ---
 title: Ruby
-description: Install and configure crontinel for Ruby applications
+description: Install the Crontinel Ruby gem and report cron and background job runs from a Ruby application to your Crontinel dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

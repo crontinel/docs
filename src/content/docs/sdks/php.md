@@ -1,6 +1,6 @@
 ---
 title: PHP
-description: Install and configure crontinel/php for any PHP application
+description: Install crontinel/php and report cron and background job runs from a PHP application that does not use the Laravel package.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

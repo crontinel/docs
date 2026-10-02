@@ -1,6 +1,6 @@
 ---
 title: Claude Code Setup
-description: Connecting Crontinel to Claude Code via MCP
+description: Add the Crontinel MCP server to Claude Code so the assistant can read cron, queue, and Horizon status without leaving the editor.
 ---
 
 :::note

@@ -1,6 +1,6 @@
 ---
 title: Ruby on Rails
-description: Auto-instrument ActiveJob and ActiveScheduler with crontinel-rails
+description: Install crontinel-rails so ActiveJob and scheduled jobs are reported to Crontinel without a manual heartbeat in each job.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

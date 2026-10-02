@@ -1,6 +1,6 @@
 ---
 title: Upgrading
-description: How to upgrade between Crontinel versions, including breaking changes and config updates
+description: How to move between Crontinel versions, including breaking changes and which config keys you need to update after the upgrade.
 ---
 
 ## General upgrade steps
