@@ -1,6 +1,6 @@
 ---
 title: Alert Channels
-description: Configuring Slack, email, and webhook alerts
+description: Send Crontinel alerts to Slack, email, or a webhook when a cron run fails, a queue climbs, or a Horizon supervisor stops.
 ---
 
 ## Available channels

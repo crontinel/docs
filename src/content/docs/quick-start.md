@@ -1,6 +1,6 @@
 ---
 title: Quick Start
-description: Get Crontinel running in under 5 minutes
+description: Install a Crontinel package and record the first run. Laravel, Node, Python, Go, Ruby, and the CLI each have a short path.
 ---
 
 Choose your stack below and follow the steps. Every quickstart follows the same flow:

@@ -1,6 +1,6 @@
 ---
 title: Self-Hosting
-description: Run the Crontinel SaaS stack on your own server
+description: "Run the Crontinel hosted stack on a server you control when you don't want the dashboard to live only on app.crontinel.com."
 ---
 
 :::note

@@ -1,6 +1,6 @@
 ---
 title: Go
-description: Install and configure crontinel/go for Go applications
+description: Install crontinel/go and report cron and background job runs from a Go app to a hosted or self-hosted Crontinel dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

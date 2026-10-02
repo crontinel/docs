@@ -1,6 +1,6 @@
 ---
 title: .NET
-description: Install and configure the Crontinel .NET SDK for .NET applications
+description: Install the Crontinel .NET SDK and report cron and background job runs from a .NET application to your Crontinel dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

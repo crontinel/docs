@@ -1,6 +1,6 @@
 ---
 title: Rust
-description: Install and configure crontinel-rust for Rust applications
+description: Install crontinel-rust and report cron and background job runs from a Rust app to a hosted or self-hosted Crontinel dashboard.
 ---
 
 import { Aside } from '@astrojs/starlight/components';

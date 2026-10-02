@@ -1,6 +1,6 @@
 ---
 title: Queue Monitor
-description: Monitoring queue depths, failed counts, and wait times
+description: Watch Laravel queue depth, failed jobs, and wait time, and see when a queue climbs or a worker stops processing new jobs.
 ---
 
 ## What it monitors

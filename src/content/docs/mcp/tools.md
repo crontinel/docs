@@ -1,6 +1,6 @@
 ---
 title: Available MCP Tools
-description: All tools exposed by the Crontinel MCP server
+description: MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, and creating or dismissing alerts.
 ---
 
 | Tool | Description |

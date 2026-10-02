@@ -1,6 +1,6 @@
 ---
 title: AI Agent Monitoring
-description: Monitor AI agent runs, tool call success rates, token usage, loop detection, and cost with Crontinel
+description: Planned, and not in a released package yet. This page previews tracking agent runs, tool calls, and cost after the feature ships.
 ---
 
 # AI Agent Monitoring

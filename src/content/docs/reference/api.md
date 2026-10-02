@@ -1,6 +1,6 @@
 ---
 title: REST API Reference
-description: Crontinel REST API for Pro and Team plan users
+description: HTTP API for Pro and Team plans. Send a Bearer API key, then list monitors and read recent cron and queue run history from the app.
 ---
 
 The REST API is available on Pro and Team plans. All endpoints require an API key.

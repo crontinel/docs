@@ -1,6 +1,6 @@
 ---
 title: SDKs & Packages
-description: Official Crontinel monitoring packages for every runtime
+description: Official packages for Laravel, Node, Python, Go, Rust, PHP, Ruby, Rails, and .NET, plus a CLI for cron jobs and containers.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
