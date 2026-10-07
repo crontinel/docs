@@ -38,7 +38,35 @@ function looksLikeBrowser(userAgent) {
   return /(Chrome|Firefox|Safari|Edg|OPR)\//.test(userAgent);
 }
 
+const DOC_REDIRECTS = {
+  '/': '/introduction/',
+  '/quickstart': '/quick-start/',
+  '/quickstart/': '/quick-start/',
+  '/pricing': 'https://crontinel.com/pricing/',
+  '/pricing/': 'https://crontinel.com/pricing/',
+  '/marketing/seo-writing': '/introduction/',
+  '/marketing/seo-writing/': '/introduction/',
+  '/sitemap.xml': '/sitemap-index.xml',
+};
+
+export function docsRedirect(url) {
+  const target = DOC_REDIRECTS[url.pathname];
+
+  if (!target) {
+    return null;
+  }
+
+  const location = target.startsWith('http') ? target : new URL(target, url.origin).toString();
+  return { status: 301, location };
+}
+
 export async function handleCrawl(request, env, fetchAsset, cacheStore) {
+  const redirect = docsRedirect(new URL(request.url));
+
+  if (redirect) {
+    return Response.redirect(redirect.location, redirect.status);
+  }
+
   const kind = classifyUserAgent(request.headers.get('user-agent'));
   const limit = LIMITS[kind];
   const cache = cacheStore || globalThis.caches?.default;
