@@ -1,3 +1,13 @@
+# Static redirects. The Pages worker applies the same paths before assets.
+# / has no index.html, so this rule is what Google receives.
+
+/              /introduction/                         301
+/quickstart    /quick-start/                          301
+/quickstart/   /quick-start/                          301
+/pricing       https://crontinel.com/pricing/         301
+/pricing/      https://crontinel.com/pricing/         301
+/marketing/seo-writing   /introduction/               301
+/marketing/seo-writing/  /introduction/               301
+
 # Redirect wrong sitemap paths (GSC may have old submissions)
 /sitemap.xml  /sitemap-index.xml  301
-

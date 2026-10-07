@@ -76,7 +76,7 @@ test('browsers are not capped', async () => {
     return new Response('html', { status: 200 });
   };
   for (let i = 0; i < 25; i += 1) {
-    const response = await handleCrawl(new Request('https://docs.crontinel.com/', {
+    const response = await handleCrawl(new Request('https://docs.crontinel.com/introduction/', {
       headers: {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
         'cf-connecting-ip': '198.51.100.6',

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node scripts/build-llms-txt.mjs && astro build && node scripts/attach-crawl-worker.mjs",
-    "test": "node --test tests/crawl-policy.test.mjs tests/llms-txt.test.mjs",
+    "test": "node --test tests/crawl-policy.test.mjs tests/llms-txt.test.mjs tests/redirects.test.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
