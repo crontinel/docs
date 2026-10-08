@@ -1,43 +1,30 @@
 ---
 title: Introduction
-description: Crontinel watches cron runs, queue depth, and Horizon from inside the app, so a failed job shows up even when the site still returns 200.
+description: Crontinel tells you when a background job finished without doing the work. Any runtime sends one HTTP receipt. Laravel adds schedule, queue, and Horizon evidence.
 ---
 
-Crontinel monitors your background jobs, queue depths, and cron schedules. It reads framework internals  –  not just HTTP pings  –  so you know what's actually happening inside your app.
+**Completed is not done.** A process can exit 0 and still produce nothing. Crontinel keeps process status and business result as separate states. Missing evidence is never shown as healthy.
 
 ## The problem
 
-Generic monitors check whether a URL returns 200 or whether a heartbeat arrived. They cannot tell you:
+Generic monitors check whether a heartbeat arrived or a URL returned 200. They cannot tell you:
 
-- That your Laravel Horizon supervisor for the `emails` queue silently crashed
-- That queue depth is at 8,000 and climbing
-- That `send-invoices` ran but exited with code 1
-
-Crontinel hooks into your app directly and surfaces this data.
+- That a nightly import exited 0 with `processed_records: 0`
+- That a scheduled agent wrote an empty digest
+- That Horizon or a queue stopped reporting freshness (Laravel package path)
 
 ## How it works
 
-The OSS package (`crontinel/laravel`) installs in your Laravel app and:
+1. Your job posts an HTTP receipt to `/api/v1/ingest/cron` with the command, exit code, times, and optional outcome metrics.
+2. Crontinel evaluates schedule and outcome rules on the server.
+3. Alerts fire without waiting for a model. Your coding assistant can read the same evidence over MCP.
 
-1. Reads Horizon's Redis keys for supervisor and pause state
-2. Queries queue depths from Redis or the database
-3. Listens to Laravel's scheduler events to record every cron run
-
-The optional SaaS at [app.crontinel.com](https://app.crontinel.com) gives you a hosted multi-app dashboard, longer history retention, team access, and alerts.
+The [Laravel package](/sdks/laravel/) is the deep integration: it attaches that receipt from the scheduler and can add queue depth and Horizon freshness. Other languages use the [HTTP recipes](/check-in/recipes/). Unowned language packages are not a support claim.
 
 ## Plans and pricing
 
-Crontinel has a generous free tier: **one app, up to 5 monitors, 7-day history**. No credit card required.
+See the [pricing page](https://crontinel.com/pricing) on the marketing site for current tiers. Hosted monitoring and alerts do not depend on a language SDK.
 
-Paid plans unlock additional apps, longer history (30–90 days), team collaboration, and priority support. See the [full pricing page](/pricing) for details.
+## Open source
 
-The self-hosted package is MIT licensed and free for unlimited use — no SaaS required.
-
-## Open source first
-
-The core package is MIT licensed. Install it in two commands and get a full dashboard with no account required:
-
-```bash
-composer require crontinel/laravel
-php artisan crontinel:install
-```
+The Laravel package is MIT licensed. Self-hosted local dashboards are not a substitute for hosted detection when the same host dies.

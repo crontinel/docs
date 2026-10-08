@@ -1,47 +1,53 @@
 ---
 title: Quick Start
-description: Install a Crontinel package and record the first run. Laravel, Node, Python, Go, Ruby, and the CLI each have a short path.
+description: Send one HTTP outcome receipt from any runtime, then optionally install the Laravel package for schedule, queue, and Horizon.
 ---
 
-Choose your stack below and follow the steps. Every quickstart follows the same flow:
+Every runtime uses the same HTTP receipt. Laravel is the deep integration when you need schedule attach, queue depth, and Horizon.
 
-<div class="grid cards" markdown>
+## 1. Create an app
 
-| Package | What you'll do | Time |
-|---|---|---|
-| [CLI / Docker →](/sdks/cli/#quickstart) | `brew install` → first ping | ~2 min |
-| [Laravel →](/installation/#quickstart) | `composer require` → artisan install → first cron run | ~3 min |
-| [Node.js / TypeScript →](/sdks/node/#quickstart) | `npm install` → `npx tsx quickstart.ts` | ~3 min |
-| [Python →](/sdks/python/#quickstart) | `pip install` → `python quickstart.py` | ~3 min |
-| [Go →](/sdks/go/#quickstart) | `go get` → `go run quickstart.go` | ~3 min |
-| [Rust →](/sdks/rust/#quickstart) | `cargo add` → `cargo run` | ~3 min |
-| [PHP →](/sdks/php/#quickstart) | `composer require` → `php quickstart.php` | ~3 min |
-| [Ruby →](/sdks/ruby/#quickstart) | `gem install` → `ruby quickstart.rb` | ~3 min |
-| [Ruby on Rails →](/sdks/rails/#quickstart) | `bundle install` → auto-instrument | ~3 min |
-| [.NET →](/sdks/dotnet/#quickstart) | `dotnet add package` → `dotnet run` | ~3 min |
+1. Sign up at [app.crontinel.com](https://app.crontinel.com/register).
+2. Create an app and copy its **ingest key**. That key is not an MCP key.
+3. Put it in the job environment as `CRONTINEL_INGEST_KEY`.
 
-</div>
+## 2. Send a receipt
 
-## Before you start
+Pick one path. Full recipes: [Check-in from any runtime](/check-in/recipes/).
 
-1. **Sign up** at [app.crontinel.com](https://app.crontinel.com/register) (free tier included).
-2. **Create an app** from the dashboard — give it a name (e.g. "my-first-app").
-3. **Copy your API key** (`crn_live_...`) from the app settings page.
+**curl**
 
-That's it — on to your package.
+```bash
+curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+  -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
+```
 
-## Verify it works
+**Python** — use `outcome_checkin.py` from the workspace (no supported PyPI package on this path).
 
-After following your package's quickstart:
+**Node** — `fetch` the same JSON body (no supported npm package on this path).
 
-1. Go to **app.crontinel.com** → **Apps** → select your app
-2. Check the **Cron**, **Queue**, or **Events** sections — data should appear within 30 seconds.
-3. If you see your job run with exit codes and duration, you're all set.
+## 3. Verify
 
-No data yet? Make sure `CRONTINEL_API_KEY` is set in the environment where your code runs, and that your app can reach `https://app.crontinel.com` (no firewall blocking).
+1. Confirm the run appears on the dashboard.
+2. With a minimum rule of 1, `processed_records: 0` should open an outcome alert even when exit code is 0.
+3. Send a later count that passes and confirm recovery.
+
+## Laravel deep integration
+
+If you run Laravel and want scheduler attach, queue depth, and Horizon:
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+```
+
+See [Installation](/installation/) and [Laravel](/sdks/laravel/).
 
 ## Next steps
 
-- Set up [alerts](/alerts/channels/) to get notified when a job fails
-- Learn about [monitors](/monitors/cron/) for deeper insight
-- Connect your [self-hosted instance](/self-hosting/) to the SaaS
+- [Check-in recipes](/check-in/recipes/) for cron, GitHub Actions, Sidekiq, and agents
+- [Alert channels](/alerts/channels/)
+- [Cron monitors](/monitors/cron/)
+- [MCP overview](/mcp/overview/) for your coding assistant

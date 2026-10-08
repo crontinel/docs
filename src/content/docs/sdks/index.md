@@ -1,65 +1,25 @@
 ---
 title: SDKs & Packages
-description: Official packages for Laravel, Node, Python, Go, Rust, PHP, Ruby, Rails, and .NET, plus a CLI for cron jobs and containers.
+description: HTTP check-in is the path for every runtime. The Laravel package is the maintained deep integration. Other language repos are not a support claim until they send the outcome receipt and have an owner.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-Crontinel has official monitoring packages for every major runtime. Each page below has a **quickstart** you can follow from scratch to first data in under 5 minutes.
+## Start here
+
+Use the [HTTP check-in recipes](/check-in/recipes/) for curl, Python, Node, cron, GitHub Actions, Sidekiq, and agents. That path is finished without installing a language package.
+
+## Maintained deep integration
 
 <CardGrid>
-  <Card title="@crontinel/node" icon="seti:nodejs">
-    TypeScript/Node.js — BullMQ, Agenda, node-cron, workers
-    [Quickstart →](/sdks/node/#quickstart)
-  </Card>
-  <Card title="crontinel/python" icon="seti:python">
-    Python — Celery, RQ, Huey, APScheduler, Prefect, Dramatiq
-    [Quickstart →](/sdks/python/#quickstart)
-  </Card>
-  <Card title="crontinel/go" icon="seti:go">
-    Go — Asynq, Machinery, Temporal, gocron, native tickers
-    [Quickstart →](/sdks/go/#quickstart)
-  </Card>
-  <Card title="crontinel/rust" icon="seti:rust">
-    Rust — Tokio, async-std, apalis, tokio-cron-scheduler
-    [Quickstart →](/sdks/rust/#quickstart)
-  </Card>
-  <Card title="crontinel/php" icon="seti:php">
-    PHP — Framework-agnostic library, Symfony Messenger + plain cron
-    [Quickstart →](/sdks/php/#quickstart)
-  </Card>
   <Card title="crontinel/laravel" icon="seti:laravel">
-    Laravel — Horizon & scheduler, auto-detect, zero config
-    [Quickstart →](/installation/#quickstart)
-  </Card>
-  <Card title="crontinel/ruby" icon="seti:ruby">
-    Ruby — Sidekiq, Resque, DelayedJob, Rake tasks
-    [Quickstart →](/sdks/ruby/#quickstart)
-  </Card>
-  <Card title="crontinel/rails" icon="seti:rails">
-    Rails — Auto-instruments ActiveJob and ActiveScheduler
-    [Quickstart →](/sdks/rails/#quickstart)
-  </Card>
-  <Card title="crontinel/cli" icon="seti:shell">
-    CLI / Docker — Wrap any cron, Docker job, K8s CronJob
-    [Quickstart →](/sdks/cli/#quickstart)
-  </Card>
-  <Card title="Crontinel.NET" icon="seti:csharp">
-    .NET / C# — Hangfire, Quartz.NET, TaskScheduler, Worker Service
-    [Quickstart →](/sdks/dotnet/#quickstart)
+    Laravel — schedule attach, queue depth, Horizon freshness
+    [Install →](/installation/) · [Package docs →](/sdks/laravel/)
   </Card>
 </CardGrid>
 
-## How it works
+## Other language repos
 
-Every SDK reports the same kind of data — what your jobs, queues, and schedulers are doing — via a simple API call. Crontinel records every run and alerts you when something goes wrong. Most SDKs (node, python, go, rust, php) send plain REST requests; the Ruby and CLI SDKs instead use the MCP protocol. See [REST vs. MCP](/reference/api/#sdk-transport-rest-vs-mcp) for details.
+GitHub may still list Node, Python, Go, Rust, PHP, Ruby, Rails, CLI, and .NET packages. They are **not** claimed as supported for the current outcome-receipt offer until each package sends that receipt and has a maintenance owner. Prefer [check-in recipes](/check-in/recipes/).
 
-All packages are MIT licensed and work with the open-source Crontinel dashboard or the hosted SaaS at [app.crontinel.com](https://app.crontinel.com).
-
-## API key
-
-Sign up at [app.crontinel.com](https://app.crontinel.com) to get your free API key. Add it as an environment variable:
-
-```env
-CRONTINEL_API_KEY=crn_live_...
-```
+Historical pages remain under `/sdks/*` for reference. Do not treat them as install instructions for production monitoring.
