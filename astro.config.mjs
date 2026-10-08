@@ -5,7 +5,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Crontinel Docs',
-      description: 'Docs for Crontinel. Install the package, watch cron runs, queue depth, and Horizon from inside the app, and alert when a job fails.',
+      description: 'Docs for Crontinel. Send an HTTP outcome receipt from any runtime. The Laravel package adds schedule, queue, and Horizon evidence.',
       social: {
         github: 'https://github.com/crontinel/laravel',
       },
@@ -17,20 +17,23 @@ export default defineConfig({
         { label: 'Getting Started', items: [
           { label: 'Introduction', link: '/introduction/' },
           { label: 'Quick Start', link: '/quick-start/' },
-          { label: 'Installation', link: '/installation/' },
+          { label: 'Check-in from any runtime', link: '/check-in/recipes/' },
+          { label: 'Installation (Laravel)', link: '/installation/' },
         ]},
         { label: 'SDKs & Packages', items: [
           { label: 'Overview', link: '/sdks/' },
           { label: 'Laravel', link: '/sdks/laravel/' },
-          { label: 'Node.js / TypeScript', link: '/sdks/node/' },
-          { label: 'Python', link: '/sdks/python/' },
-          { label: 'Go', link: '/sdks/go/' },
-          { label: 'Rust', link: '/sdks/rust/' },
-          { label: 'PHP', link: '/sdks/php/' },
-          { label: 'Ruby', link: '/sdks/ruby/' },
-          { label: 'Ruby on Rails', link: '/sdks/rails/' },
-          { label: 'CLI / Docker', link: '/sdks/cli/' },
-          { label: '.NET', link: '/sdks/dotnet/' },
+          { label: 'Other language pages (historical)', collapsed: true, items: [
+            { label: 'Node.js / TypeScript', link: '/sdks/node/' },
+            { label: 'Python', link: '/sdks/python/' },
+            { label: 'Go', link: '/sdks/go/' },
+            { label: 'Rust', link: '/sdks/rust/' },
+            { label: 'PHP', link: '/sdks/php/' },
+            { label: 'Ruby', link: '/sdks/ruby/' },
+            { label: 'Ruby on Rails', link: '/sdks/rails/' },
+            { label: 'CLI / Docker', link: '/sdks/cli/' },
+            { label: '.NET', link: '/sdks/dotnet/' },
+          ]},
         ]},
         { label: 'Monitors', items: [
           { label: 'Horizon Monitor', link: '/monitors/horizon/' },
