@@ -1,9 +1,11 @@
 ---
 title: Check-in from any runtime
-description: Send one HTTP outcome receipt from curl, Python, Node, cron, GitHub Actions, Sidekiq, or a scheduled agent. Laravel is the deep package path.
+description: Five first-class runtimes post one HTTP outcome receipt — curl, Node, Python, Sidekiq, and GitHub Actions. Laravel is the deep package path.
 ---
 
 Crontinel is an outcome monitor for background work in whatever runtime already runs it. Every runtime posts the same JSON receipt. Exit code 0 can still fail an outcome rule when `processed_records` is 0 or missing and the rule requires work.
+
+**First-class runtimes on this page:** system cron (curl), Node.js, Python, Sidekiq/Ruby, and GitHub Actions. Laravel is the maintained deep package for schedule attach, queue depth, and Horizon — not a requirement for outcome monitoring.
 
 Use the **app ingest key** (`CRONTINEL_INGEST_KEY`). It is not an MCP key. A monitoring failure must not fail the business job.
 
@@ -82,11 +84,48 @@ exit "$EXIT_CODE"
 
 ## GitHub Actions
 
-Store `CRONTINEL_INGEST_KEY` as a repository secret. After the job step, post the same receipt (see the curl or Python examples). Use a unique `request_key` per run (for example `${{ github.run_id }}`).
+Store `CRONTINEL_INGEST_KEY` as a repository secret. After the job step, post the same receipt. Use a unique `request_key` per run.
+
+```yaml
+- name: Report outcome
+  env:
+    CRONTINEL_INGEST_KEY: ${{ secrets.CRONTINEL_INGEST_KEY }}
+  run: |
+    curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+      -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"outcomes\":{\"metrics\":{\"processed_records\":0}}}" \
+      || true
+```
 
 ## Sidekiq / Ruby
 
 Post the same JSON with `Net::HTTP`. There is no supported gem for this path. Rescue so monitoring never fails the job.
+
+```ruby
+require "json"
+require "net/http"
+require "uri"
+
+begin
+  uri = URI("https://app.crontinel.com/api/v1/ingest/cron")
+  req = Net::HTTP::Post.new(uri)
+  req["Authorization"] = "Bearer #{ENV.fetch("CRONTINEL_INGEST_KEY")}"
+  req["Content-Type"] = "application/json"
+  req.body = {
+    request_key: "sidekiq-#{jid}",
+    command: "reports:generate",
+    status: "completed",
+    exit_code: 0,
+    started_at: started,
+    finished_at: Time.now.utc.iso8601,
+    outcomes: { metrics: { processed_records: records } },
+  }.to_json
+  Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+rescue StandardError
+  # Monitoring must not fail the business job.
+end
+```
 
 ## Scheduled agents
 
