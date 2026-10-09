@@ -13,7 +13,7 @@
 ## Guides
 
 - [Billing & Plans](https://docs.crontinel.com/billing/): Starter, Pro, and Max prices and monthly ingest / AI allowances. Email alerts are included; Slack and webhooks stay off the sold card until verified.
-- [FAQ](https://docs.crontinel.com/faq/): Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
+- [FAQ](https://docs.crontinel.com/faq/): HTTP check-in for any runtime, optional Laravel package depth, Octane notes, what is sent to the hosted app, and Starter/Pro/Max billing pointers.
 - [Installation](https://docs.crontinel.com/installation/): Start with the HTTP outcome receipt from any runtime. On Laravel, install crontinel/laravel for schedule attach, queue depth, and Horizon.
 - [Introduction](https://docs.crontinel.com/introduction/): Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
 - [Quick Start](https://docs.crontinel.com/quick-start/): Send one HTTP outcome receipt from any runtime, then optionally install the Laravel package for schedule, queue, and Horizon.

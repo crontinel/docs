@@ -1,103 +1,63 @@
 ---
 title: FAQ
-description: Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
+description: HTTP check-in for any runtime, optional Laravel package depth, Octane notes, what is sent to the hosted app, and Starter/Pro/Max billing pointers.
 ---
 
-## Do I need a crontinel.com account to use Crontinel?
+## Do I need Laravel?
 
-No. The OSS package (`crontinel/laravel`) works entirely standalone. Install it, run `php artisan crontinel:install`, and your local dashboard is available at `/crontinel` with no account, API key, or external connection required.
+No. Every runtime posts the same HTTP outcome receipt. First-class paths: curl, Node, Python, Sidekiq, and GitHub Actions. See [check-in recipes](/check-in/recipes/) and [quick start](/quick-start/).
 
-A crontinel.com account is optional — it gives you a hosted dashboard, cross-app visibility, and alerting without managing your own server. If you want local-only monitoring, you never need to sign up.
+Laravel is optional. Use `crontinel/laravel` when you want the package to attach that receipt from the scheduler and add queue depth or Horizon freshness.
 
----
+## Do I need a crontinel.com account?
+
+For hosted alerts and the dashboard, yes — create an app and use the ingest key (`CRONTINEL_INGEST_KEY`). That key is not an MCP / assistant key.
+
+The Laravel package can also run a local `/crontinel` dashboard without a hosted account. That local path is not a substitute for hosted detection when the same host dies.
+
+## How do I send my first receipt?
+
+1. Create an app at [app.crontinel.com](https://app.crontinel.com/register).
+2. Copy the ingest key.
+3. POST to `/api/v1/ingest/cron` when the job finishes (curl, Node `fetch`, `outcome_checkin.py`, Sidekiq, or GitHub Actions).
+4. Send `processed_records: 0`, confirm the outcome alert, then send a later count and confirm recovery.
+
+Recipes: [check-in recipes](/check-in/recipes/).
 
 ## Will Crontinel slow down my application?
 
-No. All monitoring work is dispatched through Laravel's event system. Crontinel listens to scheduler events (`ScheduledTaskStarting`, `ScheduledTaskFinished`, `ScheduledTaskFailed`) and records the data. The event listener and database write have negligible overhead — your scheduled tasks run at full speed.
+For HTTP check-in, you control when the POST runs (usually after the job). Keep a short timeout and do not fail the business job if monitoring fails.
 
-When `CRONTINEL_API_KEY` is configured, the package sends run results to `app.crontinel.com` via a direct HTTP call. This call includes a short timeout (5s) and a failure does not affect your task execution, but it does add a small amount of synchronous latency if the SaaS endpoint is slow or unreachable. For zero external latency, omit the API key and use only the local dashboard.
+On Laravel with the package, monitoring listens to scheduler events. When `CRONTINEL_API_KEY` is set, the package reports over HTTP with a short timeout; a monitoring failure does not fail your task. Omit the key for local-only dashboard use.
 
----
+## Does the Laravel package work with Octane?
 
-## Does Crontinel work with Laravel Octane?
-
-Yes. Crontinel is compatible with Laravel Octane (Swoole and RoadRunner). The package uses standard Laravel service provider and event patterns that Octane respects. There are no static state issues because all data is stored in the database, not in-memory.
-
-If you run Octane, make sure your queue worker is separate from your Octane server — this is the standard Laravel recommendation and applies to Crontinel like any other queued job.
-
----
+Yes. It uses standard service provider and event patterns. Keep queue workers separate from the Octane server, as Laravel recommends generally.
 
 ## What happens if app.crontinel.com goes down?
 
-Nothing breaks locally. Your self-hosted dashboard continues working independently. Crontinel reports data to the SaaS endpoint only if `CRONTINEL_API_KEY` is set — and only when a connection is available. If the SaaS is unreachable, the package logs a warning and continues without blocking your app.
+Your jobs keep running. Receipts that cannot be delivered should not fail the business work (recipes use `|| true` / rescue where shown). On Laravel with only a local dashboard, that dashboard stays independent of the hosted app.
 
-Your scheduler runs, your jobs execute, and your local `/crontinel` dashboard stays current regardless of SaaS availability.
+## What data is sent to the hosted app?
 
----
+Nothing until you use an ingest key. A receipt can include command / job name, status, exit code, times, and optional outcome metrics or timestamps you set. Queue and Horizon snapshots are Laravel-package paths only.
 
-## What data does the package send to the SaaS?
+**No application payloads, user PII, or environment secrets should be put in the receipt.**
 
-Nothing is sent unless you set `CRONTINEL_API_KEY`. When the key is present, the package sends:
+## What are the plan names and prices?
 
-- Cron run summaries: command name, status (`completed`/`failed`/`late`), duration, exit code
-- Queue depth snapshots: queue name, depth count, failed job count
-- Horizon status: running/paused, failed-per-minute rate, supervisor count
+Paid plans are **Starter**, **Pro**, and **Max** (internal Max key remains `team`). Free remains $0. See [Billing & Plans](/billing/) for allowances. The marketing price card stays gated until billing acceptance; [crontinel.com/pricing](https://crontinel.com/pricing/) shows what is published today.
 
-**No application data, no user data, no request payloads, and no environment variables are ever sent.**
-
----
-
-## What are the Free plan limits?
-
-The Free plan on app.crontinel.com includes:
-
-- **1 app**
-- **7-day history**
-- **1 team member**
-- **No alert channels**
-
-For paid tiers and allowances, see [Billing & Plans](/billing/) and the [pricing page](https://crontinel.com/pricing/) (Starter, Pro, and Max).
-
----
-
-## How do I upgrade to a new version?
+## How do I upgrade the Laravel package?
 
 ```bash
-composer update crontinel/laravel
+composer require crontinel/laravel:^0.8
 php artisan migrate
 php artisan crontinel:check
 ```
 
-Migrations are always additive — running `php artisan migrate` is safe alongside your existing app migrations. Check the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md) before upgrading across major versions.
+See the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md) and [upgrading](/upgrading/).
 
-If a new release adds config options, re-publish the config file to see the new defaults:
+## Where is the comparison or Slack on the price card?
 
-```bash
-php artisan vendor:publish --tag=crontinel-config --force
-```
-
-Compare the output with your existing `config/crontinel.php` and add any new keys you need.
-
----
-
-## How do I configure alert channels in the OSS version?
-
-Set the channel and credentials in `.env`:
-
-```env
-# Slack
-CRONTINEL_ALERT_CHANNEL=slack
-CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
-
-# Email
-CRONTINEL_ALERT_CHANNEL=mail
-CRONTINEL_ALERT_EMAIL=you@example.com
-
-# Webhook
-CRONTINEL_ALERT_CHANNEL=webhook
-CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/alerts
-```
-
-Only one channel is active at a time (set by `CRONTINEL_ALERT_CHANNEL`). For multiple channels simultaneously, use the hosted SaaS which supports per-app channel routing through the web UI.
-
-See [Alert Channels](/alerts/channels/) for full configuration details including `config/crontinel.php` snippets.
+Comparison publish and sold Slack/webhook channels wait on operator interviews and delivery verification (customer tasks S7–S10). Email outcome alerts are the verified channel today.

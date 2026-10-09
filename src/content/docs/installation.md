@@ -69,12 +69,16 @@ The Laravel package works fully offline with no external API key required. To se
 
 ---
 
-## Requirements
+## Laravel package details
+
+Still not on Laravel? Stop here and use the [HTTP recipes](/check-in/recipes/). Everything below is Composer-only.
+
+### Requirements
 
 - PHP 8.2, 8.3, 8.4, or 8.5
 - Laravel 11, 12, or 13
 
-## Install
+### Install (repeat of the quickstart)
 
 ```bash
 composer require crontinel/laravel
