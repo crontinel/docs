@@ -86,6 +86,6 @@ In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app ale
 The following channels are on the roadmap but not yet available:
 
 - **PagerDuty** — IT alert routing and incident management. Planned for a future release.
-- **SMS** — Direct text message alerts. Sign up for early access at [crontinel.com](/) when this launches.
+- **SMS** — Direct text message alerts. Sign up for early access at [crontinel.com](https://crontinel.com/) when this launches.
 - **OpsGenie** — IT alert routing and on-call management. Planned for a future release.
 - **VictorOps** — Incident management and PagerDuty alternative. Planned for a future release.

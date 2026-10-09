@@ -4,7 +4,7 @@ description: Add the Crontinel MCP server to Claude Code so the assistant can re
 ---
 
 :::note
-The Crontinel SaaS is now in early access. [Create a free account](https://crontinel.com/register) to get started.
+The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/register) to get started.
 :::
 
 ## 1. Get your API key

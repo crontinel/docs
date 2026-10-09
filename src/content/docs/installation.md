@@ -82,7 +82,7 @@ php artisan crontinel:install
 php artisan migrate
 ```
 
-After running the installer, `config/crontinel.php` is published to your project. Review it to set the dashboard path, middleware, and alert thresholds. See the [configuration reference](/reference/configuration) for all available options.
+After running the installer, `config/crontinel.php` is published to your project. Review it to set the dashboard path, middleware, and alert thresholds. See the [configuration reference](/reference/configuration/) for all available options.
 
 > **Using Horizon?** Set `'horizon' => ['enabled' => true]` in `config/crontinel.php`. If you're not using Horizon, set it to `false` to hide the Horizon panel.
 
@@ -147,7 +147,7 @@ CRONTINEL_API_KEY=
 CRONTINEL_API_URL=https://app.crontinel.com
 ```
 
-See the [configuration reference](/reference/configuration) for all options including thresholds, retention, and middleware.
+See the [configuration reference](/reference/configuration/) for all options including thresholds, retention, and middleware.
 
 ## Upgrading
 

@@ -1,0 +1,20 @@
+---
+// Starlight's default links to "/", which 301s to /introduction/ and shows up
+// as a redirect on every page. Link straight to the landing page instead.
+---
+
+<a href="/introduction/" class="site-title sl-flex">
+	<span>Crontinel Docs</span>
+</a>
+
+<style>
+	.site-title {
+		align-items: center;
+		gap: var(--sl-nav-gap);
+		font-size: var(--sl-text-h4);
+		font-weight: 600;
+		color: var(--sl-color-text-accent);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+</style>

@@ -52,7 +52,7 @@ For larger teams or teams with many apps:
 
 Upgrade from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Upgrades take effect immediately with prorated billing. Downgrades apply at the end of the current billing period.
 
-For full pricing details, discounts, and annual plans, see the [pricing page](https://crontinel.com/pricing).
+For full pricing details, discounts, and annual plans, see the [pricing page](https://crontinel.com/pricing/).
 
 ## Cancelling
 
@@ -60,4 +60,4 @@ Cancel anytime from the Billing page. Your subscription stays active until the e
 
 ## OSS and self-hosting
 
-The `crontinel/laravel` package is MIT licensed and always free to use. The self-hosted dashboard app (`crontinel/app`) requires a Pro or Team subscription for repository access. See [Self-Hosting](/self-hosting) for details.
+The `crontinel/laravel` package is MIT licensed and always free to use. The self-hosted dashboard app (`crontinel/app`) requires a Pro or Team subscription for repository access. See [Self-Hosting](/self-hosting/) for details.
