@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Crontinel tells you when a background job finished without doing the work. Any runtime sends one HTTP receipt. Laravel adds schedule, queue, and Horizon evidence.
+description: Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
 ---
 
 **Completed is not done.** A process can exit 0 and still produce nothing. Crontinel keeps process status and business result as separate states. Missing evidence is never shown as healthy.
@@ -19,7 +19,7 @@ Generic monitors check whether a heartbeat arrived or a URL returned 200. They c
 2. Crontinel evaluates schedule and outcome rules on the server.
 3. Alerts fire without waiting for a model. Your coding assistant can read the same evidence over MCP.
 
-The [Laravel package](/sdks/laravel/) is the deep integration: it attaches that receipt from the scheduler and can add queue depth and Horizon freshness. Other languages use the [HTTP recipes](/check-in/recipes/). Unowned language packages are not a support claim.
+First-class check-in paths: curl, Node, Python, Sidekiq, and GitHub Actions — see [HTTP recipes](/check-in/recipes/). The [Laravel package](/sdks/laravel/) is the deep integration: it attaches that receipt from the scheduler and can add queue depth and Horizon freshness. Unowned language packages are not a support claim.
 
 ## Plans and pricing
 
