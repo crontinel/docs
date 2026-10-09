@@ -52,7 +52,7 @@
 
 - [AI Agent Monitoring](https://docs.crontinel.com/mcp/ai-agent-monitoring/): Planned feature. Not available in a released package yet.
 - [Claude Code Setup](https://docs.crontinel.com/mcp/claude-code/): Add the Crontinel MCP server to Claude Code so the assistant can read cron, queue, and Horizon status without leaving the editor.
-- [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Connect an AI assistant to Crontinel with the Model Context Protocol and read cron, queue, and Horizon status from the editor.
+- [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Connect Cursor, Claude Code, or Codex over MCP. OAuth first; ordinary evidence reads do not spend hosted AI starts.
 - [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, and creating or dismissing alerts.
 
 ## Agent
