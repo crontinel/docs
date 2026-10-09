@@ -43,7 +43,10 @@ export function docsItems() {
   return walk(contentRoot.pathname).map((file) => {
     const source = readFileSync(file, 'utf8');
     const data = parseFrontmatter(source);
-    const planned = /not yet available/i.test(source);
+    // Only the explicit "coming soon" banner (or planned: true) marks a page unpublished.
+    // Body copy like "PagerDuty is on the roadmap" must not blank the whole page description.
+    const planned = data.planned === true || data.planned === 'true'
+      || /^>\s*.*coming soon.*not yet available/im.test(source);
 
     return {
       title: data.title || relative(contentRoot.pathname, file),

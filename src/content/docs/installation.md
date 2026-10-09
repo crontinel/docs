@@ -140,7 +140,7 @@ CRONTINEL_ALERT_CHANNEL=slack
 CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 CRONTINEL_ALERT_EMAIL=alerts@example.com
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
-# PagerDuty is not yet available — see /alerts/channels for the roadmap
+# PagerDuty is on the alerts roadmap — see /alerts/channels
 
 # SaaS reporting (optional — omit for local-only monitoring)
 CRONTINEL_API_KEY=
@@ -157,7 +157,7 @@ Pull the latest version through Composer:
 composer update crontinel/laravel
 ```
 
-If you want to pin a specific version, use `composer require crontinel/laravel:^0.4` instead.
+If you want to pin a specific version, use `composer require crontinel/laravel:^0.8` instead.
 
 ### Run new migrations
 

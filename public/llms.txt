@@ -14,7 +14,7 @@
 
 - [Billing & Plans](https://docs.crontinel.com/billing/): What the Free, Pro, and Team plans include: how many apps, how long history is kept, and how to upgrade off the free tier.
 - [FAQ](https://docs.crontinel.com/faq/): Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
-- [Installation](https://docs.crontinel.com/installation/): Planned feature. Not available in a released package yet.
+- [Installation](https://docs.crontinel.com/installation/): Start with the HTTP outcome receipt from any runtime. On Laravel, install crontinel/laravel for schedule attach, queue depth, and Horizon.
 - [Introduction](https://docs.crontinel.com/introduction/): Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
 - [Quick Start](https://docs.crontinel.com/quick-start/): Send one HTTP outcome receipt from any runtime, then optionally install the Laravel package for schedule, queue, and Horizon.
 - [Security](https://docs.crontinel.com/security/): Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
@@ -29,7 +29,7 @@
 - [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Use the Crontinel CLI to send a success or failure ping after a cron job, Docker container, or Kubernetes CronJob finishes.
 - [.NET](https://docs.crontinel.com/sdks/dotnet/): Install the Crontinel .NET SDK and report cron and background job runs from a .NET application to your Crontinel dashboard.
 - [Go](https://docs.crontinel.com/sdks/go/): Install crontinel/go and report cron and background job runs from a Go app to a hosted or self-hosted Crontinel dashboard.
-- [Laravel](https://docs.crontinel.com/sdks/laravel/): Install crontinel/laravel to monitor Horizon, queues, and scheduled commands from inside a Laravel app, with or without a hosted account.
+- [Laravel](https://docs.crontinel.com/sdks/laravel/): Deep Laravel package for schedule attach, queue depth, and Horizon. Outcome receipts still use the same HTTP body as every other runtime.
 - [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Prefer the HTTP check-in recipe for Node. The npm package is not a supported outcome-receipt path until it has a maintenance owner.
 - [PHP](https://docs.crontinel.com/sdks/php/): Install crontinel/php and report cron and background job runs from a PHP application that does not use the Laravel package.
 - [Python](https://docs.crontinel.com/sdks/python/): Prefer the HTTP check-in recipe for Python. The PyPI package is not a supported outcome-receipt path until it has a maintenance owner.
@@ -45,7 +45,7 @@
 
 ## Alerts
 
-- [Alert Channels](https://docs.crontinel.com/alerts/channels/): Planned feature. Not available in a released package yet.
+- [Alert Channels](https://docs.crontinel.com/alerts/channels/): Send Crontinel alerts to Slack, email, or a webhook when a cron run fails, a queue climbs, or a Horizon supervisor stops.
 - [CLI Health Check](https://docs.crontinel.com/alerts/cli/): Run php artisan crontinel:check in CI or from an external monitor so a failed cron or a stalled queue fails the pipeline.
 
 ## AI clients

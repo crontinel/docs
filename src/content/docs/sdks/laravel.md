@@ -1,7 +1,9 @@
 ---
 title: Laravel
-description: Install crontinel/laravel to monitor Horizon, queues, and scheduled commands from inside a Laravel app, with or without a hosted account.
+description: Deep Laravel package for schedule attach, queue depth, and Horizon. Outcome receipts still use the same HTTP body as every other runtime.
 ---
+
+Not on Laravel? Post the [HTTP check-in](/check-in/recipes/) from curl, Node, Python, Sidekiq, or GitHub Actions. You do not need this package.
 
 ## Requirements
 
@@ -13,46 +15,66 @@ description: Install crontinel/laravel to monitor Horizon, queues, and scheduled
 
 ```bash
 composer require crontinel/laravel
+php artisan crontinel:install
 ```
 
-Publish the config and migration:
+`crontinel:install` publishes the config and runs the package migration. Visit `/crontinel` for the local dashboard.
 
-```bash
-php artisan vendor:publish --provider="Crontinel\CrontinelServiceProvider"
-php artisan migrate
-```
-
-## Quick Start
-
-Set your API credentials in `.env`:
+For hosted monitoring, set:
 
 ```env
-CRONTINEL_API_KEY=your-api-key
-CRONTINEL_APP_ID=your-app-slug
+CRONTINEL_API_KEY=your-app-ingest-key
+CRONTINEL_API_URL=https://app.crontinel.com
 ```
 
-The package automatically reports cron runs, queue depth, and Horizon metrics to your Crontinel dashboard. No additional setup is needed for basic monitoring.
+That key is the app ingest key. It is not an MCP / assistant key.
 
-## Running the Agent
+## Business result
 
-The Laravel package includes a built-in agent daemon that polls `app.crontinel.com` for remote commands:
+Exit code 0 means the process finished. It does not mean the work happened. Record the count or artifact time inside the job. The package sends that on the terminal receipt and omits it when you record nothing. A monitoring error does not fail the job.
+
+```php
+use Crontinel\Outcome;
+
+Outcome::metric('processed_records', $count);
+Outcome::timestamp('latest_artifact', $backup->toIso8601String());
+```
+
+Zero is a real value. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` so the count survives the child process.
+
+## Stable job names
+
+Name the schedule when the command string can change, including a closure:
+
+```php
+$schedule->command('reports:send')->dailyAt('02:00')->environments('production')->name('nightly-import');
+$schedule->call(function () {
+    // the job
+})->daily()->name('nightly-import');
+```
+
+The receipt keeps the command and also sends `job_name`, `environment` when only one environment is set, and `expression`.
+
+List the schedule in Crontinel and set the `processed_records` minimum that means the run counted:
+
+```bash
+php artisan crontinel:schedule --minimum=1
+```
+
+## Horizon and queues
+
+Horizon supervisor freshness and queue depth are Laravel-only evidence. Outside Laravel, absence of a snapshot is normal, not an incident. See the [Horizon](/monitors/horizon/) and [queues](/monitors/queues/) pages.
+
+## Optional command agent
+
+The package can run an allowlisted cloud-triggered agent. Outcome monitoring does not require it.
 
 ```bash
 php artisan crontinel:agent
 ```
 
-For production, generate a systemd unit or supervisor config:
-
-```bash
-# Generate systemd unit
-php artisan crontinel:agent --systemd
-
-# Generate supervisor config
-php artisan crontinel:agent --supervisor
-```
-
-See the [Agent Guide](/agent/guide/) for full details.
+See the [Agent Guide](/agent/guide/).
 
 ## Configuration
 
-Publish and review `config/crontinel.php` for all available options including alert channels, polling intervals, and output capture settings.
+Review `config/crontinel.php` after install. Full options: [configuration reference](/reference/configuration).
