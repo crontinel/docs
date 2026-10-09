@@ -56,7 +56,7 @@ The Free plan on app.crontinel.com includes:
 - **1 team member**
 - **No alert channels**
 
-For alert channels, team collaboration, and longer history, see the [pricing page](https://crontinel.com/pricing) for Pro and Team plan details.
+For alert channels, team collaboration, and longer history, see the [pricing page](https://crontinel.com/pricing/) for Pro and Team plan details.
 
 ---
 
@@ -100,4 +100,4 @@ CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/alerts
 
 Only one channel is active at a time (set by `CRONTINEL_ALERT_CHANNEL`). For multiple channels simultaneously, use the hosted SaaS which supports per-app channel routing through the web UI.
 
-See [Alert Channels](/alerts/channels) for full configuration details including `config/crontinel.php` snippets.
+See [Alert Channels](/alerts/channels/) for full configuration details including `config/crontinel.php` snippets.

@@ -23,7 +23,7 @@ First-class check-in paths: curl, Node, Python, Sidekiq, and GitHub Actions — 
 
 ## Plans and pricing
 
-See the [pricing page](https://crontinel.com/pricing) on the marketing site for current tiers. Hosted monitoring and alerts do not depend on a language SDK.
+See the [pricing page](https://crontinel.com/pricing/) on the marketing site for current tiers. Hosted monitoring and alerts do not depend on a language SDK.
 
 ## Open source
 

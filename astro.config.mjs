@@ -13,6 +13,15 @@ export default defineConfig({
         baseUrl: 'https://github.com/crontinel/docs/edit/main/src/content/docs/',
       },
       customCss: ['./src/styles/custom.css'],
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+      },
+      head: [
+        { tag: 'meta', attrs: { property: 'og:image', content: 'https://docs.crontinel.com/og.jpg' } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://docs.crontinel.com/og.jpg' } },
+      ],
       sidebar: [
         { label: 'Getting Started', items: [
           { label: 'Introduction', link: '/introduction/' },

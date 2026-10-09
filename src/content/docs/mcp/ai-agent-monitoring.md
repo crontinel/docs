@@ -85,4 +85,4 @@ Future alert types under consideration: failure-rate spikes, loop detection, cos
 
 ## Status
 
-AI agent monitoring is unreleased. It is not available on any plan, including Pro. Follow [Pricing](/pricing) and the changelog for updates on when this ships.
+AI agent monitoring is unreleased. It is not available on any plan, including Pro. Follow [Pricing](https://crontinel.com/pricing/) and the changelog for updates on when this ships.
