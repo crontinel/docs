@@ -62,7 +62,7 @@ Marks the alert as acknowledged.
 ## `create_alert`
 
 :::note
-Requires a **Pro or Team plan**. Returns an error on free accounts.
+Not limited to a retired “Pro or Team” gate. Supported channel types follow the account’s plan features; some types stay paid-only. Ordinary evidence reads do not spend hosted AI starts.
 :::
 
 **Parameters:**

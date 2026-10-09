@@ -1,6 +1,6 @@
 ---
 title: MCP Integration Overview
-description: Connect an AI assistant to Crontinel with the Model Context Protocol and read cron, queue, and Horizon status from the editor.
+description: Connect Cursor, Claude Code, or Codex over MCP. OAuth first; ordinary evidence reads do not spend hosted AI starts.
 ---
 
 Crontinel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI coding assistants can query your monitoring data inline  –  without opening a browser.
@@ -23,5 +23,5 @@ In Claude Code:
 ## Requirements
 
 - Node.js 18+
-- A Crontinel account with an API key (**Pro or Team plan**; MCP access is not available on the free plan)
-- An AI assistant that supports MCP (Claude Code, Cursor, etc.)
+- A Crontinel account. Prefer OAuth from the app connection screen; a scoped API key is the fallback. MCP is on every tier, including Free. Hosted AI investigation starts are a separate allowance.
+- An AI assistant that supports MCP (Cursor, Claude Code, Codex, etc.)
