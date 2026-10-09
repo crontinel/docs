@@ -1,11 +1,17 @@
 ---
 title: Rust
-description: Install crontinel-rust and report cron and background job runs from a Rust app to a hosted or self-hosted Crontinel dashboard.
+description: Prefer the HTTP check-in recipes for Rust. The Rust package is not a supported outcome-receipt path until it has a maintenance owner.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
 ## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
 
 Get from zero to your first data in under 3 minutes.
 
