@@ -56,7 +56,7 @@ The Free plan on app.crontinel.com includes:
 - **1 team member**
 - **No alert channels**
 
-For alert channels, team collaboration, and longer history, see the [pricing page](https://crontinel.com/pricing/) for Pro and Team plan details.
+For paid tiers and allowances, see [Billing & Plans](/billing/) and the [pricing page](https://crontinel.com/pricing/) (Starter, Pro, and Max).
 
 ---
 
