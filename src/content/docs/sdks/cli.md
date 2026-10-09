@@ -1,11 +1,17 @@
 ---
 title: CLI / Docker
-description: Use the Crontinel CLI to send a success or failure ping after a cron job, Docker container, or Kubernetes CronJob finishes.
+description: Prefer the HTTP check-in recipes (curl) for CLI and CronJob wrappers. The CLI package is not claimed as outcome-receipt parity until verified.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
 ## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
 
 Get from zero to your first ping in under 2 minutes.
 

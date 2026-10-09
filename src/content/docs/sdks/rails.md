@@ -1,11 +1,17 @@
 ---
 title: Ruby on Rails
-description: Install crontinel-rails so ActiveJob and scheduled jobs are reported to Crontinel without a manual heartbeat in each job.
+description: Prefer the HTTP check-in recipes for Rails jobs. The Rails gem is not a supported outcome-receipt path until it has a maintenance owner.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
 ## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
 
 Get from zero to your first data in under 3 minutes.
 

@@ -26,16 +26,16 @@
 ## SDKs
 
 - [SDKs & Packages](https://docs.crontinel.com/sdks/): HTTP check-in is the path for every runtime. The Laravel package is the maintained deep integration. Other language repos are not a support claim until they send the outcome receipt and have an owner.
-- [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Use the Crontinel CLI to send a success or failure ping after a cron job, Docker container, or Kubernetes CronJob finishes.
-- [.NET](https://docs.crontinel.com/sdks/dotnet/): Install the Crontinel .NET SDK and report cron and background job runs from a .NET application to your Crontinel dashboard.
-- [Go](https://docs.crontinel.com/sdks/go/): Install crontinel/go and report cron and background job runs from a Go app to a hosted or self-hosted Crontinel dashboard.
+- [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Prefer the HTTP check-in recipes (curl) for CLI and CronJob wrappers. The CLI package is not claimed as outcome-receipt parity until verified.
+- [.NET](https://docs.crontinel.com/sdks/dotnet/): Prefer the HTTP check-in recipes for .NET. The .NET SDK is not a supported outcome-receipt path until it has a maintenance owner.
+- [Go](https://docs.crontinel.com/sdks/go/): Prefer the HTTP check-in recipes for Go. The Go package is not a supported outcome-receipt path until it has a maintenance owner.
 - [Laravel](https://docs.crontinel.com/sdks/laravel/): Deep Laravel package for schedule attach, queue depth, and Horizon. Outcome receipts still use the same HTTP body as every other runtime.
 - [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Prefer the HTTP check-in recipe for Node. The npm package is not a supported outcome-receipt path until it has a maintenance owner.
-- [PHP](https://docs.crontinel.com/sdks/php/): Install crontinel/php and report cron and background job runs from a PHP application that does not use the Laravel package.
+- [PHP](https://docs.crontinel.com/sdks/php/): Prefer the HTTP check-in recipes or the Laravel package. crontinel/php is not a supported outcome-receipt path until it has a maintenance owner.
 - [Python](https://docs.crontinel.com/sdks/python/): Prefer the HTTP check-in recipe for Python. The PyPI package is not a supported outcome-receipt path until it has a maintenance owner.
-- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Install crontinel-rails so ActiveJob and scheduled jobs are reported to Crontinel without a manual heartbeat in each job.
-- [Ruby](https://docs.crontinel.com/sdks/ruby/): Install the Crontinel Ruby gem and report cron and background job runs from a Ruby application to your Crontinel dashboard.
-- [Rust](https://docs.crontinel.com/sdks/rust/): Install crontinel-rust and report cron and background job runs from a Rust app to a hosted or self-hosted Crontinel dashboard.
+- [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Prefer the HTTP check-in recipes for Rails jobs. The Rails gem is not a supported outcome-receipt path until it has a maintenance owner.
+- [Ruby](https://docs.crontinel.com/sdks/ruby/): Prefer the HTTP check-in recipes for Ruby / Sidekiq. The Ruby gem is not a supported outcome-receipt path until it has a maintenance owner.
+- [Rust](https://docs.crontinel.com/sdks/rust/): Prefer the HTTP check-in recipes for Rust. The Rust package is not a supported outcome-receipt path until it has a maintenance owner.
 
 ## Monitors
 
