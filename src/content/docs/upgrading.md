@@ -34,6 +34,18 @@ This will prompt before overwriting your file. Decline the overwrite, then diff 
 
 2. Check the version-specific notes below and add the new keys manually. This is faster when only a few options changed.
 
+## v0.7.x to v0.8.0
+
+Released: 2026-10-09
+
+### New features
+
+- **`Outcome::metric()` / `Outcome::timestamp()`:** Record a business count or artifact time on the terminal receipt. Exit 0 still means the process finished. Zero is sent when you record it. A run that records nothing omits `outcomes`.
+- **Stable `job_name`:** `Schedule::name()` (plus expression and a single environment) travels with the receipt so a renamed command or `Schedule::call` closure can keep a rule.
+- **`php artisan crontinel:schedule`:** Lists the Laravel schedule in Crontinel and can set the `processed_records` minimum.
+
+Pin with `composer require crontinel/laravel:^0.8`. Dogfood evidence for the Packagist artifact lives in the workspace planning notes.
+
 ## v0.1.0 to v0.2.0
 
 Released: April 8, 2026
