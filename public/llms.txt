@@ -12,14 +12,14 @@
 
 ## Guides
 
-- [Billing & Plans](https://docs.crontinel.com/billing/): What the Free, Pro, and Team plans include: how many apps, how long history is kept, and how to upgrade off the free tier.
+- [Billing & Plans](https://docs.crontinel.com/billing/): Starter, Pro, and Max prices and monthly ingest / AI allowances. Email alerts are included; Slack and webhooks stay off the sold card until verified.
 - [FAQ](https://docs.crontinel.com/faq/): Whether you need an account, how Crontinel behaves with Octane, what data the package sends, and what happens if the hosted app is down.
 - [Installation](https://docs.crontinel.com/installation/): Start with the HTTP outcome receipt from any runtime. On Laravel, install crontinel/laravel for schedule attach, queue depth, and Horizon.
 - [Introduction](https://docs.crontinel.com/introduction/): Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
 - [Quick Start](https://docs.crontinel.com/quick-start/): Send one HTTP outcome receipt from any runtime, then optionally install the Laravel package for schedule, queue, and Horizon.
 - [Security](https://docs.crontinel.com/security/): Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
 - [Self-Hosting](https://docs.crontinel.com/self-hosting/): Run the Crontinel hosted stack on a server you control when you don't want the dashboard to live only on app.crontinel.com.
-- [Status Pages](https://docs.crontinel.com/status-page/): Give your users a public status page showing real-time uptime, incident history, and per-monitor health, included free with every Crontinel account.
+- [Status Pages](https://docs.crontinel.com/status-page/): Historical status-page docs. Customer status pages are out of the current outcome-monitor launch offer.
 - [Troubleshooting](https://docs.crontinel.com/troubleshooting/): Fixes for common Crontinel issues with the dashboard, cron monitor, queue monitor, Horizon, alerts, CLI, and SaaS connection
 - [Upgrading](https://docs.crontinel.com/upgrading/): How to move between Crontinel versions, including breaking changes and which config keys you need to update after the upgrade.
 
