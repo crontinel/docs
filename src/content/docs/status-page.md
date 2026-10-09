@@ -1,11 +1,13 @@
 ---
 title: Status Pages
-description: Give your users a public status page showing real-time uptime, incident history, and per-monitor health, included free with every Crontinel account.
+description: "Historical status-page docs. Customer status pages are out of the current outcome-monitor launch offer."
 ---
+
+> **Out of the current launch offer.** Crontinel’s launch story is outcome monitoring for background jobs (HTTP receipt + optional Laravel package). Customer status pages, uptime probes, and badges are not sold as part of that offer. This page describes UI that may still exist in the app; do not treat it as a launch promise.
 
 ## Why a status page
 
-When something breaks, your users want answers before you've even opened your laptop. A public status page gives them a single URL to check instead of flooding your inbox. Crontinel includes status pages with every account.
+When something breaks, users often want a single URL. That product surface is separate from outcome monitoring and is not part of the current launch claim.
 
 ## How it works
 
