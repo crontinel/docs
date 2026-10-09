@@ -1,9 +1,9 @@
 ---
 title: REST API Reference
-description: HTTP API for Pro and Team plans. Send a Bearer API key, then list monitors and read recent cron and queue run history from the app.
+description: Authenticated HTTP API using a Bearer app key. Prefer the ingest and MCP paths for the current outcome-monitor offer.
 ---
 
-The REST API is available on Pro and Team plans. All endpoints require an API key.
+Authenticated endpoints require a Bearer API key. Plan features still apply where the app enforces them; this is not the retired Free/Pro/Team table.
 
 ## SDK transport: REST vs. MCP
 

@@ -65,6 +65,6 @@ Post incidents manually from **Status Pages → Incidents → New Incident**. Ea
 
 Updates appear on the status page in reverse chronological order.
 
-## Custom domains (Team plans)
+## Custom domains
 
-Team plans support fully custom domains. Point a CNAME record to `app.crontinel.com` and the page will be served from your domain automatically.
+Custom domains may exist in the app UI. They are not a Starter/Pro/Max launch entitlement. Status pages remain out of the current offer.

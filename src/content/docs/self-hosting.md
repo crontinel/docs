@@ -9,7 +9,7 @@ Self-hosting requires you to manage upgrades, backups, and queue workers yoursel
 
 Self-hosted Crontinel works fully standalone. You do not need a crontinel.com account or API key. The dashboard, alerts, and all monitoring features run entirely on your server.
 
-> **Note:** The self-hosted app (`crontinel/app`) is available to Pro and Team plan subscribers. [See pricing](https://crontinel.com/pricing/) for plan details.
+> **Note:** The hosted product is [app.crontinel.com](https://app.crontinel.com). The app repo is private; self-hosting is an operator choice, not a Starter/Pro/Max entitlement claim. See [Billing & Plans](/billing/).
 
 ## Requirements
 

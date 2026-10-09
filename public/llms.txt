@@ -61,7 +61,7 @@
 
 ## Reference
 
-- [REST API Reference](https://docs.crontinel.com/reference/api/): HTTP API for Pro and Team plans. Send a Bearer API key, then list monitors and read recent cron and queue run history from the app.
+- [REST API Reference](https://docs.crontinel.com/reference/api/): Authenticated HTTP API using a Bearer app key. Prefer the ingest and MCP paths for the current outcome-monitor offer.
 - [Configuration Reference](https://docs.crontinel.com/reference/configuration/): Environment variables and config keys for the Laravel package, the connection to the hosted app, and a self-hosted install.
 
 ## Product
