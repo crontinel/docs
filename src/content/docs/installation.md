@@ -1,13 +1,17 @@
 ---
 title: Installation
-description: "Install crontinel/laravel with Composer, run php artisan crontinel:install, and open the local dashboard. A hosted account is optional."
+description: "Start with the HTTP outcome receipt from any runtime. On Laravel, install crontinel/laravel for schedule attach, queue depth, and Horizon."
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-## Quickstart
+## Not on Laravel?
 
-Get from zero to your first cron data in under 3 minutes.
+Post one HTTP receipt when the job finishes. First-class paths: curl, Node, Python, Sidekiq, and GitHub Actions. See the [HTTP check-in recipes](/check-in/recipes/) and [quick start](/quick-start/). You do not need Composer.
+
+## Laravel package
+
+The rest of this page is for Laravel apps that want the package to attach that receipt from the scheduler and add queue depth and Horizon freshness.
 
 ### 1. Prerequisites
 

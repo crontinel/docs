@@ -174,6 +174,13 @@ declare module 'astro:content' {
 } & { render(): Render[".md"] };
 };
 "docs": {
+"agent/guide.md": {
+	id: "agent/guide.md";
+  slug: "agent/guide";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "alerts/channels.md": {
 	id: "alerts/channels.md";
   slug: "alerts/channels";
@@ -184,6 +191,20 @@ declare module 'astro:content' {
 "alerts/cli.md": {
 	id: "alerts/cli.md";
   slug: "alerts/cli";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"billing.md": {
+	id: "billing.md";
+  slug: "billing";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"check-in/recipes.md": {
+	id: "check-in/recipes.md";
+  slug: "check-in/recipes";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -205,13 +226,6 @@ declare module 'astro:content' {
 "introduction.md": {
 	id: "introduction.md";
   slug: "introduction";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"marketing/seo-writing.md": {
-	id: "marketing/seo-writing.md";
-  slug: "marketing/seo-writing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -310,6 +324,13 @@ declare module 'astro:content' {
 "sdks/index.md": {
 	id: "sdks/index.md";
   slug: "sdks";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"sdks/laravel.md": {
+	id: "sdks/laravel.md";
+  slug: "sdks/laravel";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
