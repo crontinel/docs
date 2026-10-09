@@ -1,13 +1,17 @@
 ---
 title: Python
-description: Install the Crontinel Python package and report cron and background job runs from a Python application to your dashboard.
+description: Prefer the HTTP check-in recipe for Python. The PyPI package is not a supported outcome-receipt path until it has a maintenance owner.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
+<Aside type="caution" title="Not the supported outcome path">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/) (`outcome_checkin.py` or the same JSON body). Do not treat `pip install crontinel` as parity with the Laravel package until this repo sends the outcome receipt and has a maintenance owner.
+</Aside>
+
 ## Quickstart
 
-Get from zero to your first data in under 3 minutes.
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
 
 ### 1. Prerequisites
 
