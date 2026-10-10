@@ -165,7 +165,7 @@ def reports_generate(self):
         exit_code = 1
         raise
     finally:
-        post_receipt(f"celery-{self.request.id}", exit_code, started, records)
+        post_receipt(f"celery-{self.request.id}-{started}", exit_code, started, records)
 ```
 
 Crontinel does not discover Celery Beat or APScheduler entries. Name the jobs you expect with [a registered schedule](/check-in/schedule/).
@@ -226,7 +226,7 @@ begin
   req["Authorization"] = "Bearer #{ENV.fetch("CRONTINEL_INGEST_KEY")}"
   req["Content-Type"] = "application/json"
   req.body = {
-    request_key: "sidekiq-#{jid}",
+    request_key: "sidekiq-#{jid}-#{started}",
     command: "reports:generate",
     status: "completed",
     exit_code: 0,
