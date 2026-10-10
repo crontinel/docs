@@ -3,7 +3,9 @@ title: Configuration Reference
 description: Environment variables and config keys for the Laravel package, the connection to the hosted app, and a self-hosted install.
 ---
 
-This page documents every configuration option available in Crontinel. Options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some — particularly database, Redis, and mail — are standard Laravel `.env` vars.
+**Not on Laravel?** None of this applies. A curl, Node, Python, Sidekiq, or GitHub Actions job needs only the app **ingest key** (for example `CRONTINEL_INGEST_KEY` in the job's environment) and `https://app.crontinel.com`. Alert channels are added in the dashboard. See [check-in recipes](/check-in/recipes/).
+
+This page documents every configuration option for the Laravel package. Options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some — particularly database, Redis, and mail — are standard Laravel `.env` vars.
 
 ## Environment variable quick reference
 
