@@ -217,6 +217,7 @@ Post the same JSON with `Net::HTTP`. There is no supported gem for this path. Re
 ```ruby
 require "json"
 require "net/http"
+require "time"
 require "uri"
 
 begin
