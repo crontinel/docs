@@ -3,6 +3,8 @@ title: Alert Channels
 description: Send Crontinel alerts to Slack, email, or a webhook when a cron run fails, a queue climbs, or a Horizon supervisor stops.
 ---
 
+Channels work the same for every runtime. Add them in the Crontinel dashboard: a curl, Node, Python, Sidekiq, or GitHub Actions job gets the same alert on a failed outcome, a run that never starts, or a run that never finishes. The environment variables further down configure the Laravel package's local alerting only.
+
 ## Available channels
 
 | Channel | Config key | Notes |

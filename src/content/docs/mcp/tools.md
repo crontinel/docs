@@ -5,10 +5,10 @@ description: MCP tools for listing scheduled jobs, reading a cron run, checking 
 
 | Tool | Description |
 |---|---|
-| `list_scheduled_jobs` | List all monitored cron commands with last run status |
+| `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
 | `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
-| `get_queue_status` | Depth, failed count, and wait time for all queues or a specific queue |
-| `get_horizon_status` | Horizon supervisor health snapshot (status, paused, failed/min) |
+| `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
+| `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |
 | `acknowledge_alert` | Dismiss an active alert by its key |
 | `create_alert` | Create a new alert channel (Slack, email, or webhook) for an app |
@@ -18,7 +18,7 @@ description: MCP tools for listing scheduled jobs, reading a cron run, checking 
 **Parameters:**
 - `app_slug` (required)  –  app slug from your Crontinel dashboard
 
-Returns all commands tracked by Crontinel for that app with their most recent status.
+Returns all jobs tracked by Crontinel for that app with their most recent status. A job appears once it has sent a receipt or been [registered](/check-in/schedule/), whatever runtime runs it.
 
 ## `get_cron_status`
 
@@ -34,14 +34,14 @@ Returns: command name, last status, exit code, duration, started_at, output.
 - `app_slug` (required)  –  app slug
 - `queue` (optional)  –  queue name. Returns all queues if omitted.
 
-Returns: queue name, depth, failed count, oldest job age in seconds.
+Returns: queue name, depth, failed count, oldest job age in seconds. Queue data comes from the Laravel package. An app that never reports it has no queue data, which is not the same as an empty queue.
 
 ## `get_horizon_status`
 
 **Parameters:**
 - `app_slug` (required)  –  app slug
 
-Returns: overall status, paused indicator, supervisors list, failed jobs per minute.
+Returns: overall status, paused indicator, supervisors list, failed jobs per minute. Horizon is Laravel only. Missing data is not a stopped supervisor and not a healthy one.
 
 ## `list_recent_alerts`
 
