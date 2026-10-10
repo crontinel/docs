@@ -58,6 +58,118 @@ await fetch("https://app.crontinel.com/api/v1/ingest/cron", {
 });
 ```
 
+## Node scheduler (node-cron, BullMQ)
+
+Wrap the scheduled function. This is an HTTP example, not an npm package.
+
+```js
+import cron from "node-cron";
+
+async function postReceipt({ requestKey, command, exitCode, startedAt, records }) {
+  const body = {
+    request_key: requestKey,
+    command,
+    status: exitCode === 0 ? "completed" : "failed",
+    exit_code: exitCode,
+    started_at: startedAt,
+    finished_at: new Date().toISOString(),
+    outcomes: { metrics: { processed_records: records } },
+  };
+  try {
+    await fetch("https://app.crontinel.com/api/v1/ingest/cron", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.CRONTINEL_INGEST_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // Monitoring must not fail the business job.
+  }
+}
+
+cron.schedule("0 3 * * *", async () => {
+  const startedAt = new Date().toISOString();
+  let exitCode = 0;
+  let records = 0;
+  try {
+    records = await generateReports();
+  } catch (error) {
+    exitCode = 1;
+    throw error;
+  } finally {
+    await postReceipt({ requestKey: `node-reports-${startedAt}`, command: "reports:generate", exitCode, startedAt, records });
+  }
+});
+```
+
+For BullMQ, call `postReceipt` from the worker's `completed` and `failed` handlers and use the job id as `request_key`.
+
+## Python schedulers (APScheduler, Celery)
+
+Both wrap the task the same way. `build_receipt` comes from `outcome_checkin.py` (see the Python section above).
+
+```python
+import json, os, urllib.request
+from datetime import datetime, timezone
+from outcome_checkin import build_receipt
+
+def now():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def post_receipt(request_key, exit_code, started, records):
+    body = build_receipt(
+        command="reports:generate",
+        request_key=request_key,
+        exit_code=exit_code,
+        started_at=started,
+        finished_at=now(),
+        processed_records=records,
+    )
+    req = urllib.request.Request(
+        "https://app.crontinel.com/api/v1/ingest/cron",
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": "Bearer " + os.environ["CRONTINEL_INGEST_KEY"],
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass  # Monitoring must not fail the business job.
+
+# APScheduler
+@sched.scheduled_job("cron", hour=3)
+def reports_generate():
+    started, exit_code, records = now(), 0, 0
+    try:
+        records = run_reports()
+    except Exception:
+        exit_code = 1
+        raise
+    finally:
+        post_receipt(f"apscheduler-{started}", exit_code, started, records)
+
+# Celery (schedule with Beat as you already do)
+@shared_task(bind=True)
+def reports_generate(self):
+    started, exit_code, records = now(), 0, 0
+    try:
+        records = run_reports()
+        return records
+    except Exception:
+        exit_code = 1
+        raise
+    finally:
+        post_receipt(f"celery-{self.request.id}", exit_code, started, records)
+```
+
+Crontinel does not discover Celery Beat or APScheduler entries. Name the jobs you expect with [a registered schedule](/check-in/schedule/).
+
 ## System cron
 
 Wrap the job, capture exit code and times, post the receipt, and keep monitoring from failing the job (`|| true`).
@@ -94,7 +206,7 @@ Store `CRONTINEL_INGEST_KEY` as a repository secret. After the job step, post th
     curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
       -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
       -H "Content-Type: application/json" \
-      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"outcomes\":{\"metrics\":{\"processed_records\":0}}}" \
+      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"started_at\":\"$(date -u +%FT%TZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":0}}}" \
       || true
 ```
 

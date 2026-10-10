@@ -38,7 +38,17 @@ Don't ship that to production. Instead, add whatever gate or policy middleware y
 'middleware' => ['web', 'auth', 'can:view-monitoring'],
 ```
 
-## Cron runs not showing up
+## Runs from curl, Node, Python, Sidekiq, or GitHub Actions not showing up
+
+Check these in order. The Laravel steps further down do not apply.
+
+1. **Status code.** Remove `|| true` once and look at the response. `422` names the missing field. `started_at`, `command`, and `status` are required. `401` is a wrong or revoked key. Use the app **ingest key**, not an MCP key.
+2. **Timestamps.** `started_at` and `finished_at` are ISO 8601 and must not be more than five minutes in the future.
+3. **Same key, different run.** `409` means the `request_key` was already used for another identity or a finished run. Use a new key for each execution.
+4. **Coverage says unknown.** Register the job with [a schedule](/check-in/schedule/). Crontinel does not read crontab or your scheduler.
+5. **No missed-run alert.** The job needs a cron `expression` in its registration, and Crontinel checks only occurrences after you registered it. Its receipts must use the same `command`.
+
+## Cron runs not showing up (Laravel)
 
 This is the most common issue people hit after installation. There are three things to check, in order.
 
