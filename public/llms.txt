@@ -9,6 +9,8 @@
 ## check-in
 
 - [Check-in from any runtime](https://docs.crontinel.com/check-in/recipes/): Five first-class runtimes post one HTTP outcome receipt — curl, Node, Python, Sidekiq, and GitHub Actions. Laravel is the deep package path.
+- [Register expected jobs over HTTP](https://docs.crontinel.com/check-in/schedule/): Name the jobs you run and their cron schedule with one POST. Crontinel then alerts when a run never starts or never finishes, from any runtime.
+- [Start and finish receipts](https://docs.crontinel.com/check-in/start-finish/): Send a running receipt when a job starts and a completed or failed receipt when it ends. Same request_key, any runtime.
 
 ## Guides
 

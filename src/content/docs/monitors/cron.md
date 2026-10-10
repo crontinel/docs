@@ -3,7 +3,13 @@ title: Cron Monitor
 description: "Record every scheduled command's exit code and duration, including runs that fail while the scheduler process itself stays up."
 ---
 
-## How it works
+## From any runtime
+
+You do not need Laravel. Post a receipt when the job ends, and [register the job](/check-in/schedule/) with its cron expression so Crontinel can alert when a run never starts. Add a `running` receipt at the start to catch a run that never finishes. See [check-in recipes](/check-in/recipes/) and [start and finish receipts](/check-in/start-finish/).
+
+The rest of this page describes the Laravel package.
+
+## How it works (Laravel)
 
 Crontinel hooks into three Laravel scheduler events:
 

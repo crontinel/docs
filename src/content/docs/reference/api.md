@@ -34,7 +34,39 @@ X-Api-Key: your-api-key
 https://app.crontinel.com/api/v1
 ```
 
-## Endpoints
+## Ingest endpoints
+
+Ingest endpoints take the app **ingest key** as a Bearer token. They work from any runtime over plain HTTPS. No SDK or framework header is checked.
+
+### POST /ingest/cron
+
+Record one job run. See [start and finish receipts](/check-in/start-finish/).
+
+| Field | Required | Notes |
+|---|---|---|
+| `command` | yes | Any string, up to 255 characters. Not limited to artisan commands. |
+| `status` | yes | `running`, `completed`, `failed`, or `late`. |
+| `started_at` | yes | ISO 8601. Must not be more than five minutes in the future. |
+| `finished_at` | no | ISO 8601, not before `started_at`. |
+| `exit_code`, `duration_ms`, `output` | no | |
+| `request_key` | no | Reuse across the `running` and final receipts of one run. |
+| `job_name`, `environment`, `expression` | no | Stable identity for rules. |
+| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. |
+| `outcomes.timestamps` | no | Up to 20 ISO 8601 timestamps. |
+
+### POST /ingest/schedule
+
+Register the jobs you expect. See [register expected jobs](/check-in/schedule/).
+
+### POST /ingest/event
+
+Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `critical`, `resolved`), optional `payload` and `occurred_at`.
+
+### POST /ingest/ping
+
+Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
+
+## Read endpoints
 
 ### GET /apps
 

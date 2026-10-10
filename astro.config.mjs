@@ -27,6 +27,8 @@ export default defineConfig({
           { label: 'Introduction', link: '/introduction/' },
           { label: 'Quick Start', link: '/quick-start/' },
           { label: 'Check-in from any runtime', link: '/check-in/recipes/' },
+          { label: 'Register expected jobs', link: '/check-in/schedule/' },
+          { label: 'Start and finish receipts', link: '/check-in/start-finish/' },
           { label: 'Installation (Laravel)', link: '/installation/' },
         ]},
         { label: 'SDKs & Packages', items: [
