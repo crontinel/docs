@@ -43,3 +43,12 @@ The lookup order for thresholds is:
 1. Per-queue override (`queue_thresholds.{queue_name}`)
 2. Per-app default (`queue_thresholds.default`)
 3. Global config value (`depth_alert_threshold`, default 1000)
+
+## Related
+
+- [Horizon monitor](/monitors/horizon/): supervisor and paused-state checks for Horizon-managed queues
+- [Cron monitor](/monitors/cron/): scheduled commands that dispatch the jobs
+- [Alert channels](/alerts/channels/): where a depth or wait-time alert goes
+- [Configuration reference](/reference/configuration/): every `queues` key and its default
+- [Billing and plans](/billing/): hosted ingest allowances
+- [Troubleshooting](/troubleshooting/): queue monitor showing no data

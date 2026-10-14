@@ -51,3 +51,16 @@ node --version
 ```
 
 If the API key is wrong you'll see `401 Unauthorized` in the MCP server output.
+
+## What Claude Code can read
+
+Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): scheduled jobs and their last runs, queue depth, Horizon state, and recent alerts. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
+
+For new setups, prefer OAuth from the app's connection screen over a pasted key; the API key above is the fallback. The [MCP overview](/mcp/overview/) explains how the stdio server proxies to `app.crontinel.com/api/mcp`.
+
+## Related
+
+- [MCP overview](/mcp/overview/)
+- [Agent guide](/agent/guide/) if you want cloud-triggered commands on your own server
+- [Security](/security/) for how keys and scopes should be handled
+- [Troubleshooting](/troubleshooting/) for connection and 401 errors

@@ -41,3 +41,12 @@ If you don't use Horizon:
 ```
 
 Queue and cron monitoring continue to work independently.
+
+## Related
+
+- [Queue monitor](/monitors/queues/): depth and wait time for the queues Horizon feeds
+- [Cron monitor](/monitors/cron/): the scheduler side of the same app
+- [Alert channels](/alerts/channels/): where a supervisor-down alert goes
+- [Configuration reference](/reference/configuration/): every `horizon` key and its default
+- [Troubleshooting](/troubleshooting/): Horizon monitor not working
+- [CLI health check](/alerts/cli/): fail a deploy when Horizon is paused or a supervisor is down

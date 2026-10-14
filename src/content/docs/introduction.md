@@ -28,3 +28,14 @@ See the [pricing page](https://crontinel.com/pricing/) on the marketing site for
 ## Open source
 
 The Laravel package is MIT licensed. Self-hosted local dashboards are not a substitute for hosted detection when the same host dies.
+
+## Where to go next
+
+- [Quick start](/quick-start/): send your first receipt in a few minutes
+- [Check-in recipes](/check-in/recipes/): curl, Node, Python, Sidekiq, and GitHub Actions
+- [Register expected jobs](/check-in/schedule/): get an alert when a run never starts
+- [Start and finish receipts](/check-in/start-finish/): get an alert when a run never finishes
+- [Laravel installation](/installation/): schedule, queue, and Horizon evidence
+- [MCP overview](/mcp/overview/): read the same evidence from Claude Code, Cursor, or Codex
+- [Billing and plans](/billing/) and [security](/security/)
+- [FAQ](/faq/) and [troubleshooting](/troubleshooting/)

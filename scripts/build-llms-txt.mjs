@@ -86,6 +86,11 @@ export function docsLlms() {
       heading: 'Product',
       items: [
         {
+          title: 'Full docs text',
+          url: `${site}/llms-full.txt`,
+          description: 'Every published docs page in one plain-text file',
+        },
+        {
           title: 'Marketing site guide for assistants',
           url: 'https://crontinel.com/llms.txt',
           description: 'Public pages on crontinel.com',
@@ -106,6 +111,33 @@ export function docsLlms() {
   });
 }
 
+// One plain-text file with every published docs page, for assistants that read a single URL.
+export function docsLlmsFull() {
+  const parts = [
+    '# Crontinel docs: full text',
+    '',
+    `Source: ${site}/. Short index: ${site}/llms.txt. Marketing site: https://crontinel.com/llms-full.txt`,
+    '',
+  ];
+
+  for (const file of walk(contentRoot.pathname).sort()) {
+    const source = readFileSync(file, 'utf8');
+    const data = parseFrontmatter(source);
+    if (data.planned === true || data.planned === 'true' || /^>\s*.*coming soon.*not yet available/im.test(source)) continue;
+
+    const body = source
+      .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
+      .replace(/^import .*$/gm, '')
+      .replace(/<\/?(Card|CardGrid)[^>]*>/g, '')
+      .trim();
+
+    parts.push('---', '', `# ${data.title}`, `URL: ${docsPageUrl(file)}`, '', body, '');
+  }
+
+  return `${parts.join('\n').trim()}\n`;
+}
+
 if (process.argv[1] && process.argv[1].endsWith('build-llms-txt.mjs')) {
   writeFileSync(new URL('../public/llms.txt', import.meta.url), docsLlms());
+  writeFileSync(new URL('../public/llms-full.txt', import.meta.url), docsLlmsFull());
 }

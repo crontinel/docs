@@ -1,0 +1,19 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro';
+
+const { entry } = Astro.props;
+const url = new URL(Astro.url.pathname, Astro.site).href;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: entry.data.title,
+  description: entry.data.description,
+  url,
+  inLanguage: 'en',
+  isPartOf: { '@type': 'WebSite', name: 'Crontinel Docs', url: 'https://docs.crontinel.com/' },
+  publisher: { '@type': 'Organization', name: 'Crontinel', url: 'https://crontinel.com/' },
+};
+---
+
+<Default {...Astro.props}><slot /></Default>
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

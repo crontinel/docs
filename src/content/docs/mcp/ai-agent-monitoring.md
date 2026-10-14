@@ -1,9 +1,12 @@
 ---
 title: AI Agent Monitoring
 description: Planned, and not in a released package yet. This page previews tracking agent runs, tool calls, and cost after the feature ships.
+head:
+  - tag: meta
+    attrs:
+      name: robots
+      content: noindex
 ---
-
-# AI Agent Monitoring
 
 > 🚧 **Coming soon — not yet available.** This page describes a planned feature. The `CrontinelMCP` class, the `agentRunStart` / `toolCall` / `agentRunEnd` methods, cost tracking, and loop detection described below do not exist in any released Crontinel package yet. Nothing on this page is callable today — treat the snippets as a preview of the intended design, not working code.
 

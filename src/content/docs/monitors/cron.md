@@ -43,3 +43,12 @@ A run is marked `late` if the command didn't execute within `late_alert_after_se
     'retain_days' => 30,
 ],
 ```
+
+## Related
+
+- [Register expected jobs](/check-in/schedule/): how a run that never starts gets detected, from any runtime
+- [Start and finish receipts](/check-in/start-finish/): catch a run that starts and never ends
+- [Check-in recipes](/check-in/recipes/): curl, Node, Python, Sidekiq, and GitHub Actions
+- [Queue monitor](/monitors/queues/) and [Horizon monitor](/monitors/horizon/)
+- [Configuration reference](/reference/configuration/): the `cron` keys above and their defaults
+- [Troubleshooting](/troubleshooting/): cron runs not showing up
