@@ -1,0 +1,4624 @@
+# Crontinel docs: full text
+
+Source: https://docs.crontinel.com/. Short index: https://docs.crontinel.com/llms.txt. Marketing site: https://crontinel.com/llms-full.txt
+
+---
+
+# Agent Guide
+URL: https://docs.crontinel.com/agent/guide/
+
+The Crontinel agent is a lightweight daemon that runs on your server, connects to `app.crontinel.com`, and polls for remote commands. It enables cloud-triggered cron execution — schedule a command from the dashboard and the agent runs it on your server.
+
+:::caution[Command allowlist required]
+By default the agent refuses to run **any** command. You must explicitly configure an allowlist of permitted commands before the agent will execute anything triggered from the dashboard — see [Command Allowlisting](#command-allowlisting) below. This is deliberate: the dashboard can schedule an arbitrary command, so the agent won't run it unless you've told it that command is expected.
+:::
+
+## How It Works
+
+1. The agent registers with Crontinel Cloud using your API key and app ID
+2. It connects to receive commands — see [Connection Method](#connection-method) below, since this differs by runtime
+3. When a trigger is scheduled from the dashboard, the agent checks the command against your configured allowlist
+4. If allowed, it executes the command and reports the result (success/failure, output, duration) back to the cloud; if not allowed, it reports a rejection and does **not** run it
+5. A heartbeat is sent every 60 seconds to confirm the agent is alive
+
+### Connection Method
+
+The Laravel agent and the Node.js/Python agents use different transports to receive commands:
+
+- **Laravel** opens a persistent SSE (Server-Sent Events) connection to `/v1/agent/stream` and receives commands as they're dispatched, with no polling interval. Heartbeats are sent separately via `/v1/agent/heartbeat` every 60 seconds.
+- **Node.js and Python** poll `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds, and send heartbeats via `/api/v1/agents/heartbeat` every 60 seconds.
+
+Both approaches deliver the same behavior from your perspective — commands run within seconds of being scheduled — the underlying connection just differs by runtime.
+
+## Laravel Agent
+
+The Laravel package (`crontinel/laravel`) includes a built-in agent command.
+
+### Prerequisites
+
+- `crontinel/laravel` installed via Composer
+- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` set in `.env`
+
+### Start the Agent
+
+```bash
+php artisan crontinel:agent
+```
+
+### Production Setup
+
+Generate a systemd unit file:
+
+```bash
+php artisan crontinel:agent --systemd
+```
+
+Or a supervisor config:
+
+```bash
+php artisan crontinel:agent --supervisor
+```
+
+## Node.js Agent
+
+The Node package (`@crontinel/node`) includes a CLI agent.
+
+### Prerequisites
+
+- `@crontinel/node` installed via npm
+- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
+
+### Start the Agent
+
+```bash
+npx crontinel agent
+```
+
+Or with environment variables inline:
+
+```bash
+CRONTINEL_API_KEY=your-key CRONTINEL_APP_ID=your-app npx crontinel agent
+```
+
+## Python Agent
+
+The Python package includes an agent CLI (requires PyPI installation when available).
+
+### Prerequisites
+
+- `crontinel` package installed
+- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
+
+### Start the Agent
+
+```bash
+crontinel agent
+```
+
+## Command Allowlisting
+
+The agent will only execute commands that match an entry in your allowlist. An unconfigured or empty allowlist means **no commands are permitted** — this is the default, fail-closed behavior.
+
+Patterns support exact string matches and `*` as a wildcard (e.g. `php artisan queue:*` allows any `queue:` subcommand).
+
+**Laravel** — publish the config (`php artisan vendor:publish --tag=crontinel-config`) and set `allowed_commands` in the `agent` block of `config/crontinel.php`:
+
+```php
+'agent' => [
+    // ...
+    'allowed_commands' => [
+        'php artisan queue:restart',
+        'php artisan horizon:terminate',
+        'php artisan queue:*',
+    ],
+],
+```
+
+**Node.js and Python** — set the `CRONTINEL_AGENT_ALLOWED_COMMANDS` environment variable to a comma-separated list of patterns:
+
+```bash
+CRONTINEL_AGENT_ALLOWED_COMMANDS="php artisan queue:restart,php artisan horizon:terminate,queue:*" npx crontinel agent
+```
+
+The Node.js and Python agents also accept an equivalent `allowedCommands` / `allowed_commands` option when constructing the agent programmatically.
+
+A rejected command is reported back to the dashboard as failed with the reason "Command rejected: not in allowlist," so you can see rejections in your trigger history and adjust the allowlist as needed.
+
+## Systemd Service (All Runtimes)
+
+Create `/etc/systemd/system/crontinel-agent.service`:
+
+```ini
+[Unit]
+Description=Crontinel Agent Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/path/to/your/app
+Environment=CRONTINEL_API_KEY=your-api-key
+Environment=CRONTINEL_APP_ID=your-app-slug
+ExecStart=/usr/bin/php artisan crontinel:agent
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable crontinel-agent
+sudo systemctl start crontinel-agent
+```
+
+## Supervisor Config (All Runtimes)
+
+Create `/etc/supervisor/conf.d/crontinel-agent.conf`:
+
+```ini
+[program:crontinel-agent]
+command=php artisan crontinel:agent
+directory=/path/to/your/app
+user=www-data
+autostart=true
+autorestart=true
+startretries=3
+stderr_logfile=/var/log/crontinel-agent.err.log
+stdout_logfile=/var/log/crontinel-agent.out.log
+```
+
+Reload and start:
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start crontinel-agent
+```
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `CRONTINEL_API_KEY` | Yes | — | Your API key from app.crontinel.com/settings |
+| `CRONTINEL_APP_ID` | Yes | — | Your app slug from the app settings page |
+| `CRONTINEL_API_URL` | No | `https://app.crontinel.com` | API base URL (change only for self-hosted) |
+| `CRONTINEL_AGENT_ALLOWED_COMMANDS` | Node/Python only | — (fail-closed) | Comma-separated allowlist patterns. Laravel uses `allowed_commands` in `config/crontinel.php` instead — see [Command Allowlisting](#command-allowlisting) |
+
+## Testing
+
+1. Add the command you want to test to your [allowlist](#command-allowlisting) — untested commands are rejected by default
+2. Go to your app detail page
+3. Click "Schedule Trigger"
+4. Enter the same command (e.g., `php artisan inspire`)
+5. Set it to run "Now"
+6. Watch the agent execute it and report back
+
+## Troubleshooting
+
+**Agent won't start**
+- Verify `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` are set
+- Check network connectivity to `app.crontinel.com`
+
+**Agent starts but no commands received**
+- Verify the app ID matches your app in the dashboard
+- Check that triggers are being dispatched (Dashboard → Triggers)
+
+**Agent crashes repeatedly**
+- Enable logging: set `CRONTINEL_AGENT_LOG=/var/log/crontinel-agent.log`
+- Ensure the agent user has permission to execute the scheduled commands
+
+**Commands are rejected / never execute**
+- Check the trigger's result on the dashboard for "Command rejected: not in allowlist"
+- Verify the command matches an entry in your [allowlist](#command-allowlisting) exactly, or via a `*` pattern
+- Remember the default allowlist is empty — nothing runs until you configure one
+
+---
+
+# Alert Channels
+URL: https://docs.crontinel.com/alerts/channels/
+
+Channels work the same for every runtime. Add them in the Crontinel dashboard: a curl, Node, Python, Sidekiq, or GitHub Actions job gets the same alert on a failed outcome, a run that never starts, or a run that never finishes. The environment variables further down configure the Laravel package's local alerting only.
+
+## Available channels
+
+| Channel | Config key | Notes |
+|---|---|---|
+| Slack | `webhook_url` | Incoming webhook URL |
+| Email | `to` | Recipient email address |
+| Webhook | `url` | Any HTTPS endpoint |
+| PagerDuty | — | Coming soon |
+| SMS | — | Coming soon |
+| OpsGenie | — | Future roadmap |
+| VictorOps | — | Future roadmap |
+
+## Configuration
+
+### Slack
+
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL  # Required environment variable
+```
+
+Or directly in `config/crontinel.php` under the `alerts` key.
+
+Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack app, then add the channel in the Crontinel dashboard with config key `webhook_url`.
+
+### Email
+
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
+CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
+```
+
+Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
+
+### PagerDuty (coming soon)
+
+> **Note:** PagerDuty integration is planned and will be available in a future release.
+
+### Webhook
+
+**OSS: configure via environment variables**
+
+In your `.env`:
+```env
+CRONTINEL_ALERT_CHANNEL=webhook  # Required environment variable
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel  # Required environment variable
+```
+
+Add a webhook channel with config key `url`. Crontinel sends a POST with:
+
+```json
+{
+  "app": "my-app",
+  "alert_key": "queue:default:depth",
+  "message": "Queue 'default' depth is 1500 (threshold: 1000)",
+  "state": "firing",
+  "fired_at": "2026-04-07T08:00:00Z"
+}
+```
+
+## Alert deduplication
+
+The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start  –  not one every poll cycle.
+
+## Auto-resolution
+
+When a condition clears, Crontinel sends a "resolved" notification. You get clear start and end signals for every incident.
+
+## SaaS alert management
+
+In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.
+
+## Future alert channels
+
+The following channels are on the roadmap but not yet available:
+
+- **PagerDuty** — IT alert routing and incident management. Planned for a future release.
+- **SMS** — Direct text message alerts. Sign up for early access at [crontinel.com](https://crontinel.com/) when this launches.
+- **OpsGenie** — IT alert routing and on-call management. Planned for a future release.
+- **VictorOps** — Incident management and PagerDuty alternative. Planned for a future release.
+
+---
+
+# CLI Health Check
+URL: https://docs.crontinel.com/alerts/cli/
+
+```bash
+php artisan crontinel:check
+```
+
+Prints a table of all monitor statuses and exits:
+- `0`  –  all monitors healthy
+- `1`  –  one or more alerts active
+
+## JSON output
+
+```bash
+php artisan crontinel:check --format=json
+```
+
+Returns:
+
+```json
+{
+  "status": "healthy",
+  "horizon": {"status": "running", "paused": false},
+  "queues": [{"name": "default", "depth": 5, "status": "ok"}],
+  "crons": [{"command": "inspire", "last_exit_code": 0, "status": "ok"}],
+  "alerts": []
+}
+```
+
+## CI/CD usage
+
+```yaml
+# GitHub Actions
+- name: Check job health
+  run: php artisan crontinel:check --format=json
+```
+
+```bash
+# Deploy script
+php artisan crontinel:check || echo "Warning: monitors unhealthy after deploy"
+```
+
+## No-alert mode
+
+Run the check without firing alerts (useful for health endpoints):
+
+```bash
+php artisan crontinel:check --no-alerts
+```
+
+## What the check covers
+
+The command reads the same three monitors as the dashboard: Horizon (running or paused), each watched queue (depth against its threshold), and the latest run of each scheduled command (exit code). The `alerts` array in the JSON output lists whatever is currently firing, so a pipeline can print it when the exit code is `1`.
+
+`crontinel:check` ships with the [Laravel package](/sdks/laravel/) and needs `php artisan`. If your job runs in another runtime, use an [HTTP check-in](/check-in/recipes/) and [register the schedule](/check-in/schedule/) instead; the hosted app does the alerting.
+
+## Related
+
+- [Alert channels](/alerts/channels/) for where fired alerts are sent
+- [Cron monitor](/monitors/cron/), [queue monitor](/monitors/queues/), and [Horizon monitor](/monitors/horizon/) for the thresholds behind each status
+- [Configuration reference](/reference/configuration/) for every threshold key
+- [Troubleshooting](/troubleshooting/) if the command exits `1` and you do not know why
+
+---
+
+# Billing & Plans
+URL: https://docs.crontinel.com/billing/
+
+Paid plans are **Starter**, **Pro**, and **Max**. Free remains the $0 plan. The old Free/Pro/Team capacity table is retired. The Laravel package is MIT and free to use locally without an account.
+
+Owner-selected prices (matching Stripe test-mode prices; not a production checkout acceptance claim):
+
+| Plan | Monthly | Annual | Internal key |
+|---|---:|---:|---|
+| Free | $0 | — | `free` |
+| Starter | $9.99 | $99.90 | `starter` |
+| Pro | $19.99 | $199.90 | `pro` |
+| Max | $49.99 | $499.90 | `team` |
+
+Annual totals are about two months free against monthly billing. Prefer monthly until annual billing is verified. There is no forever-price promise and no contractual response SLA.
+
+## Monthly allowances
+
+Approved organization allowances (enforcement and hosted cost acceptance are separate gates):
+
+| Plan | Accepted ingest requests | Submitted JSON body bytes | Hosted AI starts |
+|---|---:|---:|---:|
+| Free | 20,000 | 64 MiB | 5 |
+| Starter | 100,000 | 256 MiB | 20 |
+| Pro | 500,000 | 1 GiB | 50 |
+| Max | 2,000,000 | 4 GiB | 100 |
+
+Allowances reset at 00:00 UTC on the first day of the month. Bytes are submitted request body size, not retained storage. There is no overage charge. A rejected ingest returns a typed 429. Ordinary MCP reads from your own assistant do not spend hosted AI starts.
+
+## Included on every tier
+
+- OAuth-default MCP and generated scoped API keys
+- Outcome rules (numeric minimum and artifact freshness). Missing evidence is not healthy.
+- Deterministic **email** alerts for failure and recovery, including an incorrect business result, whether or not a model is available
+
+## Not on the sold card yet
+
+- Slack, customer webhooks, SMS, or on-call as a paid channel until each passes the same delivery test as email
+- Monitor / app / member caps or retention days copied from the retired Free/Pro/Team proposal
+- Customer status pages, uptime probes, or badges as part of this offer
+
+See the [pricing page](https://crontinel.com/pricing/) on the marketing site for what is published today. Workspace contract: `PRICING.md` in the Crontinel workspace.
+
+## Upgrading and cancelling
+
+Manage billing from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Cancel anytime; the subscription stays active until the end of the current period, then Free allowances apply.
+
+## OSS
+
+`crontinel/laravel` is MIT licensed. Self-hosted local dashboards are not a substitute for hosted detection when the same host dies. See [Self-Hosting](/self-hosting/).
+
+---
+
+# Check-in from any runtime
+URL: https://docs.crontinel.com/check-in/recipes/
+
+Crontinel is an outcome monitor for background work in whatever runtime already runs it. Every runtime posts the same JSON receipt. Exit code 0 can still fail an outcome rule when `processed_records` is 0 or missing and the rule requires work.
+
+**First-class runtimes on this page:** system cron (curl), Node.js, Python, Sidekiq/Ruby, and GitHub Actions. Laravel is the maintained deep package for schedule attach, queue depth, and Horizon — not a requirement for outcome monitoring.
+
+Use the **app ingest key** (`CRONTINEL_INGEST_KEY`). It is not an MCP key. A monitoring failure must not fail the business job.
+
+## Universal receipt
+
+### curl
+
+```bash
+export CRONTINEL_INGEST_KEY=your-app-ingest-key
+curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+  -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
+```
+
+### Python
+
+Copy `outcome_checkin.py` from the [Crontinel workspace](https://github.com/crontinel/workspace) (`scripts/outcome_checkin.py`). There is no supported PyPI package for this path.
+
+```bash
+python3 outcome_checkin.py \
+  --command reports:generate \
+  --request-key run-1 \
+  --exit-code 0 \
+  --started-at 2026-10-06T12:00:00Z \
+  --finished-at 2026-10-06T12:00:05Z \
+  --records 0 \
+  --url https://app.crontinel.com \
+  --api-key "$CRONTINEL_INGEST_KEY"
+```
+
+### Node
+
+```js
+await fetch("https://app.crontinel.com/api/v1/ingest/cron", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.CRONTINEL_INGEST_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    request_key: "run-1",
+    command: "reports:generate",
+    status: "completed",
+    exit_code: 0,
+    started_at: "2026-10-06T12:00:00Z",
+    finished_at: "2026-10-06T12:00:05Z",
+    outcomes: { metrics: { processed_records: 0 } },
+  }),
+});
+```
+
+## Node scheduler (node-cron, BullMQ)
+
+Wrap the scheduled function. This is an HTTP example, not an npm package.
+
+```js
+
+
+async function postReceipt({ requestKey, command, exitCode, startedAt, records }) {
+  const body = {
+    request_key: requestKey,
+    command,
+    status: exitCode === 0 ? "completed" : "failed",
+    exit_code: exitCode,
+    started_at: startedAt,
+    finished_at: new Date().toISOString(),
+    outcomes: { metrics: { processed_records: records } },
+  };
+  try {
+    await fetch("https://app.crontinel.com/api/v1/ingest/cron", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.CRONTINEL_INGEST_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // Monitoring must not fail the business job.
+  }
+}
+
+cron.schedule("0 3 * * *", async () => {
+  const startedAt = new Date().toISOString();
+  let exitCode = 0;
+  let records = 0;
+  try {
+    records = await generateReports();
+  } catch (error) {
+    exitCode = 1;
+    throw error;
+  } finally {
+    await postReceipt({ requestKey: `node-reports-${startedAt}`, command: "reports:generate", exitCode, startedAt, records });
+  }
+});
+```
+
+For BullMQ, call `postReceipt` from the worker's `completed` and `failed` handlers and use the job id as `request_key`.
+
+## Python schedulers (APScheduler, Celery)
+
+Both wrap the task the same way. `build_receipt` comes from `outcome_checkin.py` (see the Python section above).
+
+```python
+
+from datetime import datetime, timezone
+from outcome_checkin import build_receipt
+
+def now():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def post_receipt(request_key, exit_code, started, records):
+    body = build_receipt(
+        command="reports:generate",
+        request_key=request_key,
+        exit_code=exit_code,
+        started_at=started,
+        finished_at=now(),
+        processed_records=records,
+    )
+    req = urllib.request.Request(
+        "https://app.crontinel.com/api/v1/ingest/cron",
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": "Bearer " + os.environ["CRONTINEL_INGEST_KEY"],
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass  # Monitoring must not fail the business job.
+
+# APScheduler
+@sched.scheduled_job("cron", hour=3)
+def reports_generate():
+    started, exit_code, records = now(), 0, 0
+    try:
+        records = run_reports()
+    except Exception:
+        exit_code = 1
+        raise
+    finally:
+        post_receipt(f"apscheduler-{started}", exit_code, started, records)
+
+# Celery (schedule with Beat as you already do)
+@shared_task(bind=True)
+def reports_generate(self):
+    started, exit_code, records = now(), 0, 0
+    try:
+        records = run_reports()
+        return records
+    except Exception:
+        exit_code = 1
+        raise
+    finally:
+        post_receipt(f"celery-{self.request.id}-{started}", exit_code, started, records)
+```
+
+Crontinel does not discover Celery Beat or APScheduler entries. Name the jobs you expect with [a registered schedule](/check-in/schedule/).
+
+## System cron
+
+Wrap the job, capture exit code and times, post the receipt, and keep monitoring from failing the job (`|| true`).
+
+```bash
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+set +e
+/usr/local/bin/generate-reports
+EXIT_CODE=$?
+set -e
+FINISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+python3 outcome_checkin.py \
+  --command reports:generate \
+  --request-key "reports-$(date -u +%Y%m%dT%H%M%SZ)" \
+  --exit-code "$EXIT_CODE" \
+  --started-at "$STARTED_AT" \
+  --finished-at "$FINISHED_AT" \
+  --records "${RECORDS:-0}" \
+  --url https://app.crontinel.com \
+  --api-key "$CRONTINEL_INGEST_KEY" \
+  || true
+exit "$EXIT_CODE"
+```
+
+## GitHub Actions
+
+Store `CRONTINEL_INGEST_KEY` as a repository secret. After the job step, post the same receipt. Use a unique `request_key` per run.
+
+```yaml
+- name: Report outcome
+  env:
+    CRONTINEL_INGEST_KEY: ${{ secrets.CRONTINEL_INGEST_KEY }}
+  run: |
+    curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+      -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"started_at\":\"$(date -u +%FT%TZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":0}}}" \
+      || true
+```
+
+## Sidekiq / Ruby
+
+Post the same JSON with `Net::HTTP`. There is no supported gem for this path. Rescue so monitoring never fails the job.
+
+```ruby
+require "json"
+require "net/http"
+require "time"
+require "uri"
+
+begin
+  uri = URI("https://app.crontinel.com/api/v1/ingest/cron")
+  req = Net::HTTP::Post.new(uri)
+  req["Authorization"] = "Bearer #{ENV.fetch("CRONTINEL_INGEST_KEY")}"
+  req["Content-Type"] = "application/json"
+  req.body = {
+    request_key: "sidekiq-#{jid}-#{started}",
+    command: "reports:generate",
+    status: "completed",
+    exit_code: 0,
+    started_at: started,
+    finished_at: Time.now.utc.iso8601,
+    outcomes: { metrics: { processed_records: records } },
+  }.to_json
+  Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+rescue StandardError
+  # Monitoring must not fail the business job.
+end
+```
+
+## Scheduled agents
+
+Reuse the same rules: report items produced as `processed_records` (or artifact time as `latest_artifact`). An empty successful agent run is a failed outcome when the rule requires work. This is not a separate AI-agent product.
+
+## Laravel (deep integration)
+
+When you need schedule attach, queue depth, and Horizon freshness, install the Composer package:
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+```
+
+See [Laravel](/sdks/laravel/) and [Installation](/installation/). Do not tell a non-Laravel operator to install Composer.
+
+## Verify
+
+1. Send `processed_records: 0` with exit code 0.
+2. Confirm the outcome alert (business result failed).
+3. Send a later run with a passing count and confirm recovery.
+
+Coverage stays unknown until you name the job. Crontinel does not read crontab or an agent runner.
+
+## Not claimed here
+
+- Language SDK parity for Node, Python, Go, Rust, Ruby, or .NET
+- Crontab or Kubernetes auto-discovery
+- LLM spend or tracing products
+
+---
+
+# Register expected jobs over HTTP
+URL: https://docs.crontinel.com/check-in/schedule/
+
+A receipt tells Crontinel a job ran. Registering the job tells Crontinel it **should** run. With both, you get an alert when a run never starts, even if nothing was posted.
+
+No Laravel package is needed. Use the same **app ingest key** as the [check-in recipes](/check-in/recipes/).
+
+## Register a job
+
+```bash
+curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/schedule" \
+  -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "named_by_user",
+    "tasks": [{
+      "command": "nightly-import",
+      "job_name": "nightly-import",
+      "expression": "0 2 * * *",
+      "timezone": "UTC",
+      "grace_seconds": 300,
+      "max_runtime_seconds": 3600,
+      "counted_minimum": 1
+    }]
+  }'
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `source` | yes | `named_by_user` for HTTP runtimes. |
+| `tasks[].command` | yes | The exact `command` your receipts send. Runs are matched on it. |
+| `tasks[].job_name` | no | Stable name that survives a command change. |
+| `tasks[].expression` | no | Five-field cron expression. Without it the job is inventory only and no missed-run check runs. |
+| `tasks[].timezone` | no | IANA time zone for the expression. Default `UTC`. |
+| `tasks[].grace_seconds` | no | How late a start may be before it alerts. Default `300`. |
+| `tasks[].max_runtime_seconds` | no | How long a `running` receipt may stay open before it alerts as unfinished. Default `3600`. |
+| `tasks[].counted_minimum` | no | Creates a `processed_records` rule: fewer than this fails the run even on exit 0. |
+
+The response lists `created`, `unchanged`, `activated` (an existing named job that gained its schedule), and `skipped` (plan limit). Posting the same body again is safe.
+
+## Node and Python
+
+```js
+await fetch("https://app.crontinel.com/api/v1/ingest/schedule", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.CRONTINEL_INGEST_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    source: "named_by_user",
+    tasks: [{ command: "nightly-import", expression: "0 2 * * *", counted_minimum: 1 }],
+  }),
+});
+```
+
+```python
+
+
+req = urllib.request.Request(
+    "https://app.crontinel.com/api/v1/ingest/schedule",
+    data=json.dumps({
+        "source": "named_by_user",
+        "tasks": [{"command": "nightly-import", "expression": "0 2 * * *", "counted_minimum": 1}],
+    }).encode(),
+    headers={
+        "Authorization": f"Bearer {os.environ['CRONTINEL_INGEST_KEY']}",
+        "Content-Type": "application/json",
+    },
+)
+urllib.request.urlopen(req, timeout=5)
+```
+
+## What happens next
+
+- Checking starts when you register. Earlier occurrences are not checked.
+- If no receipt with that `command` starts between the due time and the grace period, a **cron never started** alert opens. It resolves once the next scheduled run is observed.
+- If a `running` receipt is still open after `max_runtime_seconds`, a **cron never finished** alert opens. See [start and finish receipts](/check-in/start-finish/).
+- `check_monitoring_coverage` over MCP names the registered jobs instead of reporting the inventory as unknown. It does not read crontab or an agent runner.
+
+Registering is separate from the Laravel `php artisan crontinel:schedule` command, which reports a Laravel schedule as passive inventory.
+
+---
+
+# Start and finish receipts
+URL: https://docs.crontinel.com/check-in/start-finish/
+
+One receipt after the job finishes is enough for outcome rules. Add a `running` receipt at the start when you also want an alert for a job that starts and never ends.
+
+## The pair
+
+Use the same `request_key` for both. The key identifies one execution.
+
+```bash
+KEY="nightly-$(date -u +%Y%m%dT%H%M%SZ)"
+STARTED="$(date -u +%FT%TZ)"
+post() {
+  curl -sS -m 5 -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+    -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+    -H "Content-Type: application/json" -d "$1" || true
+}
+
+post "{\"request_key\":\"$KEY\",\"command\":\"nightly-import\",\"status\":\"running\",\"started_at\":\"$STARTED\"}"
+
+./nightly-import.sh
+CODE=$?
+RECORDS=$(cat /tmp/nightly-import.count 2>/dev/null || echo 0)
+
+STATUS=completed; [ "$CODE" -ne 0 ] && STATUS=failed
+post "{\"request_key\":\"$KEY\",\"command\":\"nightly-import\",\"status\":\"$STATUS\",\"exit_code\":$CODE,\"started_at\":\"$STARTED\",\"finished_at\":\"$(date -u +%FT%TZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":$RECORDS}}}"
+exit $CODE
+```
+
+Rules for the pair:
+
+- `started_at` must be the same in both receipts. A different identity under the same key returns 409.
+- A finished run (`completed` or `failed`) cannot be changed or reopened. Use a new key for a retry.
+- A late `running` receipt after the finish is ignored.
+- `|| true` and `-m 5` keep a monitoring failure from failing the business job.
+
+## What each receipt unlocks
+
+| You send | Alert you get |
+|---|---|
+| Only the finish receipt | Outcome failures (exit code, `processed_records`). |
+| Finish receipt plus a [registered schedule](/check-in/schedule/) | Also: the run never started. |
+| `running` plus a registered schedule | Also: the run started and never finished within `max_runtime_seconds`. |
+
+Fields are listed in the [ingest reference](/reference/api/#post-ingestcron).
+
+---
+
+# FAQ
+URL: https://docs.crontinel.com/faq/
+
+## Do I need Laravel?
+
+No. Every runtime posts the same HTTP outcome receipt. First-class paths: curl, Node, Python, Sidekiq, and GitHub Actions. See [check-in recipes](/check-in/recipes/) and [quick start](/quick-start/).
+
+Laravel is optional. Use `crontinel/laravel` when you want the package to attach that receipt from the scheduler and add queue depth or Horizon freshness.
+
+## Do I need a crontinel.com account?
+
+For hosted alerts and the dashboard, yes — create an app and use the ingest key (`CRONTINEL_INGEST_KEY`). That key is not an MCP / assistant key.
+
+The Laravel package can also run a local `/crontinel` dashboard without a hosted account. That local path is not a substitute for hosted detection when the same host dies.
+
+## How do I send my first receipt?
+
+1. Create an app at [app.crontinel.com](https://app.crontinel.com/register).
+2. Copy the ingest key.
+3. POST to `/api/v1/ingest/cron` when the job finishes (curl, Node `fetch`, `outcome_checkin.py`, Sidekiq, or GitHub Actions).
+4. Send `processed_records: 0`, confirm the outcome alert, then send a later count and confirm recovery.
+
+Recipes: [check-in recipes](/check-in/recipes/).
+
+## Will Crontinel slow down my application?
+
+For HTTP check-in, you control when the POST runs (usually after the job). Keep a short timeout and do not fail the business job if monitoring fails.
+
+On Laravel with the package, monitoring listens to scheduler events. When `CRONTINEL_API_KEY` is set, the package reports over HTTP with a short timeout; a monitoring failure does not fail your task. Omit the key for local-only dashboard use.
+
+## Does the Laravel package work with Octane?
+
+Yes. It uses standard service provider and event patterns. Keep queue workers separate from the Octane server, as Laravel recommends generally.
+
+## What happens if app.crontinel.com goes down?
+
+Your jobs keep running. Receipts that cannot be delivered should not fail the business work (recipes use `|| true` / rescue where shown). On Laravel with only a local dashboard, that dashboard stays independent of the hosted app.
+
+## What data is sent to the hosted app?
+
+Nothing until you use an ingest key. A receipt can include command / job name, status, exit code, times, and optional outcome metrics or timestamps you set. Queue and Horizon snapshots are Laravel-package paths only.
+
+**No application payloads, user PII, or environment secrets should be put in the receipt.**
+
+## What are the plan names and prices?
+
+Paid plans are **Starter**, **Pro**, and **Max** (internal Max key remains `team`). Free remains $0. See [Billing & Plans](/billing/) for allowances. The marketing price card stays gated until billing acceptance; [crontinel.com/pricing](https://crontinel.com/pricing/) shows what is published today.
+
+## How do I upgrade the Laravel package?
+
+```bash
+composer require crontinel/laravel:^0.8
+php artisan migrate
+php artisan crontinel:check
+```
+
+See the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md) and [upgrading](/upgrading/).
+
+## Where is the comparison or Slack on the price card?
+
+Comparison publish and sold Slack/webhook channels wait on operator interviews and delivery verification (customer tasks S7–S10). Email outcome alerts are the verified channel today.
+
+---
+
+# Installation
+URL: https://docs.crontinel.com/installation/
+
+## Not on Laravel?
+
+Post one HTTP receipt when the job finishes. First-class paths: curl, Node, Python, Sidekiq, and GitHub Actions. See the [HTTP check-in recipes](/check-in/recipes/) and [quick start](/quick-start/). You do not need Composer.
+
+## Laravel package
+
+The rest of this page is for Laravel apps that want the package to attach that receipt from the scheduler and add queue depth and Horizon freshness.
+
+### 1. Prerequisites
+
+- PHP 8.2+
+- Laravel 11, 12, or 13
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+
+### 2. Install
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+php artisan migrate
+```
+
+### 3. Configure
+
+By default the dashboard is at `/crontinel`. Optionally change it in your `.env`:
+
+```env
+CRONTINEL_PATH=crontinel
+```
+
+### 4. Open the dashboard
+
+Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
+
+> **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once — this is normal.
+
+### 5. Run your scheduler
+
+For local development:
+
+```bash
+php artisan schedule:work
+```
+
+For production, add this to your server's crontab:
+
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### 6. Dashboard verification
+
+After the first scheduler tick:
+
+1. Go to `/crontinel` in your browser
+2. The **Cron** section now shows your registered scheduled commands
+3. Each command displays its last run time, exit code, and duration
+
+<Aside>
+The Laravel package works fully offline with no external API key required. To send data to the Crontinel SaaS, add `CRONTINEL_API_KEY` to your `.env`.
+</Aside>
+
+---
+
+## Laravel package details
+
+Still not on Laravel? Stop here and use the [HTTP recipes](/check-in/recipes/). Everything below is Composer-only.
+
+### Requirements
+
+- PHP 8.2, 8.3, 8.4, or 8.5
+- Laravel 11, 12, or 13
+
+### Install (repeat of the quickstart)
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+php artisan migrate
+```
+
+After running the installer, `config/crontinel.php` is published to your project. Review it to set the dashboard path, middleware, and alert thresholds. See the [configuration reference](/reference/configuration/) for all available options.
+
+> **Using Horizon?** Set `'horizon' => ['enabled' => true]` in `config/crontinel.php`. If you're not using Horizon, set it to `false` to hide the Horizon panel.
+
+## Requirements check
+
+Run the health check to confirm everything is wired up correctly:
+
+```bash
+php artisan crontinel:check
+```
+
+## Dashboard path
+
+By default the dashboard is at `/crontinel`. To change it:
+
+```env
+CRONTINEL_PATH=monitoring  # Required environment variable
+```
+
+## Middleware
+
+The dashboard uses `['web', 'auth']` middleware by default. To customize:
+
+```php
+// config/crontinel.php
+'middleware' => ['web', 'auth', 'can:view-monitoring'],
+```
+
+## Requirements check
+
+```bash
+php artisan crontinel:check
+```
+
+Exits 0 if healthy, 1 if any alert is active. Use in CI pipelines:
+
+```bash
+php artisan crontinel:check --format=json
+```
+
+## Environment variables
+
+All Crontinel environment variables and their defaults. Set these in `.env` or directly in `config/crontinel.php`:
+
+```env
+# Dashboard path (default: /crontinel)
+CRONTINEL_PATH=crontinel
+
+# Horizon integration (set to false if you don't use Horizon)
+CRONTINEL_HORIZON_ENABLED=true
+CRONTINEL_HORIZON_CONNECTION=horizon
+
+# Alert channel (slack, email, webhook)
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+CRONTINEL_ALERT_EMAIL=alerts@example.com
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
+# PagerDuty is on the alerts roadmap — see /alerts/channels
+
+# SaaS reporting (optional — omit for local-only monitoring)
+CRONTINEL_API_KEY=
+CRONTINEL_API_URL=https://app.crontinel.com
+```
+
+See the [configuration reference](/reference/configuration/) for all options including thresholds, retention, and middleware.
+
+## Upgrading
+
+Pull the latest version through Composer:
+
+```bash
+composer update crontinel/laravel
+```
+
+If you want to pin a specific version, use `composer require crontinel/laravel:^0.8` instead.
+
+### Run new migrations
+
+New releases sometimes add or modify tables. After updating, always run:
+
+```bash
+php artisan migrate
+```
+
+The package uses its own migration files, so this is safe to run alongside your app migrations. Check the release notes if you're curious what changed.
+
+### Config changes
+
+If a new version introduces config options, your existing `config/crontinel.php` won't have them. You've got two choices:
+
+1. Re-publish and diff manually:
+
+```bash
+php artisan vendor:publish --tag=crontinel-config
+```
+
+This will ask to overwrite your existing file. Say no, then compare the new defaults with your current config.
+
+2. Check the changelog for new keys and add them yourself. This is usually faster if only one or two options were added.
+
+### Check for breaking changes
+
+Before upgrading across major versions, read the [changelog](https://github.com/crontinel/laravel/blob/main/CHANGELOG.md). Major releases may rename config keys, drop support for older Laravel/PHP versions, or change method signatures. In practice, minor and patch releases won't break anything.
+
+### Verify the upgrade
+
+Once you've migrated and updated your config, run the health check:
+
+```bash
+php artisan crontinel:check
+```
+
+This confirms your database tables are current, the API key is valid, and the agent can reach the Crontinel servers. If something's off, it'll tell you exactly what failed.
+
+So, the full upgrade sequence looks like this:
+
+```bash
+composer update crontinel/laravel
+php artisan migrate
+php artisan crontinel:check
+```
+
+Three commands, done in under a minute.
+
+---
+
+# Introduction
+URL: https://docs.crontinel.com/introduction/
+
+**Completed is not done.** A process can exit 0 and still produce nothing. Crontinel keeps process status and business result as separate states. Missing evidence is never shown as healthy.
+
+## The problem
+
+Generic monitors check whether a heartbeat arrived or a URL returned 200. They cannot tell you:
+
+- That a nightly import exited 0 with `processed_records: 0`
+- That a scheduled agent wrote an empty digest
+- That Horizon or a queue stopped reporting freshness (Laravel package path)
+
+## How it works
+
+1. Your job posts an HTTP receipt to `/api/v1/ingest/cron` with the command, exit code, times, and optional outcome metrics.
+2. Crontinel evaluates schedule and outcome rules on the server.
+3. Alerts fire without waiting for a model. Your coding assistant can read the same evidence over MCP.
+
+First-class check-in paths: curl, Node, Python, Sidekiq, and GitHub Actions — see [HTTP recipes](/check-in/recipes/). The [Laravel package](/sdks/laravel/) is the deep integration: it attaches that receipt from the scheduler and can add queue depth and Horizon freshness. Unowned language packages are not a support claim.
+
+## Plans and pricing
+
+See the [pricing page](https://crontinel.com/pricing/) on the marketing site for current tiers. Hosted monitoring and alerts do not depend on a language SDK.
+
+## Open source
+
+The Laravel package is MIT licensed. Self-hosted local dashboards are not a substitute for hosted detection when the same host dies.
+
+## Where to go next
+
+- [Quick start](/quick-start/): send your first receipt in a few minutes
+- [Check-in recipes](/check-in/recipes/): curl, Node, Python, Sidekiq, and GitHub Actions
+- [Register expected jobs](/check-in/schedule/): get an alert when a run never starts
+- [Start and finish receipts](/check-in/start-finish/): get an alert when a run never finishes
+- [Laravel installation](/installation/): schedule, queue, and Horizon evidence
+- [MCP overview](/mcp/overview/): read the same evidence from Claude Code, Cursor, or Codex
+- [Billing and plans](/billing/) and [security](/security/)
+- [FAQ](/faq/) and [troubleshooting](/troubleshooting/)
+
+---
+
+# Claude Code Setup
+URL: https://docs.crontinel.com/mcp/claude-code/
+
+:::note
+The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/register) to get started.
+:::
+
+## 1. Get your API key
+
+Log in to [app.crontinel.com](https://app.crontinel.com), go to your app, and copy the API key.
+
+## 2. Add to Claude Code config
+
+Edit `~/.claude/settings.json` (or use the Claude Code settings UI):
+
+```json
+{
+  "mcpServers": {
+    "crontinel": {
+      "command": "npx",
+      "args": ["-y", "@crontinel/mcp-server"],
+      "env": {
+        "CRONTINEL_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+## 3. Restart Claude Code
+
+The Crontinel tools will appear in Claude Code's tool list.
+
+## 4. Try it
+
+Ask Claude Code:
+
+- "Did my cron jobs run last night?"
+- "What's the queue depth right now?"
+- "Is Horizon healthy?"
+- "Show me recent alerts"
+
+## Troubleshooting
+
+If tools don't appear, check that Node.js 18+ is installed:
+
+```bash
+node --version
+```
+
+If the API key is wrong you'll see `401 Unauthorized` in the MCP server output.
+
+## What Claude Code can read
+
+Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): scheduled jobs and their last runs, queue depth, Horizon state, and recent alerts. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
+
+For new setups, prefer OAuth from the app's connection screen over a pasted key; the API key above is the fallback. The [MCP overview](/mcp/overview/) explains how the stdio server proxies to `app.crontinel.com/api/mcp`.
+
+## Related
+
+- [MCP overview](/mcp/overview/)
+- [Agent guide](/agent/guide/) if you want cloud-triggered commands on your own server
+- [Security](/security/) for how keys and scopes should be handled
+- [Troubleshooting](/troubleshooting/) for connection and 401 errors
+
+---
+
+# MCP Integration Overview
+URL: https://docs.crontinel.com/mcp/overview/
+
+Crontinel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI coding assistants can query your monitoring data inline  –  without opening a browser.
+
+## Example
+
+In Claude Code:
+
+> **You:** Did my `send-invoices` job run last night?
+>
+> **Claude:** Checking Crontinel... The `send-invoices` command ran at 02:00:14 UTC, completed in 847ms, exit code 0. Last 7 runs all successful.
+
+## How it works
+
+1. The `@crontinel/mcp-server` npm package runs as a local stdio process
+2. Your AI assistant spawns it on startup
+3. It proxies tool calls to `app.crontinel.com/api/mcp` using your API key
+4. Results come back inline in your chat
+
+## Requirements
+
+- Node.js 18+
+- A Crontinel account. Prefer OAuth from the app connection screen; a scoped API key is the fallback. MCP is on every tier, including Free. Hosted AI investigation starts are a separate allowance.
+- An AI assistant that supports MCP (Cursor, Claude Code, Codex, etc.)
+
+## What you can ask
+
+The assistant mostly reads evidence that your jobs already sent to Crontinel. Typical questions:
+
+- Did a named scheduled job run, and with what exit code and duration?
+- Is a queue backing up, or is Horizon paused?
+- Which alerts fired recently, and have they resolved?
+
+The tools behind these are listed on [Available Tools](/mcp/tools/). Two tools change state in Crontinel (`acknowledge_alert` and `create_alert`); nothing is written to your own app or servers.
+
+## Set up your client
+
+- [Claude Code setup](/mcp/claude-code/)
+
+## Related
+
+- [Introduction](/introduction/): what Crontinel monitors and why exit `0` is not enough
+- [Check-in from any runtime](/check-in/recipes/): how the evidence gets to Crontinel in the first place
+- [Billing and plans](/billing/): MCP is on every tier; hosted AI investigation starts have their own allowance
+- [Security](/security/): handling API keys and scopes
+
+---
+
+# Available MCP Tools
+URL: https://docs.crontinel.com/mcp/tools/
+
+| Tool | Description |
+|---|---|
+| `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
+| `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
+| `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
+| `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
+| `list_recent_alerts` | Alerts fired in the last N hours |
+| `acknowledge_alert` | Dismiss an active alert by its key |
+| `create_alert` | Create a new alert channel (Slack, email, or webhook) for an app |
+
+## `list_scheduled_jobs`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug from your Crontinel dashboard
+
+Returns all jobs tracked by Crontinel for that app with their most recent status. A job appears once it has sent a receipt or been [registered](/check-in/schedule/), whatever runtime runs it.
+
+## `get_cron_status`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+- `command` (required)  –  command name or partial match
+
+Returns: command name, last status, exit code, duration, started_at, output.
+
+## `get_queue_status`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+- `queue` (optional)  –  queue name. Returns all queues if omitted.
+
+Returns: queue name, depth, failed count, oldest job age in seconds. Queue data comes from the Laravel package. An app that never reports it has no queue data, which is not the same as an empty queue.
+
+## `get_horizon_status`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+
+Returns: overall status, paused indicator, supervisors list, failed jobs per minute. Horizon is Laravel only. Missing data is not a stopped supervisor and not a healthy one.
+
+## `list_recent_alerts`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+- `hours` (optional, default 24)  –  look-back window
+
+Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
+
+## `acknowledge_alert`
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+- `alert_key` (required)  –  e.g. `horizon:paused`, `queue:emails:depth`
+
+Marks the alert as acknowledged.
+
+## `create_alert`
+
+:::note
+Not limited to a retired “Pro or Team” gate. Supported channel types follow the account’s plan features; some types stay paid-only. Ordinary evidence reads do not spend hosted AI starts.
+:::
+
+**Parameters:**
+- `app_slug` (required)  –  app slug
+- `type` (required)  –  `slack`, `email`, or `webhook`
+- `config` (required)  –  channel-specific config object (see below)
+
+**Config by type:**
+
+| type | required fields |
+|---|---|
+| `slack` | `webhook_url`  –  Incoming Webhook URL |
+| `email` | `address`  –  recipient email address |
+| `webhook` | `url`  –  endpoint URL, optionally `secret` for HMAC signing |
+
+**Example  –  create a Slack alert:**
+
+```json
+{
+  "app_slug": "my-app",
+  "type": "slack",
+  "config": {
+    "webhook_url": "https://hooks.slack.com/services/T000/B000/xxxx"
+  }
+}
+```
+
+Returns the new alert channel ID on success.
+
+---
+
+# Cron Monitor
+URL: https://docs.crontinel.com/monitors/cron/
+
+## From any runtime
+
+You do not need Laravel. Post a receipt when the job ends, and [register the job](/check-in/schedule/) with its cron expression so Crontinel can alert when a run never starts. Add a `running` receipt at the start to catch a run that never finishes. See [check-in recipes](/check-in/recipes/) and [start and finish receipts](/check-in/start-finish/).
+
+The rest of this page describes the Laravel package.
+
+## How it works (Laravel)
+
+Crontinel hooks into three Laravel scheduler events:
+
+- `ScheduledTaskStarting`
+- `ScheduledTaskFinished`
+- `ScheduledTaskFailed`
+
+No code changes to your `schedule()` method are needed. Every command defined there is tracked automatically after installation.
+
+## What's recorded
+
+| Field | Description |
+|---|---|
+| `command` | Artisan command name |
+| `exit_code` | 0 = success, non-zero = failure |
+| `duration_ms` | How long it ran |
+| `output` | Captured output (if any) |
+| `started_at` | Exact start timestamp |
+| `status` | `completed`, `failed`, or `late` |
+
+## Late detection
+
+A run is marked `late` if the command didn't execute within `late_alert_after_seconds` of its expected window. This catches the case where the scheduler itself is running but a command is being skipped.
+
+## Configuration
+
+```php
+'cron' => [
+    'enabled' => true,
+    'late_alert_after_seconds' => 120,
+    'retain_days' => 30,
+],
+```
+
+## Related
+
+- [Register expected jobs](/check-in/schedule/): how a run that never starts gets detected, from any runtime
+- [Start and finish receipts](/check-in/start-finish/): catch a run that starts and never ends
+- [Check-in recipes](/check-in/recipes/): curl, Node, Python, Sidekiq, and GitHub Actions
+- [Queue monitor](/monitors/queues/) and [Horizon monitor](/monitors/horizon/)
+- [Configuration reference](/reference/configuration/): the `cron` keys above and their defaults
+- [Troubleshooting](/troubleshooting/): cron runs not showing up
+
+---
+
+# Horizon Monitor
+URL: https://docs.crontinel.com/monitors/horizon/
+
+The Horizon monitor reads Horizon's Redis keys directly  –  the same data source the Horizon dashboard uses.
+
+## What it monitors
+
+| Signal | How |
+|---|---|
+| Overall status | `horizon:status` Redis key |
+| Per-supervisor state | `horizon:{id}:supervisor` heartbeat timestamp |
+| Paused state | `horizon:status` = `paused` |
+| Failed jobs per minute | `horizon:{id}:{queue}:throughput` buckets |
+
+## Configuration
+
+```php
+// config/crontinel.php
+'horizon' => [
+    'enabled' => true,
+    'supervisor_alert_after_seconds' => 60,
+    'failed_jobs_per_minute_threshold' => 5,
+    'connection' => 'horizon', // Redis connection used by Horizon
+],
+```
+
+## What "supervisor down" means
+
+Crontinel tracks each supervisor separately via its heartbeat. If a supervisor's `lastHeartbeat` is more than `supervisor_alert_after_seconds` old, Crontinel considers it down  –  even if the top-level `horizon:status` key still says `running`.
+
+This is the key difference from generic monitors: you get an alert for a supervisor crash in the `emails` queue while your `default` queue supervisor is still healthy.
+
+## Disabling
+
+If you don't use Horizon:
+
+```php
+'horizon' => ['enabled' => false],
+```
+
+Queue and cron monitoring continue to work independently.
+
+## Related
+
+- [Queue monitor](/monitors/queues/): depth and wait time for the queues Horizon feeds
+- [Cron monitor](/monitors/cron/): the scheduler side of the same app
+- [Alert channels](/alerts/channels/): where a supervisor-down alert goes
+- [Configuration reference](/reference/configuration/): every `horizon` key and its default
+- [Troubleshooting](/troubleshooting/): Horizon monitor not working
+- [CLI health check](/alerts/cli/): fail a deploy when Horizon is paused or a supervisor is down
+
+---
+
+# Queue Monitor
+URL: https://docs.crontinel.com/monitors/queues/
+
+## What it monitors
+
+- **Depth**  –  number of pending jobs in each queue
+- **Failed count**  –  jobs in the failed jobs table or dead-letter list
+- **Oldest job age**  –  how long the oldest waiting job has been sitting
+
+## Supported drivers
+
+- `redis`  –  queries queue lengths from Redis directly
+- `database`  –  queries the `jobs` and `failed_jobs` tables
+
+## Configuration
+
+```php
+'queues' => [
+    'enabled' => true,
+    'watch' => [],                    // empty = auto-discover all queues
+    'depth_alert_threshold' => 1000,
+    'wait_time_alert_seconds' => 300,
+],
+```
+
+To watch specific queues only:
+
+```php
+'watch' => ['default', 'emails', 'notifications'],
+```
+
+## Alert conditions
+
+An alert fires when any watched queue exceeds `depth_alert_threshold` jobs or `wait_time_alert_seconds` wait time. The alert auto-resolves when the queue drains.
+
+## Per-app queue thresholds (SaaS)
+
+On [Crontinel SaaS](https://app.crontinel.com), you can override the depth threshold per app and per queue from the app settings page. This is useful when different apps have naturally different queue volumes.
+
+The lookup order for thresholds is:
+1. Per-queue override (`queue_thresholds.{queue_name}`)
+2. Per-app default (`queue_thresholds.default`)
+3. Global config value (`depth_alert_threshold`, default 1000)
+
+## Related
+
+- [Horizon monitor](/monitors/horizon/): supervisor and paused-state checks for Horizon-managed queues
+- [Cron monitor](/monitors/cron/): scheduled commands that dispatch the jobs
+- [Alert channels](/alerts/channels/): where a depth or wait-time alert goes
+- [Configuration reference](/reference/configuration/): every `queues` key and its default
+- [Billing and plans](/billing/): hosted ingest allowances
+- [Troubleshooting](/troubleshooting/): queue monitor showing no data
+
+---
+
+# Quick Start
+URL: https://docs.crontinel.com/quick-start/
+
+Every runtime uses the same HTTP receipt. First-class paths: **curl**, **Node**, **Python**, **Sidekiq**, and **GitHub Actions**. Laravel is the deep integration when you need schedule attach, queue depth, and Horizon.
+
+## 1. Create an app
+
+1. Sign up at [app.crontinel.com](https://app.crontinel.com/register).
+2. Create an app and copy its **ingest key**. That key is not an MCP key.
+3. Put it in the job environment as `CRONTINEL_INGEST_KEY`.
+
+## 2. Send a receipt
+
+Pick one path. Full recipes: [Check-in from any runtime](/check-in/recipes/).
+
+**curl**
+
+```bash
+curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+  -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
+```
+
+**Python** — use `outcome_checkin.py` from the workspace (no supported PyPI package on this path).
+
+**Node** — `fetch` the same JSON body (no supported npm package on this path).
+
+**Sidekiq / Ruby** — thin `Net::HTTP` post after the job (no supported gem on this path).
+
+**GitHub Actions** — repository secret + curl (or Python) after the job step.
+
+## 3. Verify
+
+1. Confirm the run appears on the dashboard.
+2. With a minimum rule of 1, `processed_records: 0` should open an outcome alert even when exit code is 0.
+3. Send a later count that passes and confirm recovery.
+
+## Laravel deep integration
+
+If you run Laravel and want scheduler attach, queue depth, and Horizon:
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+```
+
+See [Installation](/installation/) and [Laravel](/sdks/laravel/).
+
+## Next steps
+
+- [Check-in recipes](/check-in/recipes/) for cron, GitHub Actions, Sidekiq, and agents
+- [Alert channels](/alerts/channels/)
+- [Cron monitors](/monitors/cron/)
+- [MCP overview](/mcp/overview/) for your coding assistant
+
+---
+
+# REST API Reference
+URL: https://docs.crontinel.com/reference/api/
+
+Authenticated endpoints require a Bearer API key. Plan features still apply where the app enforces them; this is not the retired Free/Pro/Team table.
+
+## SDK transport: REST vs. MCP
+
+Not every Crontinel SDK talks to this REST API directly. Two SDKs use a different transport:
+
+- **REST to `/api/v1`** — `crontinel/php`, `crontinel/go`, `crontinel/rust`, `@crontinel/node`, and `crontinel/python` send plain HTTPS requests to the endpoints documented on this page.
+- **MCP protocol** — `crontinel/ruby` and `crontinel/cli` instead speak the [Model Context Protocol](https://modelcontextprotocol.io), using `notify/*` notifications and `tools/call` requests over the MCP transport rather than calling `/api/v1` REST routes directly.
+
+Both transports report the same underlying data (runs, alerts, status), so nothing in this split changes what you can monitor — it only changes what's on the wire. If you're switching between SDKs and a request you expected to see in HTTP logs isn't there, check whether that language's SDK uses the MCP transport instead.
+
+## Authentication
+
+Pass your API key as a Bearer token:
+
+```
+Authorization: Bearer your-api-key
+```
+
+Or as a header:
+
+```
+X-Api-Key: your-api-key
+```
+
+## Base URL
+
+```
+https://app.crontinel.com/api/v1
+```
+
+## Ingest endpoints
+
+Ingest endpoints take the app **ingest key** as a Bearer token. They work from any runtime over plain HTTPS. No SDK or framework header is checked.
+
+### POST /ingest/cron
+
+Record one job run. See [start and finish receipts](/check-in/start-finish/).
+
+| Field | Required | Notes |
+|---|---|---|
+| `command` | yes | Any string, up to 255 characters. Not limited to artisan commands. |
+| `status` | yes | `running`, `completed`, `failed`, or `late`. |
+| `started_at` | yes | ISO 8601. Must not be more than five minutes in the future. |
+| `finished_at` | no | ISO 8601, not before `started_at`. |
+| `exit_code`, `duration_ms`, `output` | no | |
+| `request_key` | no | Reuse across the `running` and final receipts of one run. |
+| `job_name`, `environment`, `expression` | no | Stable identity for rules. |
+| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. |
+| `outcomes.timestamps` | no | Up to 20 ISO 8601 timestamps. |
+
+### POST /ingest/schedule
+
+Register the jobs you expect. See [register expected jobs](/check-in/schedule/).
+
+### POST /ingest/event
+
+Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `critical`, `resolved`), optional `payload` and `occurred_at`.
+
+### POST /ingest/ping
+
+Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
+
+## Read endpoints
+
+### GET /apps
+
+List all apps for the authenticated team.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "name": "My App",
+      "slug": "my-app",
+      "status": "healthy",
+      "last_ping_at": "2026-04-06T12:00:00Z"
+    }
+  ]
+}
+```
+
+### GET /apps/{slug}/status
+
+Full health snapshot for an app.
+
+**Response:**
+```json
+{
+  "app": {"name": "My App", "slug": "my-app"},
+  "status": "healthy",
+  "horizon": {"status": "running", "paused": false, "failed_per_minute": 0.2},
+  "queues": [{"name": "default", "depth": 5, "failed": 0}],
+  "active_alerts": [],
+  "last_updated": "2026-04-06T12:00:00Z"
+}
+```
+
+### GET /apps/{slug}/cron-runs
+
+Last 50 cron runs, newest first.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "command": "php artisan inspire",
+      "status": "completed",
+      "exit_code": 0,
+      "duration_ms": 145,
+      "started_at": "2026-04-07T08:00:02Z"
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `command` | string | The artisan or shell command |
+| `status` | string | `completed`, `failed`, `running`, or `late` |
+| `exit_code` | int \| null | Process exit code (null if still running) |
+| `duration_ms` | int \| null | Execution time in milliseconds |
+| `started_at` | string | ISO 8601 timestamp |
+
+### GET /apps/{slug}/alerts
+
+Active (unresolved) alerts for the app.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "alert_key": "queue:default:depth",
+      "fired_at": "2026-04-07T07:55:00Z",
+      "fire_count": 3
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `alert_key` | string | Unique key like `horizon:paused`, `queue:default:depth`, `cron:send-invoices:failed` |
+| `fired_at` | string | When the alert first fired |
+| `fire_count` | int | How many times the condition was re-evaluated as firing |
+
+## OpenAPI spec
+
+Download the full spec at:
+
+```
+https://app.crontinel.com/openapi.json
+```
+
+---
+
+# Configuration Reference
+URL: https://docs.crontinel.com/reference/configuration/
+
+**Not on Laravel?** None of this applies. A curl, Node, Python, Sidekiq, or GitHub Actions job needs only the app **ingest key** (for example `CRONTINEL_INGEST_KEY` in the job's environment) and `https://app.crontinel.com`. Alert channels are added in the dashboard. See [check-in recipes](/check-in/recipes/).
+
+This page documents every configuration option for the Laravel package. Options are set in `config/crontinel.php` (published via `php artisan crontinel:install`). Some — particularly database, Redis, and mail — are standard Laravel `.env` vars.
+
+## Environment variable quick reference
+
+| Variable | Config key | Default | Description |
+|---|---|---|---|
+| `CRONTINEL_PATH` | `path` | `crontinel` | URL path for the dashboard |
+| `CRONTINEL_HORIZON` | `horizon.enabled` | `true` (auto) | Enable Horizon integration |
+| `CRONTINEL_HORIZON_CONNECTION` | `horizon.connection` | `horizon` | Redis connection name for Horizon |
+| `CRONTINEL_ALERT_CHANNEL` | `alerts.channel` | _(none)_ | Alert channel: `slack`, `mail`, or `webhook` |
+| `CRONTINEL_ALERT_EMAIL` | `alerts.mail.to` | _(none)_ | Email alert recipient |
+| `CRONTINEL_SLACK_WEBHOOK` | `alerts.slack.webhook_url` | _(none)_ | Slack incoming webhook URL |
+| `CRONTINEL_WEBHOOK_URL` | `alerts.webhook.url` | _(none)_ | Custom webhook endpoint URL |
+| `CRONTINEL_WEBHOOK_HEADERS` | `alerts.webhook.headers` | _(none)_ | JSON object of extra HTTP headers |
+| `CRONTINEL_WEBHOOK_TIMEOUT` | `alerts.webhook.timeout` | `10` | Webhook request timeout in seconds |
+| `CRONTINEL_API_KEY` | `saas_key` | _(none)_ | API key for the hosted dashboard |
+| `CRONTINEL_API_URL` | `saas_url` | `https://app.crontinel.com` | SaaS endpoint URL |
+
+---
+
+## Dashboard
+
+### `path`
+
+Dashboard URL path. Default: `crontinel`
+
+```php
+'path' => env('CRONTINEL_PATH', 'crontinel'),
+```
+
+If set to `monitoring`, the dashboard lives at `yourdomain.com/monitoring`.
+
+### `middleware`
+
+Middleware applied to all dashboard routes. Default: `['web', 'auth']`
+
+```php
+'middleware' => ['web', 'auth'],
+```
+
+You almost certainly want `'web'` and `'auth'`. Add a role or ability check to restrict access:
+
+```php
+'middleware' => ['web', 'auth', 'can:viewCrontinel'],
+```
+
+---
+
+## Horizon monitoring
+
+Crontinel reads Horizon's Redis keys directly — the same data source the Horizon dashboard uses.
+
+### `horizon.enabled`
+
+Enable or disable Horizon monitoring. Default: `true` (auto-detected)
+
+```php
+'horizon' => [
+    'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
+],
+```
+
+Set to `false` if you don't use Horizon. Queue and cron monitoring continue independently.
+
+### `horizon.connection`
+
+Redis connection name that Horizon uses. Default: `horizon`
+
+```php
+'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
+```
+
+This must match the connection name in your `config/horizon.php`. Most apps leave it as `horizon`.
+
+### `horizon.supervisor_alert_after_seconds`
+
+Alert when a supervisor's heartbeat is older than this. Default: `60`
+
+```php
+'supervisor_alert_after_seconds' => 60,
+```
+
+Crontinel tracks each supervisor separately via its heartbeat Redis key. If `lastHeartbeat` is older than this threshold, the supervisor is considered down — even if the top-level `horizon:status` key still says `running`.
+
+### `horizon.failed_jobs_per_minute_threshold`
+
+Alert when the failed jobs-per-minute rate exceeds this. Default: `5`
+
+```php
+'failed_jobs_per_minute_threshold' => 5,
+```
+
+### Horizon gate — `ADMIN_EMAILS`
+
+Access to the Horizon panel within Crontinel is gated by the `ADMIN_EMAILS` env var (checked via `Gate::before()` in `HorizonServiceProvider`). Set it to a comma-separated list of admin email addresses:
+
+```env
+ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
+```
+
+Users whose logged-in email matches one of these addresses can access Horizon. If `ADMIN_EMAILS` is not set, access is denied to everyone.
+
+---
+
+## Queue monitoring
+
+Crontinel supports both `redis` and `database` queue drivers.
+
+### `queues.enabled`
+
+Enable or disable queue monitoring. Default: `true`
+
+```php
+'queues' => [
+    'enabled' => true,
+],
+```
+
+### `queues.watch`
+
+Queue names to watch. Default: `[]` (auto-discover all active queues)
+
+```php
+'watch' => [],                    // empty = auto-discover all queues
+```
+
+To watch specific queues only:
+
+```php
+'watch' => ['default', 'emails', 'notifications'],
+```
+
+### `queues.depth_alert_threshold`
+
+Alert when a queue exceeds this many pending jobs. Default: `1000`
+
+```php
+'depth_alert_threshold' => 1000,
+```
+
+### `queues.wait_time_alert_seconds`
+
+Alert when the oldest waiting job has been in the queue longer than this. Default: `300`
+
+```php
+'wait_time_alert_seconds' => 300,
+```
+
+### Threshold lookup order (hosted dashboard)
+
+On the hosted dashboard, threshold lookups resolve in this order:
+
+1. Per-queue override: `queue_thresholds.{queue_name}`
+2. Per-app default: `queue_thresholds.default`
+3. Global config value: `depth_alert_threshold` (default 1000)
+
+---
+
+## Cron / scheduler monitoring
+
+Crontinel hooks into Laravel's `ScheduledTaskStarting`, `ScheduledTaskFinished`, and `ScheduledTaskFailed` events. No changes to your `schedule()` method are needed.
+
+### `cron.enabled`
+
+Enable or disable scheduler monitoring. Default: `true`
+
+```php
+'cron' => [
+    'enabled' => true,
+],
+```
+
+### `cron.late_alert_after_seconds`
+
+Mark a cron run as `late` if it didn't execute within this many seconds of its expected window. Default: `120`
+
+```php
+'late_alert_after_seconds' => 120,
+```
+
+Bump this higher if you have tasks that legitimately take a few minutes to start.
+
+### `cron.retain_days`
+
+How long to keep cron run history in the database. Default: `30`
+
+```php
+'retain_days' => 30,
+```
+
+Crontinel prunes old records automatically. Schedule the prune command daily:
+
+```php
+$schedule->command('crontinel:prune')->daily();
+```
+
+### What gets recorded
+
+| Field | Description |
+|---|---|
+| `command` | Artisan command name |
+| `exit_code` | 0 = success, non-zero = failure |
+| `duration_ms` | Execution time in milliseconds |
+| `output` | Captured output (if enabled) |
+| `started_at` | Exact start timestamp |
+| `status` | `completed`, `failed`, or `late` |
+
+---
+
+## Alert channels
+
+Crontinel supports three alert channels: `slack`, `mail`, and `webhook`. Set the active channel via `CRONTINEL_ALERT_CHANNEL`.
+
+### `alerts.channel`
+
+```php
+'channel' => env('CRONTINEL_ALERT_CHANNEL'), // 'slack', 'mail', or 'webhook'
+```
+
+### Slack
+
+```env
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+```php
+'slack' => [
+    'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
+],
+```
+
+Create an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your Slack workspace. Crontinel sends a formatted message with alert details.
+
+### Email
+
+```env
+CRONTINEL_ALERT_CHANNEL=mail
+CRONTINEL_ALERT_EMAIL=ops@yourcompany.com
+```
+
+```php
+'mail' => [
+    'to' => env('CRONTINEL_ALERT_EMAIL'),
+],
+```
+
+Uses your app's configured mail driver (set `MAIL_MAILER` in `.env`). Works with SMTP, Resend, Mailgun, or any Laravel-compatible driver.
+
+### Webhook
+
+```env
+CRONTINEL_ALERT_CHANNEL=webhook
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/alerts
+```
+
+```php
+'webhook' => [
+    'url' => env('CRONTINEL_WEBHOOK_URL'),
+    'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),   // optional JSON object
+    'timeout' => env('CRONTINEL_WEBHOOK_TIMEOUT', 10), // seconds
+],
+```
+
+Sends a JSON POST to your endpoint:
+
+```json
+{
+  "title": "Queue [default] alert",
+  "message": "• Queue depth: 1500 jobs (threshold: 1000)",
+  "level": "warning",
+  "resolved": false,
+  "fired_at": "2026-04-07T08:00:00+00:00",
+  "source": "crontinel"
+}
+```
+
+#### Custom headers
+
+If your endpoint requires authentication headers, set `CRONTINEL_WEBHOOK_HEADERS` as a JSON object:
+
+```env
+CRONTINEL_WEBHOOK_HEADERS={"Authorization": "Bearer your-token", "X-Custom": "my-header"}
+```
+
+#### Request timeout
+
+The default timeout is 10 seconds. Adjust with:
+
+```env
+CRONTINEL_WEBHOOK_TIMEOUT=30
+```
+
+### Alert deduplication
+
+The same alert condition won't re-fire for 5 minutes. If a queue stays above threshold for an hour, you get one alert at the start — not one every poll cycle.
+
+### Auto-resolution
+
+When the condition clears, Crontinel sends a "resolved" notification with `"resolved": true`. You get clear start and end signals for every incident.
+
+---
+
+## SaaS connection (optional)
+
+Connect this self-hosted app to the hosted dashboard at app.crontinel.com.
+
+### `saas_key`
+
+```php
+'saas_key' => env('CRONTINEL_API_KEY'),
+```
+
+Set `CRONTINEL_API_KEY` to your dashboard API key. When set, Crontinel reports cron run summaries and status every minute.
+
+### `saas_url`
+
+```php
+'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
+```
+
+Override the SaaS endpoint for self-hosted dashboard instances.
+
+---
+
+## Database (self-hosting)
+
+Crontinel uses your app's existing database connection. Standard Laravel database env vars:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=crontinel
+DB_USERNAME=postgres
+DB_PASSWORD=your-password
+DB_SSLMODE=require
+```
+
+For local development with Docker or Laravel Valet, `DB_HOST=127.0.0.1` is typical. On Railway or other PaaS, use the host/port/credentials provided by the platform.
+
+---
+
+## Redis
+
+Crontinel and Horizon both use Redis. Standard Laravel Redis env vars:
+
+```env
+REDIS_CLIENT=phpredis      # or 'predis'
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+```
+
+`REDIS_CLIENT` must match your PHP Redis extension — `phpredis` requires the PHP extension; `predis` is the pure-PHP client.
+
+The connection used by Horizon is configured separately via `horizon.connection` (default: `horizon`). Ensure that connection name is defined in `config/database.php` under `redis`:
+
+```php
+'redis' => [
+    'client' => env('REDIS_CLIENT', 'phpredis'),
+    'connections' => [
+        'horizon' => [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_DB', '1'),
+        ],
+    ],
+],
+```
+
+---
+
+## Mail
+
+Crontinel uses your app's configured mail driver for email alerts.
+
+```env
+MAIL_MAILER=smtp                    # or 'resend', 'mailgun', 'ses', etc.
+MAIL_HOST=smtp.resend.com
+MAIL_PORT=465
+MAIL_USERNAME=resend
+MAIL_PASSWORD=your-api-key
+MAIL_FROM_ADDRESS="alerts@your-domain.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+For production, Resend is recommended:
+
+```env
+MAIL_MAILER=resend
+RESEND_API_KEY=re_your-api-key
+MAIL_FROM_ADDRESS="alerts@your-domain.com"
+```
+
+---
+
+## Full config file
+
+After `php artisan crontinel:install`, `config/crontinel.php` is published with all defaults:
+
+```php
+<?php
+
+declare(strict_types=1);
+use Laravel\Horizon\Horizon;
+
+return [
+
+    'path' => env('CRONTINEL_PATH', 'crontinel'),
+
+    'middleware' => ['web', 'auth'],
+
+    'saas_key' => env('CRONTINEL_API_KEY'),
+    'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
+
+    'horizon' => [
+        'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
+        'supervisor_alert_after_seconds' => 60,
+        'failed_jobs_per_minute_threshold' => 5,
+        'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
+    ],
+
+    'queues' => [
+        'enabled' => true,
+        'watch' => [],
+        'depth_alert_threshold' => 1000,
+        'wait_time_alert_seconds' => 300,
+    ],
+
+    'cron' => [
+        'enabled' => true,
+        'late_alert_after_seconds' => 120,
+        'retain_days' => 30,
+    ],
+
+    'alerts' => [
+        'channel' => env('CRONTINEL_ALERT_CHANNEL'),
+
+        'mail' => [
+            'to' => env('CRONTINEL_ALERT_EMAIL'),
+        ],
+
+        'slack' => [
+            'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
+        ],
+
+        'webhook' => [
+            'url' => env('CRONTINEL_WEBHOOK_URL'),
+            'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),
+            'timeout' => env('CRONTINEL_WEBHOOK_TIMEOUT', 10),
+        ],
+    ],
+
+];
+```
+
+Run `php artisan config:clear` after changing the config file in production.
+
+---
+
+# CLI / Docker
+URL: https://docs.crontinel.com/sdks/cli/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first ping in under 2 minutes.
+
+### 1. Prerequisites
+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+**macOS (Homebrew):**
+
+```bash
+brew tap crontinel/cli
+brew install crontinel
+```
+
+**Linux / macOS (curl):**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/crontinel/cli/main/install.sh | sh
+```
+
+**Or download the binary directly:**
+
+```bash
+curl -L https://github.com/crontinel/cli/releases/latest/download/crontinel -o crontinel
+chmod +x crontinel
+mv crontinel /usr/local/bin/
+```
+
+**Docker:**
+
+```bash
+docker pull ghcr.io/crontinel/cli:latest
+```
+
+### 3. Configure
+
+Set your API key:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+```
+
+Add it to `~/.bashrc` or `~/.zshrc` to persist across sessions.
+
+### 4. First ping
+
+```bash
+crontinel ping
+```
+
+Expected output:
+
+```
+OK — connected to app.crontinel.com
+```
+
+### 5. Wrap a command
+
+Run any command and report its outcome automatically:
+
+```bash
+crontinel run -- echo "hello world"
+```
+
+You'll see output with the exit code and duration.
+
+### 6. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Events** section — you should see the `crontinel run` command with its exit code and duration
+3. Your first data is now on the dashboard!
+
+<Aside>
+The CLI reports each wrapped command as a cron job run. You'll see every command you run with `crontinel run -- <cmd>` in the dashboard's cron section.
+</Aside>
+
+---
+
+## Install
+
+### macOS / Linux
+
+```bash
+curl -sSL https://raw.githubusercontent.com/crontinel/cli/main/install.sh | sh
+```
+
+### Download binary
+
+```bash
+curl -L https://github.com/crontinel/cli/releases/latest/download/crontinel -o crontinel
+chmod +x crontinel
+mv crontinel /usr/local/bin/
+```
+
+### Docker
+
+```bash
+docker pull ghcr.io/crontinel/cli:latest
+```
+
+## Setup
+
+```bash
+export CRONTINEL_API_KEY=your_key_here
+crontinel ping
+# OK — connected to app.crontinel.com
+```
+
+## Usage
+
+### Wrap a command
+
+Reports the exit code and duration automatically:
+
+```bash
+crontinel run -- my-cron-job --option
+```
+
+### Send a custom event
+
+```bash
+crontinel event \
+  --key deploy-success \
+  --message "Deployed OK" \
+  --state resolved
+```
+
+## Docker examples
+
+### Wrap any Docker command
+
+```bash
+docker run --rm \
+  -e CRONTINEL_API_KEY=$CRONTINEL_API_KEY \
+  ghcr.io/crontinel/cli:latest \
+  run -- docker-health-check
+```
+
+### Kubernetes CronJob
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: my-cron
+spec:
+  schedule: "0 9 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: crontinel
+            image: ghcr.io/crontinel/cli:latest
+            command: ["crontinel", "run", "--", "./run.sh"]
+            env:
+            - name: CRONTINEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: crontinel
+                  key: api-key
+```
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `crontinel run -- <cmd>` | Run a command and report outcome |
+| `crontinel event --key <key> --message <msg> --state <state>` | Send a custom event |
+| `crontinel ping` | Test connectivity |
+| `crontinel monitors` | List all monitors |
+| `crontinel events` | View recent firing/resolved events |
+
+## Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--key <key>` | env `CRONTINEL_API_KEY` | API key |
+| `--url <url>` | `https://app.crontinel.com` | API endpoint |
+| `--app <name>` | hostname | App/service name |
+| `--json` | — | Raw JSON output |
+
+---
+
+# .NET
+URL: https://docs.crontinel.com/sdks/dotnet/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- .NET 8.0+ or .NET Standard 2.0
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+dotnet new console -n Quickstart
+cd Quickstart
+dotnet add package Crontinel
+```
+
+### 3. Configure
+
+Edit `Program.cs`:
+
+```csharp
+using Crontinel;
+using Crontinel.Models;
+
+var apiKey = Environment.GetEnvironmentVariable("CRONTINEL_API_KEY")
+    ?? throw new InvalidOperationException("CRONTINEL_API_KEY not set");
+
+var client = new CrontinelClient(apiKey);
+
+await client.ScheduleRunAsync(new ScheduleRunOptions
+{
+    Command = "hello-from-dotnet",
+    DurationMs = 100,
+    ExitCode = 0
+});
+
+Console.WriteLine("Data sent to Crontinel!");
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+dotnet run
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-dotnet` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Requirements
+
+- .NET 8.0+ or .NET Standard 2.0
+
+## Install
+
+```bash
+dotnet add package Crontinel
+```
+
+## Quick Start
+
+```csharp
+using Crontinel;
+using Crontinel.Models;
+
+var client = new CrontinelClient(
+    Environment.GetEnvironmentVariable("CRONTINEL_API_KEY")!
+);
+
+// Report a cron job run
+await client.ScheduleRunAsync(new ScheduleRunOptions
+{
+    Command = "reports:generate",
+    DurationMs = 2340,
+    ExitCode = 0  // 0 = success, non-zero = failure
+});
+
+// Report queue worker activity
+await client.QueueProcessedAsync(new QueueProcessedOptions
+{
+    Queue = "emails",
+    Processed = 12,
+    Failed = 0,
+    DurationMs = 8901
+});
+```
+
+## `MonitorScheduleAsync` helper
+
+Wrap any async function and automatically report its outcome:
+
+```csharp
+var result = await client.MonitorScheduleAsync("reports:generate", async () =>
+{
+    await SendDailyReports();
+    return true;
+});
+
+Console.WriteLine($"Duration: {result.DurationMs}ms, ExitCode: {result.ExitCode}");
+```
+
+If the inner function throws, the exception propagates and `ExitCode` is set to `1`.
+
+## ASP.NET Core / Worker Service
+
+Register as a singleton in `Program.cs`:
+
+```csharp
+builder.Services.AddSingleton<CrontinelClient>(_ =>
+    new CrontinelClient(
+        Environment.GetEnvironmentVariable("CRONTINEL_API_KEY")!
+    ));
+```
+
+Use in a hosted service:
+
+```csharp
+public class MyWorker : BackgroundService
+{
+    private readonly CrontinelClient _crontinel;
+
+    public MyWorker(CrontinelClient crontinel) => _crontinel = crontinel;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await _crontinel.MonitorScheduleAsync("my-worker-tick", async () =>
+            {
+                await DoWorkAsync();
+            }, stoppingToken);
+
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+    }
+}
+```
+
+## Hangfire integration
+
+```csharp
+using Crontinel;
+using Crontinel.Models;
+
+var client = new CrontinelClient(apiKey);
+
+RecurringJob.AddOrUpdate("sync-data", async () =>
+{
+    await client.MonitorScheduleAsync("sync-data", async () =>
+    {
+        await DataSyncAsync();
+    });
+}, Cron.Hourly);
+```
+
+## Configuration
+
+```csharp
+var client = new CrontinelClient(new CrontinelOptions
+{
+    ApiKey = "your-api-key",
+    ApiUrl = "https://app.crontinel.com",  // optional, defaults to SaaS
+    AppName = "my-service",                // optional, default: "dotnet"
+    UserAgent = "my-app/1.0"              // optional
+});
+```
+
+## Environment variables
+
+The .NET SDK does not read environment variables automatically. Pass values explicitly via `CrontinelOptions` or set them in your app's configuration and inject them at construction time.
+
+---
+
+# Go
+URL: https://docs.crontinel.com/sdks/go/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Go 1.21+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+go get github.com/crontinel/go
+```
+
+### 3. Configure
+
+Create a `quickstart.go` file:
+
+```go
+package main
+
+
+    "fmt"
+    "os"
+    "github.com/crontinel/go"
+)
+
+func main() {
+    apiKey := os.Getenv("CRONTINEL_API_KEY")
+    client := crontinel.NewClient(apiKey)
+
+    client.ScheduleRun("hello-from-go", 100, 0)
+
+    fmt.Println("Data sent to Crontinel!")
+}
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+go run quickstart.go
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-go` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Install
+
+```bash
+go get github.com/crontinel/go
+```
+
+## Quick Start
+
+```go
+package main
+
+
+    "time"
+    "github.com/crontinel/go"
+)
+
+func main() {
+    client := crontinel.NewClient("your_api_key")
+
+    client.ScheduleRun("reports:generate", 1500, 0)
+    client.QueueProcessed("emails", 50, 2, 3200)
+    client.Event("deployment", "Application deployed", "info", nil)
+}
+```
+
+## `MonitorSchedule`
+
+Run a function and auto-report its outcome:
+
+```go
+durationMs, exitCode := client.MonitorSchedule("reports:generate", func() error {
+    return generateReports()
+})
+fmt.Printf("Completed in %dms, exit_code=%d\n", durationMs, exitCode)
+```
+
+## Asynq integration
+
+```go
+
+
+
+func HandleTask(ctx context.Context, t *asynq.Task) error {
+    start := time.Now()
+    err := processTask(t.Payload())
+    durationMs := time.Since(start).Milliseconds()
+    if err != nil {
+        client.QueueProcessed("default", 0, 1, durationMs)
+        return err
+    }
+    client.QueueProcessed("default", 1, 0, durationMs)
+    return nil
+}
+```
+
+## Options
+
+```go
+client := crontinel.NewClient("key",
+    crontinel.WithAPIURL("https://custom.example.com"),
+    crontinel.WithAppName("my-worker"),
+    crontinel.WithTimeout(30*time.Second),
+)
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+---
+
+# SDKs & Packages
+URL: https://docs.crontinel.com/sdks/
+
+## Start here
+
+Use the [HTTP check-in recipes](/check-in/recipes/) for curl, Python, Node, cron, GitHub Actions, Sidekiq, and agents. That path is finished without installing a language package.
+
+## Maintained deep integration
+
+
+  
+    Laravel — schedule attach, queue depth, Horizon freshness
+    [Install →](/installation/) · [Package docs →](/sdks/laravel/)
+  
+
+
+## Other language repos
+
+GitHub may still list Node, Python, Go, Rust, PHP, Ruby, Rails, CLI, and .NET packages. They are **not** claimed as supported for the current outcome-receipt offer until each package sends that receipt and has a maintenance owner. Prefer [check-in recipes](/check-in/recipes/).
+
+Historical pages remain under `/sdks/*` for reference. Do not treat them as install instructions for production monitoring.
+
+## Which path to pick
+
+| Your job runs in | Use |
+|---|---|
+| Laravel (schedule, queues, Horizon) | The [Laravel package](/sdks/laravel/), which also sends the HTTP receipt |
+| Node, Python, Ruby, Sidekiq, Celery, GitHub Actions, plain cron | An [HTTP check-in recipe](/check-in/recipes/) |
+| Anything else that can make an HTTP request | The same receipt: `POST /api/v1/ingest/cron` with your ingest key |
+
+Whichever you choose, [register the job and its schedule](/check-in/schedule/) so a run that never starts raises an alert, and send a [start receipt](/check-in/start-finish/) if you also want to catch a run that never finishes.
+
+The older per-language pages ([Node.js](/sdks/node/), [Python](/sdks/python/), [Go](/sdks/go/), [Rust](/sdks/rust/), [PHP](/sdks/php/), [Ruby](/sdks/ruby/), [Rails](/sdks/rails/), [CLI](/sdks/cli/), [.NET](/sdks/dotnet/)) are kept for reference only. For plan limits on ingest volume, see [billing and plans](/billing/).
+
+---
+
+# Laravel
+URL: https://docs.crontinel.com/sdks/laravel/
+
+Not on Laravel? Post the [HTTP check-in](/check-in/recipes/) from curl, Node, Python, Sidekiq, or GitHub Actions. You do not need this package.
+
+## Requirements
+
+- PHP 8.2+
+- Laravel 11, 12, or 13
+- Composer 2+
+
+## Install
+
+```bash
+composer require crontinel/laravel
+php artisan crontinel:install
+```
+
+`crontinel:install` publishes the config and runs the package migration. Visit `/crontinel` for the local dashboard.
+
+For hosted monitoring, set:
+
+```env
+CRONTINEL_API_KEY=your-app-ingest-key
+CRONTINEL_API_URL=https://app.crontinel.com
+```
+
+That key is the app ingest key. It is not an MCP / assistant key.
+
+## Business result
+
+Exit code 0 means the process finished. It does not mean the work happened. Record the count or artifact time inside the job. The package sends that on the terminal receipt and omits it when you record nothing. A monitoring error does not fail the job.
+
+```php
+use Crontinel\Outcome;
+
+Outcome::metric('processed_records', $count);
+Outcome::timestamp('latest_artifact', $backup->toIso8601String());
+```
+
+Zero is a real value. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` so the count survives the child process.
+
+## Stable job names
+
+Name the schedule when the command string can change, including a closure:
+
+```php
+$schedule->command('reports:send')->dailyAt('02:00')->environments('production')->name('nightly-import');
+$schedule->call(function () {
+    // the job
+})->daily()->name('nightly-import');
+```
+
+The receipt keeps the command and also sends `job_name`, `environment` when only one environment is set, and `expression`.
+
+List the schedule in Crontinel and set the `processed_records` minimum that means the run counted:
+
+```bash
+php artisan crontinel:schedule --minimum=1
+```
+
+## Horizon and queues
+
+Horizon supervisor freshness and queue depth are Laravel-only evidence. Outside Laravel, absence of a snapshot is normal, not an incident. See the [Horizon](/monitors/horizon/) and [queues](/monitors/queues/) pages.
+
+## Optional command agent
+
+The package can run an allowlisted cloud-triggered agent. Outcome monitoring does not require it.
+
+```bash
+php artisan crontinel:agent
+```
+
+See the [Agent Guide](/agent/guide/).
+
+## Configuration
+
+Review `config/crontinel.php` after install. Full options: [configuration reference](/reference/configuration).
+
+---
+
+# Node.js / TypeScript
+URL: https://docs.crontinel.com/sdks/node/
+
+<Aside type="caution" title="Not the supported outcome path">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/) (`fetch` with the same JSON body). Do not treat `npm install @crontinel/node` as parity with the Laravel package until this repo sends the outcome receipt and has a maintenance owner.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+### 1. Prerequisites
+
+- Node.js 18+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+npm install @crontinel/node
+```
+
+Or with your preferred package manager:
+
+```bash
+# yarn
+yarn add @crontinel/node
+
+# pnpm
+pnpm add @crontinel/node
+```
+
+### 3. Configure
+
+Create a `quickstart.mjs` file:
+
+```javascript
+
+
+const crontinel = new Crontinel({
+  apiKey: process.env.CRONTINEL_API_KEY,
+  appName: 'my-first-app',
+});
+
+// Report a cron job run
+await crontinel.scheduleRun({
+  command: 'hello-from-node',
+  duration_ms: 100,
+  exit_code: 0,
+});
+
+console.log('Data sent to Crontinel!');
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+node quickstart.mjs
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-node` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Requirements
+
+- Node.js 18+
+
+## Install
+
+```bash
+npm install @crontinel/node
+# or
+yarn add @crontinel/node
+# or
+pnpm add @crontinel/node
+```
+
+## Quick Start
+
+```typescript
+
+
+const crontinel = new Crontinel({
+  apiKey: process.env.CRONTINEL_API_KEY!,
+  appName: 'my-service',
+});
+
+// Report a cron job run
+await crontinel.scheduleRun({
+  command: 'reports:generate',
+  duration_ms: 2340,
+  exit_code: 0, // 0 = success, 1 = failure
+});
+
+// Report queue worker activity
+await crontinel.queueProcessed({
+  queue: 'emails',
+  processed: 12,
+  failed: 0,
+  duration_ms: 8901,
+});
+```
+
+## `monitorSchedule` helper
+
+Wrap any async function and automatically report its outcome:
+
+```typescript
+const result = await crontinel.monitorSchedule('reports:generate', async () => {
+  const sent = await sendDailyReports();
+  return { sent, failed: 0 };
+});
+// { result: { sent: 142, failed: 0 }, duration_ms: 1840, exit_code: 0 }
+```
+
+## BullMQ integration
+
+```typescript
+
+
+
+const crontinel = new Crontinel({ apiKey: process.env.CRONTINEL_API_KEY! });
+
+const worker = new Worker('emails', async (job) => {
+  const start = Date.now();
+  try {
+    const result = await processJob(job);
+    await crontinel.queueProcessed({ queue: 'emails', processed: 1, failed: 0, duration_ms: Date.now() - start });
+    return result;
+  } catch (err) {
+    await crontinel.queueProcessed({ queue: 'emails', processed: 0, failed: 1, duration_ms: Date.now() - start });
+    throw err;
+  }
+}, { connection: redisConnection });
+```
+
+## node-cron integration
+
+```typescript
+
+
+
+const crontinel = new Crontinel({ apiKey: process.env.CRONTINEL_API_KEY! });
+
+cron.schedule('0 9 * * *', async () => {
+  const result = await crontinel.monitorSchedule('send-daily-reports', dailyReportTask);
+  console.log('Report sent:', result.exit_code === 0 ? 'OK' : 'FAILED');
+});
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+---
+
+# PHP
+URL: https://docs.crontinel.com/sdks/php/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- PHP 8.1+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+composer require crontinel/php
+```
+
+### 3. Configure
+
+Create a `quickstart.php` file:
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+$crontinel = new \Crontinel\Client(getenv('CRONTINEL_API_KEY'));
+
+$crontinel->scheduleRun([
+    'command' => 'hello-from-php',
+    'duration_ms' => 100,
+    'exit_code' => 0,
+]);
+
+echo "Data sent to Crontinel!\n";
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+php quickstart.php
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-php` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Requirements
+
+- PHP 8.1+
+
+## Install
+
+```bash
+composer require crontinel/php
+```
+
+## Quick Start
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+$crontinel = new \Crontinel\Client(getenv('CRONTINEL_API_KEY'));
+
+// Report a cron job run
+$crontinel->scheduleRun([
+    'command' => 'reports:generate',
+    'duration_ms' => 2340,
+    'exit_code' => 0,
+]);
+
+// Report queue worker activity
+$crontinel->queueProcessed([
+    'queue' => 'emails',
+    'processed' => 12,
+    'failed' => 0,
+    'duration_ms' => 8901,
+]);
+```
+
+## `monitorSchedule`
+
+Wrap any callable and auto-report outcome:
+
+```php
+$result = $crontinel->monitorSchedule('reports:generate', function () {
+    return generateDailyReports();
+});
+// ['result' => ..., 'duration_ms' => 1840, 'exit_code' => 0]
+```
+
+## Symfony Messenger integration
+
+```php
+$crontinel->wrap(function (array $payload) use ($handler) {
+    $start = microtime(true) * 1000;
+    try {
+        $result = $handler($payload);
+        $crontinel->queueProcessed([
+            'queue' => 'default', 'processed' => 1, 'failed' => 0,
+            'duration_ms' => (int)(microtime(true) * 1000 - $start),
+        ]);
+        return $result;
+    } catch (\Throwable $e) {
+        $crontinel->queueProcessed([
+            'queue' => 'default', 'processed' => 0, 'failed' => 1,
+            'duration_ms' => (int)(microtime(true) * 1000 - $start),
+        ]);
+        throw $e;
+    }
+});
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+## Laravel
+
+For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) instead — it auto-instruments Horizon, the scheduler, and queue workers with zero code changes.
+
+---
+
+# Python
+URL: https://docs.crontinel.com/sdks/python/
+
+<Aside type="caution" title="Not the supported outcome path">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/) (`outcome_checkin.py` or the same JSON body). Do not treat `pip install crontinel` as parity with the Laravel package until this repo sends the outcome receipt and has a maintenance owner.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+### 1. Prerequisites
+
+- Python 3.9+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+pip install crontinel
+```
+
+For async support with httpx:
+
+```bash
+pip install "crontinel[httpx]"
+```
+
+### 3. Configure
+
+Create a `quickstart.py` file:
+
+```python
+from crontinel import Crontinel
+
+
+client = Crontinel(
+    api_key=os.environ["CRONTINEL_API_KEY"],
+    app_name="my-first-app",
+)
+
+# Report a cron job run
+client.schedule_run(
+    command="hello-from-python",
+    duration_ms=100,
+    exit_code=0,
+)
+
+print("Data sent to Crontinel!")
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+python quickstart.py
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-python` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Requirements
+
+- Python 3.9+
+
+## Install
+
+```bash
+pip install crontinel
+# with httpx for async support:
+pip install "crontinel[httpx]"
+```
+
+## Quick Start
+
+```python
+from crontinel import Crontinel
+
+
+client = Crontinel(
+    api_key=os.environ["CRONTINEL_API_KEY"],
+    app_name="my-worker",
+)
+
+# Report a cron job run
+client.schedule_run(
+    command="reports:generate",
+    duration_ms=2340,
+    exit_code=0,  # 0 = success, 1 = failure
+)
+
+# Report queue worker activity
+client.queue_processed(
+    queue="emails",
+    processed=12,
+    failed=0,
+    duration_ms=8901,
+)
+```
+
+## `monitor_schedule` helper
+
+Wrap any function and automatically report its outcome:
+
+```python
+result, duration_ms, exit_code = client.monitor_schedule(
+    "reports:generate",
+    generate_daily_reports,
+)
+print(f"Completed in {duration_ms}ms, exit_code={exit_code}")
+```
+
+## Celery integration
+
+```python
+from celery import Celery
+from crontinel import Crontinel
+
+
+app = Celery('tasks')
+client = Crontinel(api_key=os.environ["CRONTINEL_API_KEY"])
+
+@app.task
+def send_emails(recipients):
+    start = time.time()
+    try:
+        result = _send_emails(recipients)
+        client.queue_processed(queue="emails", processed=len(recipients), failed=0,
+                              duration_ms=int((time.time()-start)*1000))
+        return result
+    except Exception as e:
+        client.queue_processed(queue="emails", processed=0, failed=len(recipients),
+                              duration_ms=int((time.time()-start)*1000))
+        raise
+```
+
+## APScheduler integration
+
+```python
+from apscheduler.schedulers.blocking import BlockingScheduler
+from crontinel import Crontinel
+
+client = Crontinel(api_key=os.environ["CRONTINEL_API_KEY"])
+scheduler = BlockingScheduler()
+
+@scheduler.scheduled_job("cron", hour=9, minute=0)
+def daily_reports():
+    duration_ms, exit_code = client.monitor_schedule("reports:generate", generate_reports)
+
+scheduler.start()
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+---
+
+# Ruby on Rails
+URL: https://docs.crontinel.com/sdks/rails/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Ruby 3.0+
+- Rails 6.1+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+Add to your `Gemfile`:
+
+```ruby
+gem "crontinel", "~> 0.1"
+gem "crontinel-rails", "~> 0.1"
+```
+
+```bash
+bundle install
+```
+
+### 3. Configure
+
+Create `config/initializers/crontinel.rb`:
+
+```ruby
+Crontinel.setup do |config|
+  config.api_key = ENV.fetch("CRONTINEL_API_KEY")
+end
+```
+
+Set the environment variable:
+
+```bash
+# .env or export
+CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+```
+
+### 4. Add to a job
+
+Add the module to any ActiveJob:
+
+```ruby
+class MyJob < ApplicationJob
+  include Crontinel::Rails::ActiveJob
+
+  def perform(*args)
+    # your job work — auto-reported
+  end
+end
+```
+
+### 5. Dashboard verification
+
+1. Queue the job: `MyJob.perform_later`
+2. Run your worker: `bundle exec sidekiq` or `bundle exec good_job start`
+3. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+4. Check the **Queue** section — you should see `MyJob` with its run data
+
+<Aside>
+Crontinel auto-instruments ActiveJob so every job run is recorded automatically. No manual reporting calls needed.
+</Aside>
+
+---
+
+## Requirements
+
+- Ruby 3.0+
+- Rails 6.1+
+
+## Install
+
+Add to your `Gemfile`:
+
+```ruby
+gem "crontinel", "~> 0.1"
+gem "crontinel-rails", "~> 0.1"
+```
+
+```bash
+bundle install
+```
+
+## Configuration
+
+Create `config/initializers/crontinel.rb`:
+
+```ruby
+Crontinel.setup do |config|
+  config.api_key = ENV.fetch("CRONTINEL_API_KEY")
+end
+```
+
+Set the environment variable:
+
+```bash
+# .env
+CRONTINEL_API_KEY=crn_live_...
+```
+
+## ActiveJob integration
+
+Automatically tracks all `ActiveJob.perform_later` jobs:
+
+```ruby
+class MyJob < ApplicationJob
+  include Crontinel::Rails::ActiveJob
+
+  def perform(*args)
+    # your job work — auto-reported
+  end
+end
+```
+
+The module wraps `around_perform` automatically. No other changes needed.
+
+## ActiveScheduler integration
+
+Automatically tracks jobs scheduled with [ActiveScheduler](https://github.com/rails-engine/active_scheduler):
+
+```ruby
+# config/initializers/crontinel.rb
+Rails.application.config.active_scheduler do |scheduler|
+  scheduler.include Crontinel::Rails::ActiveScheduler
+end
+```
+
+## Sidekiq server middleware
+
+```ruby
+require "crontinel/rails/sidekiq/server_middleware"
+
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add Crontinel::Rails::Sidekiq::ServerMiddleware
+  end
+end
+```
+
+## Rake tasks
+
+```ruby
+# lib/tasks/reports.rake
+namespace :reports do
+  task daily: :environment do
+    crontinel = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
+
+    crontinel.task_started(name: "reports:daily")
+    begin
+      GenerateDailyReport.call
+      crontinel.task_finished(name: "reports:daily", duration_ms: 0)
+    rescue => e
+      crontinel.task_failed(name: "reports:daily", error: e.message, duration_ms: 0)
+      raise
+    end
+  end
+end
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+---
+
+# Ruby
+URL: https://docs.crontinel.com/sdks/ruby/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Ruby 3.0+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+```bash
+gem install crontinel
+```
+
+Or add to your `Gemfile`:
+
+```ruby
+gem "crontinel", "~> 0.1"
+```
+
+### 3. Configure
+
+Create a `quickstart.rb` file:
+
+```ruby
+require "crontinel"
+
+client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
+
+client.task_finished(name: "hello-from-ruby", duration_ms: 100)
+
+puts "Data sent to Crontinel!"
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+ruby quickstart.rb
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-ruby` job with `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Requirements
+
+- Ruby 3.0+
+
+## Install
+
+Add to your `Gemfile`:
+
+```ruby
+gem "crontinel", "~> 0.1"
+```
+
+Or install directly:
+
+```bash
+gem install crontinel
+```
+
+## Quick Start
+
+```ruby
+require "crontinel"
+
+client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
+
+client.task_started(name: "send-daily-summary")
+result = send_daily_summary
+client.task_finished(name: "send-daily-summary", duration_ms: 520)
+```
+
+### With error handling
+
+```ruby
+client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
+
+begin
+  client.task_started(name: "process-invoices")
+  process_invoices
+  client.task_finished(name: "process-invoices", duration_ms: 3200)
+rescue => e
+  client.task_failed(name: "process-invoices", error: e.message, duration_ms: 150)
+  raise
+end
+```
+
+## Sidekiq integration
+
+```ruby
+require "crontinel"
+
+Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
+
+# In your worker
+class MyJob
+  include Sidekiq::Worker
+
+  def perform(*args)
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    do_work(*args)
+    Crontinel.client.task_finished(
+      name: "MyJob",
+      duration_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
+    )
+  rescue => e
+    Crontinel.client.task_failed(
+      name: "MyJob",
+      error: e.message,
+      duration_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
+    )
+    raise
+  end
+end
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
+| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+
+## Rails
+
+For Ruby on Rails applications, use [`crontinel-rails`](https://github.com/crontinel/ruby-on-rails) instead — it auto-instruments ActiveJob and ActiveScheduler.
+
+---
+
+# Rust
+URL: https://docs.crontinel.com/sdks/rust/
+
+<Aside type="caution">
+For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+</Aside>
+
+## Quickstart
+
+Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+
+Get from zero to your first data in under 3 minutes.
+
+### 1. Prerequisites
+
+- Rust 1.75+
+- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- An app created in the dashboard
+- Your API key (`crn_live_...`) from app settings
+
+### 2. Install
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+crontinel = "0.1"
+```
+
+### 3. Configure
+
+Create a `src/bin/quickstart.rs` file:
+
+```rust
+use crontinel::Crontinel;
+use std::env;
+
+fn main() {
+    let api_key = env::var("CRONTINEL_API_KEY")
+        .expect("CRONTINEL_API_KEY must be set");
+    let client = Crontinel::new(&api_key);
+
+    client.schedule_run("hello-from-rust", Some(100), 0).unwrap();
+
+    println!("Data sent to Crontinel!");
+}
+```
+
+Set your API key and run it:
+
+```bash
+export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+cargo run --bin quickstart
+```
+
+### 4. Dashboard verification
+
+1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
+2. Check the **Cron** section — you should see the `hello-from-rust` job with exit code `0` and `100ms` duration
+3. Your first data is on the dashboard!
+
+<Aside>
+If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
+</Aside>
+
+---
+
+## Install
+
+```toml
+[dependencies]
+crontinel = "0.1"
+```
+
+## Quick Start
+
+```rust
+use crontinel::Crontinel;
+
+let client = Crontinel::new("your_api_key");
+
+client.schedule_run("reports:generate", Some(1500), 0).unwrap();
+client.queue_processed("emails", 50, 2, Some(3200)).unwrap();
+client.event("deployment", "Application deployed", "info", None).unwrap();
+```
+
+## Builder
+
+```rust
+use std::time::Duration;
+
+let client = Crontinel::builder("key")
+    .api_url("https://custom.example.com")
+    .app_name("my-worker")
+    .timeout(Duration::from_secs(30))
+    .build();
+```
+
+## `monitor_schedule`
+
+```rust
+let (ms, code) = client.monitor_schedule("reports:generate", || Ok(()));
+assert_eq!(code, 0);
+```
+
+## Tokio cron-scheduler integration
+
+```rust
+use crontinel::Crontinel;
+use tokio_cron_scheduler::{Job, JobScheduler};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Crontinel::new("your_api_key");
+    let scheduler = JobScheduler::new().await?;
+
+    let job = Job::new_async("0 9 * * *", move |_uuid, _l| {
+        let client = client.clone();
+        Box::pin(async move {
+            let (ms, code) = client.monitor_schedule("daily-reports", || Ok(()));
+            println!("Reports done in {ms}ms, code={code}");
+        })
+    })?;
+
+    scheduler.add(job).await?;
+    scheduler.start().await?;
+    Ok(())
+}
+```
+
+---
+
+# Security
+URL: https://docs.crontinel.com/security/
+
+## Dashboard hardening
+
+### Restrict access with middleware
+
+By default, the dashboard uses `['web', 'auth']` middleware — any authenticated user can view it. For production, restrict access further:
+
+```php
+// config/crontinel.php
+'middleware' => ['web', 'auth', 'can:viewCrontinel'],
+```
+
+Define the `viewCrontinel` gate in a service provider:
+
+```php
+Gate::define('viewCrontinel', function ($user) {
+    return in_array($user->email, explode(',', env('CRONTINEL_ADMIN_EMAILS', '')));
+});
+```
+
+Or use a role check if you have a role system:
+
+```php
+Gate::define('viewCrontinel', fn ($user) => $user->hasRole('admin'));
+```
+
+### Move the dashboard path
+
+Change the default `/crontinel` path to something less predictable:
+
+```env
+CRONTINEL_PATH=internal/ops/monitor
+```
+
+The dashboard is then at `/internal/ops/monitor`. Security through obscurity alone isn't sufficient — always require authentication — but an unusual path reduces automated scanning.
+
+### HTTPS only
+
+The dashboard exposes operational data (job names, queue depths, failure rates). Always serve it over HTTPS in production. In Laravel, force HTTPS by setting `APP_URL` to an `https://` URL and using `URL::forceScheme('https')` in a service provider if your server terminates TLS upstream.
+
+---
+
+## What data the package captures
+
+Crontinel records the following from your Laravel application:
+
+| Data type | What's captured | What's NOT captured |
+|---|---|---|
+| Cron runs | Command name, status, duration, exit code | Command arguments (see note) |
+| Queue | Queue name, depth count, failed count | Job payloads, job class arguments |
+| Horizon | Status, supervisor count, failed/min rate | Job data, worker logs |
+
+**No user data, no request data, no environment variables, and no application secrets are captured.**
+
+> **Note on command arguments:** The package resolves the scheduled task's command string via Laravel's `Command` class, which includes arguments passed to the Artisan command. If your scheduled task commands contain secrets (API keys, passwords) as arguments, those values will be recorded. Avoid passing secrets as command arguments in scheduled tasks.
+>
+> **Note on output:** When a scheduled task fails, the exception message is stored as `output`. If the exception message contains sensitive data, it will be captured.
+
+Job output can optionally be captured if `'capture_output' => true` is set in `config/crontinel.php`, but this is disabled by default and should only be enabled if your job output contains no sensitive data.
+
+---
+
+## What data is sent to the SaaS
+
+**Nothing is sent unless `CRONTINEL_API_KEY` is set in your environment.**
+
+When the key is present, the package sends the data types listed above (cron summaries, queue snapshots, Horizon status) to `app.crontinel.com` over HTTPS. Data is transmitted as JSON in the request body.
+
+If you operate in an air-gapped or restricted environment, omit `CRONTINEL_API_KEY` entirely. The local dashboard works without it.
+
+---
+
+## Webhook HMAC signing
+
+When Crontinel fires an outbound webhook alert, it signs the request body with HMAC-SHA256 using a secret you define. This lets your endpoint verify the request came from Crontinel and wasn't tampered with.
+
+### Configuring the secret
+
+```env
+CRONTINEL_WEBHOOK_SECRET=your-signing-secret
+```
+
+```php
+// config/crontinel.php
+'webhook' => [
+    'url'    => env('CRONTINEL_WEBHOOK_URL'),
+    'secret' => env('CRONTINEL_WEBHOOK_SECRET'),
+],
+```
+
+### Verifying the signature
+
+Crontinel adds an `X-Crontinel-Signature` header to every webhook request:
+
+```
+X-Crontinel-Signature: sha256=<hex_digest>
+```
+
+Verify it in your endpoint:
+
+```php
+$payload   = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_CRONTINEL_SIGNATURE'] ?? '';
+$expected  = 'sha256=' . hash_hmac('sha256', $payload, env('CRONTINEL_WEBHOOK_SECRET'));
+
+if (! hash_equals($expected, $signature)) {
+    http_response_code(401);
+    exit('Invalid signature');
+}
+```
+
+Use `hash_equals()` to prevent timing attacks.
+
+---
+
+## Additional recommendations
+
+- **Rotate `CRONTINEL_API_KEY` regularly** if you use the SaaS. Revoke and reissue from the app dashboard under Settings → API Keys.
+- **Use a dedicated alert email address** (`alerts@your-company.com`) rather than a personal inbox — this makes it easier to audit who receives operational alerts.
+- **Audit team members** on your Crontinel account periodically. Access is managed per-team; remove former employees from the dashboard team as part of your offboarding checklist.
+
+---
+
+# Self-Hosting
+URL: https://docs.crontinel.com/self-hosting/
+
+:::note
+Self-hosting requires you to manage upgrades, backups, and queue workers yourself. If that's not what you want, [app.crontinel.com](https://app.crontinel.com) handles all of this for you.
+:::
+
+Self-hosted Crontinel works fully standalone. You do not need a crontinel.com account or API key. The dashboard, alerts, and all monitoring features run entirely on your server.
+
+> **Note:** The hosted product is [app.crontinel.com](https://app.crontinel.com). The app repo is private; self-hosting is an operator choice, not a Starter/Pro/Max entitlement claim. See [Billing & Plans](/billing/).
+
+## Requirements
+
+| Component | Minimum version |
+|---|---|
+| PHP | 8.5 |
+| PostgreSQL | 15 |
+| Node.js | 20 |
+| Redis | Optional — queue driver can be `database` or `sync` instead |
+
+## 1. Clone and install
+
+```bash
+git clone https://github.com/crontinel/app.git
+cd app
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+```
+
+## 2. Environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Set these values in `.env`:
+
+```ini
+APP_URL=https://your-domain.com
+APP_ENV=production
+APP_DEBUG=false
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=crontinel
+DB_USERNAME=postgres
+DB_PASSWORD=
+DB_SSLMODE=require
+
+REDIS_HOST=127.0.0.1
+
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=alerts@your-domain.com
+
+# Alert channels (email and webhook both work in self-hosted mode)
+CRONTINEL_ALERT_CHANNEL=email
+CRONTINEL_ALERT_EMAIL=alerts@your-domain.com
+```
+
+## 3. Database
+
+```bash
+php artisan migrate --force
+```
+
+## 4. Permissions
+
+```bash
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+```
+
+## 5. Web server
+
+Caddy is the simplest option here. It provisions TLS certificates automatically via Let's Encrypt with zero config. If you prefer Nginx, you'll need to manage certificates yourself (see below).
+
+### Caddy
+
+```
+your-domain.com {
+    root * /var/www/crontinel-app/public
+    php_fastcgi unix//var/run/php/php8.5-fpm.sock
+    file_server
+}
+```
+
+### Nginx
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate     /etc/ssl/certs/your-domain.com.pem;
+    ssl_certificate_key /etc/ssl/private/your-domain.com.key;
+
+    root /var/www/crontinel-app/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.5-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+Replace the `ssl_certificate` and `ssl_certificate_key` paths with your actual cert and key. If you use Certbot, the paths are typically `/etc/letsencrypt/live/your-domain.com/fullchain.pem` and `privkey.pem`.
+
+## 6. Queue workers
+
+Crontinel needs a persistent queue worker to process ping events, alerts, and Horizon data.
+
+Create a Supervisor config at `/etc/supervisor/conf.d/crontinel.conf`:
+
+```ini
+[program:crontinel-worker]
+command=php /var/www/crontinel-app/artisan queue:work redis --queue=crontinel,default --sleep=3 --tries=3 --max-time=3600
+directory=/var/www/crontinel-app
+user=www-data
+numprocs=2
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stdout_logfile=/var/log/crontinel/worker.log
+```
+
+The `--queue=crontinel,default` flag is important. Without it, workers only process the `default` queue and won't pick up alert evaluation or ping processing jobs that Crontinel dispatches to the `crontinel` queue. The order matters: `crontinel` is listed first so those jobs get priority.
+
+Then:
+
+```bash
+supervisorctl reread
+supervisorctl update
+supervisorctl start crontinel-worker:*
+```
+
+## 7. Scheduler
+
+Add the Laravel scheduler to cron for `www-data`:
+
+```bash
+* * * * * cd /var/www/crontinel-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## 8. Verify
+
+```bash
+php artisan queue:monitor redis:default
+php artisan horizon:status
+```
+
+Check `/health` returns `200` -- that endpoint is always unauthenticated.
+
+## Access the dashboard
+
+After install, visit `/crontinel` on your domain to open the monitoring dashboard. The dashboard shows Horizon status, queue throughput, and cron job data once the scheduler and queue workers are running.
+
+## Upgrades
+
+```bash
+git pull
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+supervisorctl restart crontinel-worker:*
+```
+
+---
+
+# Status Pages
+URL: https://docs.crontinel.com/status-page/
+
+> **Out of the current launch offer.** Crontinel’s launch story is outcome monitoring for background jobs (HTTP receipt + optional Laravel package). Customer status pages, uptime probes, and badges are not sold as part of that offer. This page describes UI that may still exist in the app; do not treat it as a launch promise.
+
+## Why a status page
+
+When something breaks, users often want a single URL. That product surface is separate from outcome monitoring and is not part of the current launch claim.
+
+## How it works
+
+Your status page is served from your own domain via CNAME. Users visit `status.yourdomain.com` and see your status page, while the URL stays `status.yourdomain.com` in their browser.
+
+## Creating your first status page
+
+Create a status page from the dashboard under **Status Pages → Create**. Each page gets:
+
+- A unique domain identifier (your main domain, e.g. `yourdomain.com`)
+- A CNAME target to add to your DNS
+
+## Setting up your CNAME
+
+After creating a status page, you'll see a CNAME target: `app.crontinel.com`.
+
+Add this DNS record to your domain:
+
+| Type | Name | Target |
+|------|------|--------|
+| CNAME | `status` | `app.crontinel.com` |
+
+Once added, your status page will be live at `status.yourdomain.com`.
+
+It can take a few minutes for DNS to propagate.
+
+## Your status page URL
+
+After setup, your status page is available at:
+
+```
+https://status.yourdomain.com
+```
+
+Where `yourdomain.com` is the domain you specified when creating the page.
+
+## Adding monitors
+
+From **Status Pages → Edit**, select which monitors appear on the page. Each monitor shows as a row with:
+
+- Current status indicator
+- Response time
+- Last checked time
+
+Only the monitors you choose are visible. Internal or sensitive checks stay private.
+
+## Incident management
+
+Post incidents manually from **Status Pages → Incidents → New Incident**. Each incident moves through four stages:
+
+1. **Investigating** – you're aware and looking into it
+2. **Identified** – root cause found
+3. **Monitoring** – fix deployed, watching for recurrence
+4. **Resolved** – back to normal
+
+Updates appear on the status page in reverse chronological order.
+
+## Custom domains
+
+Custom domains may exist in the app UI. They are not a Starter/Pro/Max launch entitlement. Status pages remain out of the current offer.
+
+---
+
+# Troubleshooting
+URL: https://docs.crontinel.com/troubleshooting/
+
+## Dashboard not loading (404)
+
+If you hit `/crontinel` and get a 404, the routes aren't registered. First, make sure you ran the install command:
+
+```bash
+php artisan crontinel:install
+php artisan migrate
+```
+
+Then clear the route cache:
+
+```bash
+php artisan route:clear
+```
+
+If you're still getting a 404, check whether something else is already using the `/crontinel` path. Another package or a custom route can shadow it. Change the path in your `.env`:
+
+```env
+CRONTINEL_PATH=monitoring  # Required environment variable
+```
+
+### Auth middleware blocking access
+
+The dashboard uses `['web', 'auth']` middleware by default. If you're getting redirected to a login page, you're not authenticated in your current session. For local development, you can temporarily loosen this in `config/crontinel.php`:
+
+```php
+'middleware' => ['web'],
+```
+
+Don't ship that to production. Instead, add whatever gate or policy middleware your app uses:
+
+```php
+'middleware' => ['web', 'auth', 'can:view-monitoring'],
+```
+
+## Runs from curl, Node, Python, Sidekiq, or GitHub Actions not showing up
+
+Check these in order. The Laravel steps further down do not apply.
+
+1. **Status code.** Remove `|| true` once and look at the response. `422` names the missing field. `started_at`, `command`, and `status` are required. `401` is a wrong or revoked key. Use the app **ingest key**, not an MCP key.
+2. **Timestamps.** `started_at` and `finished_at` are ISO 8601 and must not be more than five minutes in the future.
+3. **Same key, different run.** `409` means the `request_key` was already used for another identity or a finished run. Use a new key for each execution.
+4. **Coverage says unknown.** Register the job with [a schedule](/check-in/schedule/). Crontinel does not read crontab or your scheduler.
+5. **No missed-run alert.** The job needs a cron `expression` in its registration, and Crontinel checks only occurrences after you registered it. Its receipts must use the same `command`.
+
+## Cron runs not showing up (Laravel)
+
+This is the most common issue people hit after installation. There are three things to check, in order.
+
+### 1. Is the scheduler actually running?
+
+Crontinel listens for Laravel's `ScheduledTaskStarting`, `ScheduledTaskFinished`, and `ScheduledTaskFailed` events. If the scheduler itself isn't running, there's nothing to capture. Verify it's set up in your server's crontab:
+
+```bash
+crontab -l | grep artisan
+```
+
+You should see something like:
+
+```
+* * * * * cd /path-to-your-app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+If that line is missing, no scheduled tasks will run at all, and Crontinel will have nothing to record.
+
+### 2. Did you run the migration?
+
+Crontinel stores cron run history in a database table. If the table doesn't exist, events fire but there's nowhere to write them. Run:
+
+```bash
+php artisan migrate
+```
+
+Check that the `crontinel_cron_runs` table exists in your database.
+
+### 3. Is the cron monitor enabled?
+
+Open `config/crontinel.php` and confirm:
+
+```php
+'cron' => [
+    'enabled' => true,
+    'late_alert_after_seconds' => 120,
+    'retain_days' => 30,
+],
+```
+
+If `enabled` is `false`, the event listeners won't register and nothing gets tracked.
+
+## Queue monitor showing no data
+
+The queue monitor reads queue depth, failed job counts, and wait times. If it's showing zeros or nothing at all, the issue is almost always the queue driver.
+
+### Wrong driver
+
+Crontinel's queue monitor works with Redis and database drivers. If your `QUEUE_CONNECTION` is set to `sync`, there's no queue to monitor because jobs execute immediately. Check your `.env`:
+
+```env
+QUEUE_CONNECTION=redis
+```
+
+### Redis connection mismatch
+
+If you're using Redis, make sure Crontinel can reach the same Redis instance your queues use. The queue monitor reads from whatever connection your `QUEUE_CONNECTION` points to in `config/queue.php`. If you've got a non-default Redis setup (custom host, port, or database number), Crontinel follows the same config, so there's nothing extra to set.
+
+One thing that trips people up: if you use a separate Redis database for queues (say, database `1`) but your default Redis connection points to database `0`, the monitor might not see your queues. Double-check the `connection` value in your `config/queue.php` Redis driver config.
+
+## Horizon monitor not working
+
+Two things can cause the Horizon section to show nothing.
+
+### Horizon not installed
+
+The Horizon monitor reads Horizon's Redis keys directly. If you don't have `laravel/horizon` installed, there are no keys to read. Crontinel won't crash, but the Horizon section will be empty. Either install Horizon or disable the monitor:
+
+```php
+'horizon' => ['enabled' => false],
+```
+
+### Wrong Redis connection
+
+Crontinel needs to connect to the same Redis instance Horizon uses. By default it looks for the `horizon` connection in your `config/database.php` Redis config. If Horizon uses a different connection name, update it:
+
+```php
+// config/crontinel.php
+'horizon' => [
+    'enabled' => true,
+    'connection' => 'your-horizon-connection',
+],
+```
+
+Here's the thing: if `horizon:status` returns `null` from Redis, Crontinel can't determine Horizon's state. Run `redis-cli` and check manually:
+
+```bash
+redis-cli -n 0 GET horizon:status
+```
+
+If that returns nothing but Horizon is definitely running, you're connected to the wrong Redis database.
+
+## Alerts not firing
+
+You've set thresholds, something is clearly broken, but no Slack message. No email. Here's where to look.
+
+### No alert channel configured
+
+Crontinel needs to know where to send alerts. Check that you've set the channel in your `.env`:
+
+```env
+CRONTINEL_ALERT_CHANNEL=slack  # Required environment variable
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/T00/B00/xxx  # Required environment variable
+```
+
+Or for email:
+
+```env
+CRONTINEL_ALERT_CHANNEL=mail
+CRONTINEL_ALERT_EMAIL=ops@yourapp.com
+```
+
+If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn't send notifications anywhere.
+
+### Deduplication window
+
+The same alert won't re-fire for 5 minutes. So if a queue breached its threshold, Crontinel fired the alert, and you missed it, you won't see another one until the dedup window resets. Check your Slack channel's history or your email spam folder for the initial alert.
+
+### Slack webhook URL invalid
+
+Slack webhooks expire if the app is uninstalled or the channel is deleted. Test the webhook directly:
+
+```bash
+curl -X POST -H 'Content-type: application/json' \
+  --data '{"text":"test"}' \
+  https://hooks.slack.com/services/T00/B00/xxx
+```
+
+If that returns `invalid_payload` or `channel_not_found`, regenerate the webhook in your Slack app settings.
+
+### SaaS alert channels
+
+If you're using Crontinel SaaS (app.crontinel.com), alert channels are configured in the web dashboard, not in your local config. Your local `CRONTINEL_ALERT_CHANNEL` only applies to the self-hosted setup. The SaaS version manages channels, thresholds, and routing through its own UI.
+
+## CLI check returns unexpected results
+
+`php artisan crontinel:check` exits `0` when everything is healthy and `1` when any alert condition is active. If you're getting unexpected results:
+
+```bash
+php artisan crontinel:check --format=json
+```
+
+This prints the full status payload so you can see exactly which monitor is unhealthy and why. Common surprises:
+
+The Horizon monitor reports unhealthy because a supervisor heartbeat is stale, even though `horizon:status` says `running`. Crontinel tracks each supervisor independently. A single dead supervisor triggers the unhealthy state. Restart Horizon to clear it:
+
+```bash
+php artisan horizon:terminate
+php artisan horizon
+```
+
+If the CLI check shows healthy but your dashboard shows alerts, you might have a caching issue. Clear the application cache:
+
+```bash
+php artisan cache:clear
+```
+
+## SaaS connection issues
+
+If you're using the hosted version at app.crontinel.com and your app isn't showing data there, check these things.
+
+### API key
+
+Your `.env` needs the API key from your Crontinel SaaS dashboard:
+
+```env
+CRONTINEL_API_KEY=cnt_live_xxxxxxxxxxxxxxxx  # Required environment variable
+```
+
+If the key is missing or wrong, the package falls back to local-only mode silently. No errors in your logs, just no data on the SaaS dashboard.
+
+### Network and firewall
+
+Your server needs outbound HTTPS access to `app.crontinel.com` on port 443. In containerized environments or strict firewall setups, this can be blocked. Test from your server:
+
+```bash
+curl -I https://app.crontinel.com/api/v1/ping
+```
+
+You should get a `200` response. If you get a timeout or connection refused, your firewall or network config is blocking outbound traffic.
+
+### API URL override
+
+If you're self-hosting the Crontinel backend, make sure the URL points to your instance:
+
+```env
+CRONTINEL_API_URL=https://crontinel.internal.yourcompany.com  # Required environment variable
+```
+
+The default is `https://app.crontinel.com`, so you only need this if you're running your own backend.
+
+## Dashboard is completely empty after install
+
+You installed the package, ran migrations, opened `/crontinel`, and every section is blank. No cron data, no queue data, nothing.
+
+### Nothing has run yet
+
+Crontinel does not generate synthetic data. It only shows real activity from your app. If your scheduler has not executed since install, the cron section will be empty. If your queues have no pending jobs, the queue section will show zeros. This is correct behavior.
+
+To seed initial data, trigger a scheduler tick:
+
+```bash
+php artisan schedule:run
+```
+
+Or, for local development, start the scheduler worker:
+
+```bash
+php artisan schedule:work
+```
+
+Queue data appears as soon as jobs are dispatched. Push a test job to confirm:
+
+```bash
+php artisan tinker --execute="dispatch(fn() => logger('test'));"
+```
+
+Refresh the dashboard after each step. Data should appear within a few seconds.
+
+### Service provider not registered
+
+If the dashboard route exists but shows a blank page with no data at all, the service provider may not be loading. Verify it is discovered:
+
+```bash
+php artisan about | grep -i crontinel
+```
+
+If Crontinel does not appear in the output, check that `composer require` completed successfully and that you are not blocking auto-discovery in your `composer.json` `extra.laravel.dont-discover` array.
+
+## Cron runs recorded but alerts are not firing
+
+The cron section shows runs (including failures or late tasks), but you never receive an alert. This is different from the "alerts not firing" section above, which covers channel configuration. Here the channel is set up, but specific cron thresholds are not.
+
+### Late-run threshold not configured
+
+Crontinel only fires a "late cron" alert when a task exceeds the `late_alert_after_seconds` value. If this is set too high (or left at the default), tasks that are a few minutes late won't trigger anything. Check your config:
+
+```php
+// config/crontinel.php
+'cron' => [
+    'enabled' => true,
+    'late_alert_after_seconds' => 120,  // fires if a task is >2 minutes late
+    'retain_days' => 30,
+],
+```
+
+Lower the value if you need tighter alerting. For example, setting it to `60` will fire alerts for tasks that are more than one minute late.
+
+### Failed-run alerts require the alert channel
+
+Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured. If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
+
+### Dedup window hiding repeated failures
+
+If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; subsequent failures within that window are suppressed. If you missed the initial alert, check your Slack channel history or email spam folder. The next alert will fire after the dedup window expires.
+
+## Still stuck?
+
+Run the full diagnostics:
+
+```bash
+php artisan crontinel:check --format=json
+```
+
+If the output doesn't point you to the issue, open a GitHub issue on [crontinel/app](https://github.com/crontinel/app/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.
+
+---
+
+# Upgrading
+URL: https://docs.crontinel.com/upgrading/
+
+## General upgrade steps
+
+Every Crontinel upgrade follows the same sequence:
+
+```bash
+composer update crontinel/laravel
+php artisan migrate
+php artisan config:clear
+php artisan cache:clear
+php artisan crontinel:check
+```
+
+1. **Update the package** via Composer.
+2. **Run migrations.** New releases may add or modify database tables. The package uses its own migration files, so this is safe to run alongside your app migrations.
+3. **Clear config and cache.** This ensures Laravel picks up any new config defaults or service provider changes.
+4. **Run the health check.** Confirms your database tables are current, the API key is valid (if configured), and monitors are responding.
+
+### Config changes between versions
+
+When a new version introduces config options, your existing `config/crontinel.php` won't include them automatically. You have two options:
+
+1. Re-publish and compare:
+
+```bash
+php artisan vendor:publish --tag=crontinel-config
+```
+
+This will prompt before overwriting your file. Decline the overwrite, then diff the new defaults against your current config.
+
+2. Check the version-specific notes below and add the new keys manually. This is faster when only a few options changed.
+
+## v0.7.x to v0.8.0
+
+Released: 2026-10-09
+
+### New features
+
+- **`Outcome::metric()` / `Outcome::timestamp()`:** Record a business count or artifact time on the terminal receipt. Exit 0 still means the process finished. Zero is sent when you record it. A run that records nothing omits `outcomes`.
+- **Stable `job_name`:** `Schedule::name()` (plus expression and a single environment) travels with the receipt so a renamed command or `Schedule::call` closure can keep a rule.
+- **`php artisan crontinel:schedule`:** Lists the Laravel schedule in Crontinel and can set the `processed_records` minimum.
+
+Pin with `composer require crontinel/laravel:^0.8`. Dogfood evidence for the Packagist artifact lives in the workspace planning notes.
+
+## v0.1.0 to v0.2.0
+
+Released: April 8, 2026
+
+### New features
+
+- **SaaS reporting:** When `CRONTINEL_API_KEY` is set, the package automatically sends a status ping to `app.crontinel.com` every minute via the `crontinel:report` scheduled command. Individual cron run events are also pushed after each task completes or fails.
+- **Webhook alert channel:** A new `webhook` alert channel sends structured JSON POST payloads (both fire and resolve events) to any URL you specify.
+- **`crontinel:report` command:** Manually trigger a SaaS status ping at any time.
+- **`crontinel:prune` command:** Delete old `cron_runs` records beyond the retention window. Accepts `--days=N` to override the configured value.
+
+### Bug fixes
+
+- **Cron late detection:** Fixed incorrect `isLate` calculation that used `Carbon::now()->next(closure)`. The check now uses `CronExpression::getPreviousRunDate()` to correctly determine whether a cron missed its scheduled window. If you previously saw false late alerts, this release resolves the issue.
+
+### Breaking changes
+
+None. This is a backward-compatible minor release.
+
+### New config keys
+
+Add the following to your `config/crontinel.php` if they are missing:
+
+```php
+// Inside the 'alerts' array, add the webhook channel:
+'webhook' => [
+    'url' => env('CRONTINEL_WEBHOOK_URL'),
+],
+```
+
+### New environment variables
+
+| Variable | Purpose |
+|---|---|
+| `CRONTINEL_API_KEY` | SaaS API key for status reporting to app.crontinel.com |
+| `CRONTINEL_API_URL` | SaaS endpoint (defaults to `https://app.crontinel.com`) |
+| `CRONTINEL_WEBHOOK_URL` | Webhook endpoint for the `webhook` alert channel |
+
+To use the webhook channel, update your `.env`:
+
+```env
+CRONTINEL_ALERT_CHANNEL=webhook
+CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/webhook
+```
+
+### Migration
+
+This release includes a migration. Run `php artisan migrate` after updating.
+
+## v0.1.0 (initial release)
+
+Released: April 5, 2026
+
+This is the first stable release. No upgrade path needed; install from scratch using the [Quick Start](/quick-start/) guide.
+
+### Requirements
+
+- PHP 8.2, 8.3, 8.4, or 8.5
+- Laravel 11, 12, or 13
+
+### Included
+
+- Horizon monitor (supervisor status, paused state, failed jobs per minute)
+- Queue monitor (depth, failed count, oldest job age for Redis and database drivers)
+- Cron monitor (automatic run recording via scheduler events)
+- Dashboard at `/crontinel` with dark theme and 30-second auto-refresh
+- `crontinel:check` CLI command with `--json` and `--no-alerts` flags
+- `crontinel:install` CLI command
+- Alert channels: Slack webhook and email, with 5-minute deduplication
+- JSON API at `/crontinel/api/status`

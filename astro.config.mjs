@@ -15,6 +15,7 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       components: {
         SiteTitle: './src/components/SiteTitle.astro',
+        Head: './src/components/Head.astro',
       },
       head: [
         { tag: 'meta', attrs: { property: 'og:image', content: 'https://docs.crontinel.com/og.jpg' } },
@@ -30,6 +31,7 @@ export default defineConfig({
           { label: 'Register expected jobs', link: '/check-in/schedule/' },
           { label: 'Start and finish receipts', link: '/check-in/start-finish/' },
           { label: 'Installation (Laravel)', link: '/installation/' },
+          { label: 'Billing & Plans', link: '/billing/' },
         ]},
         { label: 'SDKs & Packages', items: [
           { label: 'Overview', link: '/sdks/' },

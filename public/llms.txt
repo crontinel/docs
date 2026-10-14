@@ -68,5 +68,6 @@
 
 ## Product
 
+- [Full docs text](https://docs.crontinel.com/llms-full.txt): Every published docs page in one plain-text file
 - [Marketing site guide for assistants](https://crontinel.com/llms.txt): Public pages on crontinel.com
 - [Hosted app](https://app.crontinel.com/): Sign in to the hosted monitor. Customer data is not part of this guide.
