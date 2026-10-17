@@ -31,12 +31,14 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/schedule" \
 |---|---|---|
 | `source` | yes | `named_by_user` for HTTP runtimes. |
 | `tasks[].command` | yes | The exact `command` your receipts send. Runs are matched on it. |
-| `tasks[].job_name` | no | Stable name that survives a command change. |
+| `tasks[].job_name` | no | Stable name that survives a command change. If you set it, send the same `job_name` on every run receipt, or the job's rules won't apply to those runs. |
 | `tasks[].expression` | no | Five-field cron expression. Without it the job is inventory only and no missed-run check runs. |
 | `tasks[].timezone` | no | IANA time zone for the expression. Default `UTC`. |
 | `tasks[].grace_seconds` | no | How late a start may be before it alerts. Default `300`, or `900` for a command starting with `agent:`. |
 | `tasks[].max_runtime_seconds` | no | How long a `running` receipt may stay open before it alerts as unfinished. Default `3600`, or `7200` for a command starting with `agent:`. |
 | `tasks[].counted_minimum` | no | Creates a `processed_records` rule: fewer than this fails the run even on exit 0. |
+
+If you register a `job_name`, add it to every receipt for that job, for example `"job_name": "nightly-import"` next to `"command"`. Rules for a named job follow the name, so a receipt without it is treated as a different, unnamed job. Leave `job_name` out of both to match on `command` alone.
 
 Scheduled AI agents get longer defaults because model calls vary. Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and leave the two timing fields out. Values you send always win.
 
