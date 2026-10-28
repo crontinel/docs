@@ -1,8 +1,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   integrations: [
+    // Replaces Starlight's built-in sitemap so noindex pages stay out of it.
+    sitemap({ filter: (page) => !page.includes('/mcp/ai-agent-monitoring/') }),
     starlight({
       title: 'Crontinel Docs',
       description: 'Docs for Crontinel. Send an HTTP outcome receipt from any runtime. The Laravel package adds schedule, queue, and Horizon evidence.',
