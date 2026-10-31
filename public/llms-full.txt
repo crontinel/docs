@@ -95,6 +95,15 @@ The Python package includes an agent CLI (requires PyPI installation when availa
 crontinel agent
 ```
 
+## Check-in alerts
+
+Set how often an agent should check in from **Configure** on its row in the dashboard: an expected interval and a grace period.
+
+- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert waits at least 15 minutes.
+- **Late:** turn on **Alert when late** to also get a separate alert once a check-in is past its interval. It is off by default and recovers when the agent is on time.
+
+To silence one agent for a while, use the mute control on its row. See [muting alerts](/alerts/channels/#muting-alerts-saas).
+
 ## Command Allowlisting
 
 The agent will only execute commands that match an entry in your allowlist. An unconfigured or empty allowlist means **no commands are permitted** — this is the default, fail-closed behavior.
@@ -296,6 +305,15 @@ The same condition won't re-fire for 5 minutes. If a queue stays above its thres
 
 When a condition clears, Crontinel sends a "resolved" notification. You get clear start and end signals for every incident.
 
+## Muting alerts (SaaS)
+
+Mute alerts for 1 hour, 4 hours, 24 hours, or 7 days, or unmute early. Only people who can configure the app can mute.
+
+- **Whole app:** use the mute control in the app header.
+- **One monitor:** use the mute control on a cron, heartbeat, HTTP, cron schedule, or agent row. A muted cron schedule also mutes run alerts for its command.
+
+While muted, Crontinel still records incidents and state. Only the notification is held back. An app mute wins over monitor settings. Test sends still go out. The mute ends by itself, and each mute and unmute is in the audit log.
+
 ## SaaS alert management
 
 In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.
@@ -376,6 +394,64 @@ The command reads the same three monitors as the dashboard: Horizon (running or 
 
 ---
 
+# Analytics and Run History
+URL: https://docs.crontinel.com/analytics/
+
+Each app has an **Analytics** page, linked from the app navigation. It shows how every job has done over a time range. It works for any runtime that sends [receipts](/check-in/recipes/).
+
+## Ranges
+
+Pick **24h**, **7d**, **30d**, or **90d**. Ranges longer than your plan's history retention are not shown.
+
+Days follow the app's timezone setting. If the app has no timezone set, days are UTC.
+
+## What it shows
+
+Summary tiles at the top: runs, success rate, failures, and incidents.
+
+Then one row per job:
+
+| Column | Meaning |
+|---|---|
+| Runs | Runs in the range |
+| Success | Share of finished runs that succeeded |
+| Failed | Runs that failed |
+| Outcome failed | Runs that exited 0 but failed an [outcome rule](/check-in/start-finish/) |
+| Late | Runs marked late |
+| Missed | Runs that never started when expected |
+| p50, p95 | Median and 95th percentile duration |
+| Quality pass | Share of AI-graded runs that met the pass score. Blank unless the job has a [quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). |
+
+A **Daily trend** chart shows success rate and p95 duration per day for each job. If the app reports queues, a **Queues (daily max)** table shows the highest depth and oldest job age per queue per day.
+
+Missed and incident counts come from incident history. Full history starts on 2026-10-31. Before that date, only the latest incident for each alert is counted.
+
+## Run history
+
+**All runs** opens the run history: 50 runs per page, newest first. Filter by range, job, and status (`completed`, `failed`, `late`, `running`, or `outcome failed`). The **Quality (AI)** column shows the grade when the job has a quality check.
+
+The dashboard's history tab also links here with **View all runs**.
+
+## CSV export
+
+**Export CSV** downloads the runs that match the current range and filters. Anyone who can view the app can export. An export holds up to 50,000 rows.
+
+Columns: `id`, `command`, `status`, `outcome_status`, `exit_code`, `duration_ms`, `started_at`, `finished_at`, `attempt`, `trigger_source`.
+
+## Weekly email
+
+Turn on **Email me a weekly report for each app in my organizations** on your profile. It is off by default.
+
+The email goes out on Mondays at 08:00 UTC. For each app it covers the last 7 full days in the app's timezone and shows runs, success rate, incidents, and the slowest jobs by p95. Turn it off from the same profile setting.
+
+## Related
+
+- [Alert channels](/alerts/channels/): where alerts go, and how to mute them
+- [AI agent jobs](/mcp/ai-agent-monitoring/): guardrails and quality checks
+- [Billing and plans](/billing/): plan allowances
+
+---
+
 # Billing & Plans
 URL: https://docs.crontinel.com/billing/
 
@@ -402,6 +478,8 @@ Approved organization allowances (enforcement and hosted cost acceptance are sep
 | Starter | 100,000 | 256 MiB | 20 |
 | Pro | 500,000 | 1 GiB | 50 |
 | Max | 2,000,000 | 4 GiB | 100 |
+
+AI quality grades have their own monthly allowance: Free 50, Starter 500, Pro 2,000, Max 5,000. Each graded run uses one, even when the grade fails. See [AI agent jobs](/mcp/ai-agent-monitoring/#grade-allowance).
 
 Allowances reset at 00:00 UTC on the first day of the month. Bytes are submitted request body size, not retained storage. There is no overage charge. A rejected ingest returns a typed 429. Ordinary MCP reads from your own assistant do not spend hosted AI starts.
 
@@ -740,7 +818,7 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/schedule" \
 
 If you register a `job_name`, add it to every receipt for that job, for example `"job_name": "nightly-import"` next to `"command"`. Rules for a named job follow the name, so a receipt without it is treated as a different, unnamed job. Leave `job_name` out of both to match on `command` alone.
 
-Scheduled AI agents get longer defaults because model calls vary. Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and leave the two timing fields out. Values you send always win.
+Scheduled AI agents get longer defaults because model calls vary. Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and leave the two timing fields out. Values you send always win. See [AI agent jobs](/mcp/ai-agent-monitoring/) for token, cost, and tool-call ceilings and the optional quality check.
 
 The response lists `created`, `unchanged`, `activated` (an existing named job that gained its schedule), and `skipped` (plan limit). Posting the same body again is safe.
 
@@ -782,6 +860,7 @@ urllib.request.urlopen(req, timeout=5)
 - Checking starts when you register. Earlier occurrences are not checked.
 - If no receipt with that `command` starts between the due time and the grace period, a **cron never started** alert opens. It resolves once the next scheduled run is observed.
 - If a `running` receipt is still open after `max_runtime_seconds`, a **cron never finished** alert opens. See [start and finish receipts](/check-in/start-finish/).
+- If a run completes but took longer than `max_runtime_seconds`, a **cron ran too long** alert opens. The next run inside the limit resolves it.
 - `check_monitoring_coverage` over MCP names the registered jobs instead of reporting the inventory as unknown. It does not read crontab or an agent runner.
 
 Registering is separate from the Laravel `php artisan crontinel:schedule` command, which reports a Laravel schedule as passive inventory.
@@ -1153,6 +1232,98 @@ The Laravel package is MIT licensed. Self-hosted local dashboards are not a subs
 
 ---
 
+# AI Agent Jobs
+URL: https://docs.crontinel.com/mcp/ai-agent-monitoring/
+
+A scheduled AI agent is a job. It posts the same [receipt](/check-in/recipes/) as any other runtime. Crontinel then checks three things: the run happened, it produced what you expect, and it stayed inside the limits you set.
+
+## Name and register the job
+
+Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and [register it](/check-in/schedule/). Agent jobs get longer default grace and runtime limits because model calls vary.
+
+## Report guardrail numbers
+
+Your agent reports its own numbers under `outcomes.metrics` on the finish receipt:
+
+```json
+{
+  "command": "agent:nightly-digest",
+  "status": "completed",
+  "exit_code": 0,
+  "output": "...",
+  "outcomes": {
+    "metrics": {
+      "items_produced": 12,
+      "tokens_used": 48210,
+      "cost_usd": 0.31,
+      "tool_calls": 17
+    }
+  }
+}
+```
+
+Then add one outcome rule per number. The **Outcome rules** page in the app has presets for each:
+
+| Preset | Rule | Default threshold |
+|---|---|---:|
+| At least 1 item produced | `items_produced` numeric minimum | 1 |
+| Token ceiling | `tokens_used` numeric maximum | 200000 |
+| Cost ceiling | `cost_usd` numeric maximum | 5 |
+| Tool-call ceiling (loop detection) | `tool_calls` numeric maximum | 50 |
+
+A run over a ceiling fails its outcome rule, even on exit code 0. Change the thresholds to fit your agent. These rules check numbers your agent reports. Crontinel does not meter model usage.
+
+## Quality check (AI, optional)
+
+A quality check asks a model to grade a run's `output` against your rubric. It is off until you add one for a job.
+
+To add one, open **Outcome rules** and fill in **Quality check (AI, optional)**:
+
+- **Job name**, or the command when the job has no name
+- **Rubric**: plain language, up to 1,000 characters
+- **Pass score**: 1 to 5
+- **Consent**: the run's output and your rubric are sent to Crontinel's hosted model provider (Cloudflare Workers AI) for every graded run. Do not turn this on for output that contains secrets or personal data.
+
+Hosted AI must also be on for the organization. An owner turns it on from **Assistance**. An app can have up to 10 quality checks.
+
+### How grading works
+
+- Only completed runs with non-empty `output` are graded. The first 6,000 characters are sent.
+- The model returns a score from 1 to 5. A score at or above the pass score is a pass.
+- A score below the pass score opens a separate quality alert. A later passing run clears only that alert.
+- The grade is advisory. It never changes the run's status and never resolves other alerts. Alerts for failed, late, or missed runs do not wait for it.
+- A reply that is not a valid grade shows as **unknown**.
+- When the monthly grade allowance is used up or the model is unavailable, the grade shows as **unavailable** and no alert fires.
+
+### Grade allowance
+
+Grades have their own monthly allowance, separate from hosted AI investigation starts:
+
+| Plan | Quality grades per month |
+|---|---:|
+| Free | 50 |
+| Starter | 500 |
+| Pro | 2,000 |
+| Max | 5,000 |
+
+The allowance resets at 00:00 UTC on the 1st. A grade that fails still counts. Usage shows on the [Billing page](https://app.crontinel.com/team/billing).
+
+### Where the grade shows
+
+- The **Quality (AI)** column in [run history](/analytics/#run-history)
+- The **Quality pass** rate in [Analytics](/analytics/)
+- The MCP `list_runs` tool, as `quality` with `status`, `score`, `pass_score`, and `advisory: true`. The model's reasons and the output are not returned.
+- Incident evidence, as the quality status and score
+
+## Related
+
+- [Register expected jobs](/check-in/schedule/): catch an agent run that never starts
+- [Start and finish receipts](/check-in/start-finish/): catch an agent run that never finishes
+- [Ingest reference](/reference/api/#post-ingestcron): every receipt field
+- [Billing and plans](/billing/): monthly allowances
+
+---
+
 # Claude Code Setup
 URL: https://docs.crontinel.com/mcp/claude-code/
 
@@ -1276,6 +1447,7 @@ URL: https://docs.crontinel.com/mcp/tools/
 |---|---|
 | `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
 | `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
+| `list_runs` | Recent runs for an app, with outcome status and the AI quality grade when enabled |
 | `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
 | `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |
@@ -1296,6 +1468,15 @@ Returns all jobs tracked by Crontinel for that app with their most recent status
 - `command` (required)  –  command name or partial match
 
 Returns: command name, last status, exit code, duration, started_at, output.
+
+## `list_runs`
+
+**Parameters:**
+- `app_id` (required)  –  numeric app ID
+- `limit` (optional, 1 to 100)  –  runs per page
+- `after_id` (optional)  –  continue from `next_after_id` in the last response
+
+Returns per run: status, exit code, duration, times, attempt, `outcome_status`, and `quality`. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
 
 ## `get_queue_status`
 
@@ -1396,6 +1577,12 @@ No code changes to your `schedule()` method are needed. Every command defined th
 ## Late detection
 
 A run is marked `late` if the command didn't execute within `late_alert_after_seconds` of its expected window. This catches the case where the scheduler itself is running but a command is being skipped.
+
+## Slow runs (SaaS)
+
+When a job has a cron schedule monitor with a maximum runtime, a completed run that took longer opens a **cron ran too long** alert. The next run that finishes inside the limit resolves it.
+
+If the same run already opened a **cron never finished** alert, the slow-run alert is skipped, so one overrun alerts once. Set the limit with `max_runtime_seconds` when you [register the job](/check-in/schedule/).
 
 ## Configuration
 
@@ -1515,6 +1702,16 @@ The lookup order for thresholds is:
 2. Per-app default (`queue_thresholds.default`)
 3. Global config value (`depth_alert_threshold`, default 1000)
 
+The same settings page has three optional thresholds. Each is off while blank, so an app gets no new alerts until you set one.
+
+| Setting | Alerts when |
+|---|---|
+| Oldest job age (seconds) | The oldest waiting job in any queue is older than this |
+| Failed jobs (count) | A queue's failed job count is above this |
+| Horizon failures per minute | Horizon's failed jobs per minute is above this |
+
+Each alert resolves when the value drops back under its threshold. Queue and Horizon numbers come from the Laravel package.
+
 ## Related
 
 - [Horizon monitor](/monitors/horizon/): supervisor and paused-state checks for Horizon-managed queues
@@ -1632,10 +1829,11 @@ Record one job run. See [start and finish receipts](/check-in/start-finish/).
 | `status` | yes | `running`, `completed`, `failed`, or `late`. |
 | `started_at` | yes | ISO 8601. Must not be more than five minutes in the future. |
 | `finished_at` | no | ISO 8601, not before `started_at`. |
-| `exit_code`, `duration_ms`, `output` | no | |
+| `exit_code`, `duration_ms` | no | |
+| `output` | no | Text the job printed. If the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional), the first 6,000 characters are graded. |
 | `request_key` | no | Reuse across the `running` and final receipts of one run. |
 | `job_name`, `environment`, `expression` | no | Stable identity for rules. |
-| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. |
+| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. AI agents can report `items_produced`, `tokens_used`, `cost_usd`, and `tool_calls` for [guardrail rules](/mcp/ai-agent-monitoring/#report-guardrail-numbers). |
 | `outcomes.timestamps` | no | Up to 20 ISO 8601 timestamps. |
 
 ### POST /ingest/schedule

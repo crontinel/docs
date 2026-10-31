@@ -4,8 +4,8 @@ import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   integrations: [
-    // Replaces Starlight's built-in sitemap so noindex pages stay out of it.
-    sitemap({ filter: (page) => !page.includes('/mcp/ai-agent-monitoring/') }),
+    // Replaces Starlight's built-in sitemap.
+    sitemap(),
     starlight({
       title: 'Crontinel Docs',
       description: 'Docs for Crontinel. Send an HTTP outcome receipt from any runtime. The Laravel package adds schedule, queue, and Horizon evidence.',
@@ -55,6 +55,8 @@ export default defineConfig({
           { label: 'Horizon Monitor', link: '/monitors/horizon/' },
           { label: 'Queue Monitor', link: '/monitors/queues/' },
           { label: 'Cron Monitor', link: '/monitors/cron/' },
+          { label: 'AI Agent Jobs', link: '/mcp/ai-agent-monitoring/' },
+          { label: 'Analytics', link: '/analytics/' },
         ]},
         { label: 'Alerts', items: [
           { label: 'Alert Channels', link: '/alerts/channels/' },

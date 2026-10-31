@@ -7,6 +7,7 @@ description: MCP tools for listing scheduled jobs, reading a cron run, checking 
 |---|---|
 | `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
 | `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
+| `list_runs` | Recent runs for an app, with outcome status and the AI quality grade when enabled |
 | `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
 | `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |
@@ -27,6 +28,15 @@ Returns all jobs tracked by Crontinel for that app with their most recent status
 - `command` (required)  –  command name or partial match
 
 Returns: command name, last status, exit code, duration, started_at, output.
+
+## `list_runs`
+
+**Parameters:**
+- `app_id` (required)  –  numeric app ID
+- `limit` (optional, 1 to 100)  –  runs per page
+- `after_id` (optional)  –  continue from `next_after_id` in the last response
+
+Returns per run: status, exit code, duration, times, attempt, `outcome_status`, and `quality`. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
 
 ## `get_queue_status`
 

@@ -13,7 +13,6 @@ test('llms.txt lists every docs page, including billing and agent monitoring', (
 
   assert.match(generated, /https:\/\/docs\.crontinel\.com\/billing\//);
   assert.match(generated, /https:\/\/docs\.crontinel\.com\/mcp\/ai-agent-monitoring\//);
-  assert.match(generated, /Not available in a released package yet/);
 });
 
 test('the published llms.txt matches the generator', () => {

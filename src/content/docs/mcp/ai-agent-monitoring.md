@@ -1,91 +1,91 @@
 ---
-title: AI Agent Monitoring
-description: Planned, and not in a released package yet. This page previews tracking agent runs, tool calls, and cost after the feature ships.
-head:
-  - tag: meta
-    attrs:
-      name: robots
-      content: noindex
+title: AI Agent Jobs
+description: Monitor a scheduled AI agent like any other job, set ceilings on tokens, cost, and tool calls, and add an optional AI check of the output.
 ---
 
-> 🚧 **Coming soon — not yet available.** This page describes a planned feature. The `CrontinelMCP` class, the `agentRunStart` / `toolCall` / `agentRunEnd` methods, cost tracking, and loop detection described below do not exist in any released Crontinel package yet. Nothing on this page is callable today — treat the snippets as a preview of the intended design, not working code.
+A scheduled AI agent is a job. It posts the same [receipt](/check-in/recipes/) as any other runtime. Crontinel then checks three things: the run happened, it produced what you expect, and it stayed inside the limits you set.
 
-Crontinel plans to monitor AI agents built with the MCP server, tracking runs, tool calls, costs, and failure patterns.
+## Name and register the job
 
-## What gets monitored (planned)
+Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and [register it](/check-in/schedule/). Agent jobs get longer default grace and runtime limits because model calls vary.
 
-| Metric | Description |
-|---|---|
-| **Agent runs** | Each invocation of an AI agent |
-| **Tool call success rate** | Percentage of tool calls that succeeded |
-| **Token usage** | Input + output tokens per run |
-| **Cost** | Estimated cost per run (based on model pricing) |
-| **Loop detection** | Repeated tool call patterns indicating infinite loops |
-| **Failure rate** | Percentage of runs that ended in error |
+## Report guardrail numbers
 
-## Intended setup (not yet implemented)
+Your agent reports its own numbers under `outcomes.metrics` on the finish receipt:
 
-The steps below describe how this feature is expected to work once it ships. None of this exists yet — there is no `@crontinel/mcp-server` agent-monitoring API, and these snippets will not run.
-
-### 1. Install the MCP server
-
-The MCP server itself already exists for other purposes; agent-monitoring support would be added to it in a future release.
-
-### 2. Configure your agent
-
-Conceptually, your agent would point at the Crontinel MCP server the same way it points at any other MCP server today, plus an API key for reporting.
-
-### 3. Instrument your agent (conceptual — not real API)
-
-The design under consideration is a small client with `agentRunStart` / `toolCall` / `agentRunEnd` calls, illustrated here only to convey the shape of the idea:
-
-```typescript
-// CONCEPTUAL — this class and these methods do not exist yet.
-// import { CrontinelMCP } from "@crontinel/mcp-server";
-//
-// const crontinel = new CrontinelMCP({
-//   apiKey: process.env.CRONTINEL_API_KEY,
-//   appName: "order-processing-agent",
-// });
-//
-// // Report an agent run starting
-// const runId = await crontinel.agentRunStart({
-//   agentName: "order-processing",
-//   model: "gpt-4o",
-//   inputTokens: 1200,
-// });
-//
-// // Report tool calls as they happen
-// await crontinel.toolCall({
-//   runId,
-//   tool: "fetch-order",
-//   inputTokens: 300,
-//   outputTokens: 150,
-//   success: true,
-//   durationMs: 420,
-// });
-//
-// // Report the run complete
-// await crontinel.agentRunEnd({
-//   runId,
-//   outputTokens: 340,
-//   success: false,
-//   error: "inventory update failed",
-// });
+```json
+{
+  "command": "agent:nightly-digest",
+  "status": "completed",
+  "exit_code": 0,
+  "output": "...",
+  "outcomes": {
+    "metrics": {
+      "items_produced": 12,
+      "tokens_used": 48210,
+      "cost_usd": 0.31,
+      "tool_calls": 17
+    }
+  }
+}
 ```
 
-## Loop detection (planned)
+Then add one outcome rule per number. The **Outcome rules** page in the app has presets for each:
 
-The idea is that repeated tool calls on the same tool within a short window would indicate a potential infinite loop, and Crontinel would fire a `loop_detected` alert after a configurable number of repeats. No such detection exists today.
+| Preset | Rule | Default threshold |
+|---|---|---:|
+| At least 1 item produced | `items_produced` numeric minimum | 1 |
+| Token ceiling | `tokens_used` numeric maximum | 200000 |
+| Cost ceiling | `cost_usd` numeric maximum | 5 |
+| Tool-call ceiling (loop detection) | `tool_calls` numeric maximum | 50 |
 
-## Dashboard (planned)
+A run over a ceiling fails its outcome rule, even on exit code 0. Change the thresholds to fit your agent. These rules check numbers your agent reports. Crontinel does not meter model usage.
 
-Once built, agent metrics would appear at `https://app.crontinel.com` under an **Agents** tab, showing run history, a tool-call failure map, loop incidents, and cost trends. This tab does not exist yet.
+## Quality check (AI, optional)
 
-## Alerting (planned)
+A quality check asks a model to grade a run's `output` against your rubric. It is off until you add one for a job.
 
-Future alert types under consideration: failure-rate spikes, loop detection, cost thresholds, and repeated tool failures. None of these alert types are configurable today.
+To add one, open **Outcome rules** and fill in **Quality check (AI, optional)**:
 
-## Status
+- **Job name**, or the command when the job has no name
+- **Rubric**: plain language, up to 1,000 characters
+- **Pass score**: 1 to 5
+- **Consent**: the run's output and your rubric are sent to Crontinel's hosted model provider (Cloudflare Workers AI) for every graded run. Do not turn this on for output that contains secrets or personal data.
 
-AI agent monitoring is unreleased. It is not available on any plan, including Pro. Follow [Pricing](https://crontinel.com/pricing/) and the changelog for updates on when this ships.
+Hosted AI must also be on for the organization. An owner turns it on from **Assistance**. An app can have up to 10 quality checks.
+
+### How grading works
+
+- Only completed runs with non-empty `output` are graded. The first 6,000 characters are sent.
+- The model returns a score from 1 to 5. A score at or above the pass score is a pass.
+- A score below the pass score opens a separate quality alert. A later passing run clears only that alert.
+- The grade is advisory. It never changes the run's status and never resolves other alerts. Alerts for failed, late, or missed runs do not wait for it.
+- A reply that is not a valid grade shows as **unknown**.
+- When the monthly grade allowance is used up or the model is unavailable, the grade shows as **unavailable** and no alert fires.
+
+### Grade allowance
+
+Grades have their own monthly allowance, separate from hosted AI investigation starts:
+
+| Plan | Quality grades per month |
+|---|---:|
+| Free | 50 |
+| Starter | 500 |
+| Pro | 2,000 |
+| Max | 5,000 |
+
+The allowance resets at 00:00 UTC on the 1st. A grade that fails still counts. Usage shows on the [Billing page](https://app.crontinel.com/team/billing).
+
+### Where the grade shows
+
+- The **Quality (AI)** column in [run history](/analytics/#run-history)
+- The **Quality pass** rate in [Analytics](/analytics/)
+- The MCP `list_runs` tool, as `quality` with `status`, `score`, `pass_score`, and `advisory: true`. The model's reasons and the output are not returned.
+- Incident evidence, as the quality status and score
+
+## Related
+
+- [Register expected jobs](/check-in/schedule/): catch an agent run that never starts
+- [Start and finish receipts](/check-in/start-finish/): catch an agent run that never finishes
+- [Ingest reference](/reference/api/#post-ingestcron): every receipt field
+- [Billing and plans](/billing/): monthly allowances

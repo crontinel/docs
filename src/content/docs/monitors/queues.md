@@ -44,6 +44,16 @@ The lookup order for thresholds is:
 2. Per-app default (`queue_thresholds.default`)
 3. Global config value (`depth_alert_threshold`, default 1000)
 
+The same settings page has three optional thresholds. Each is off while blank, so an app gets no new alerts until you set one.
+
+| Setting | Alerts when |
+|---|---|
+| Oldest job age (seconds) | The oldest waiting job in any queue is older than this |
+| Failed jobs (count) | A queue's failed job count is above this |
+| Horizon failures per minute | Horizon's failed jobs per minute is above this |
+
+Each alert resolves when the value drops back under its threshold. Queue and Horizon numbers come from the Laravel package.
+
 ## Related
 
 - [Horizon monitor](/monitors/horizon/): supervisor and paused-state checks for Horizon-managed queues

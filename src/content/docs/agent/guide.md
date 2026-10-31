@@ -91,6 +91,15 @@ The Python package includes an agent CLI (requires PyPI installation when availa
 crontinel agent
 ```
 
+## Check-in alerts
+
+Set how often an agent should check in from **Configure** on its row in the dashboard: an expected interval and a grace period.
+
+- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert waits at least 15 minutes.
+- **Late:** turn on **Alert when late** to also get a separate alert once a check-in is past its interval. It is off by default and recovers when the agent is on time.
+
+To silence one agent for a while, use the mute control on its row. See [muting alerts](/alerts/channels/#muting-alerts-saas).
+
 ## Command Allowlisting
 
 The agent will only execute commands that match an entry in your allowlist. An unconfigured or empty allowlist means **no commands are permitted** — this is the default, fail-closed behavior.

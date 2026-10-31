@@ -48,10 +48,11 @@ Record one job run. See [start and finish receipts](/check-in/start-finish/).
 | `status` | yes | `running`, `completed`, `failed`, or `late`. |
 | `started_at` | yes | ISO 8601. Must not be more than five minutes in the future. |
 | `finished_at` | no | ISO 8601, not before `started_at`. |
-| `exit_code`, `duration_ms`, `output` | no | |
+| `exit_code`, `duration_ms` | no | |
+| `output` | no | Text the job printed. If the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional), the first 6,000 characters are graded. |
 | `request_key` | no | Reuse across the `running` and final receipts of one run. |
 | `job_name`, `environment`, `expression` | no | Stable identity for rules. |
-| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. |
+| `outcomes.metrics` | no | Up to 20 finite numbers, for example `processed_records`. AI agents can report `items_produced`, `tokens_used`, `cost_usd`, and `tool_calls` for [guardrail rules](/mcp/ai-agent-monitoring/#report-guardrail-numbers). |
 | `outcomes.timestamps` | no | Up to 20 ISO 8601 timestamps. |
 
 ### POST /ingest/schedule
