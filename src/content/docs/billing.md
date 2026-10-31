@@ -27,6 +27,8 @@ Approved organization allowances (enforcement and hosted cost acceptance are sep
 | Pro | 500,000 | 1 GiB | 50 |
 | Max | 2,000,000 | 4 GiB | 100 |
 
+AI quality grades have their own monthly allowance: Free 50, Starter 500, Pro 2,000, Max 5,000. Each graded run uses one, even when the grade fails. See [AI agent jobs](/mcp/ai-agent-monitoring/#grade-allowance).
+
 Allowances reset at 00:00 UTC on the first day of the month. Bytes are submitted request body size, not retained storage. There is no overage charge. A rejected ingest returns a typed 429. Ordinary MCP reads from your own assistant do not spend hosted AI starts.
 
 ## Included on every tier

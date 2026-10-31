@@ -79,6 +79,15 @@ The same condition won't re-fire for 5 minutes. If a queue stays above its thres
 
 When a condition clears, Crontinel sends a "resolved" notification. You get clear start and end signals for every incident.
 
+## Muting alerts (SaaS)
+
+Mute alerts for 1 hour, 4 hours, 24 hours, or 7 days, or unmute early. Only people who can configure the app can mute.
+
+- **Whole app:** use the mute control in the app header.
+- **One monitor:** use the mute control on a cron, heartbeat, HTTP, cron schedule, or agent row. A muted cron schedule also mutes run alerts for its command.
+
+While muted, Crontinel still records incidents and state. Only the notification is held back. An app mute wins over monitor settings. Test sends still go out. The mute ends by itself, and each mute and unmute is in the audit log.
+
 ## SaaS alert management
 
 In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.

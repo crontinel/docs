@@ -40,7 +40,7 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/schedule" \
 
 If you register a `job_name`, add it to every receipt for that job, for example `"job_name": "nightly-import"` next to `"command"`. Rules for a named job follow the name, so a receipt without it is treated as a different, unnamed job. Leave `job_name` out of both to match on `command` alone.
 
-Scheduled AI agents get longer defaults because model calls vary. Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and leave the two timing fields out. Values you send always win.
+Scheduled AI agents get longer defaults because model calls vary. Name the job with an `agent:` prefix, such as `agent:nightly-digest`, and leave the two timing fields out. Values you send always win. See [AI agent jobs](/mcp/ai-agent-monitoring/) for token, cost, and tool-call ceilings and the optional quality check.
 
 The response lists `created`, `unchanged`, `activated` (an existing named job that gained its schedule), and `skipped` (plan limit). Posting the same body again is safe.
 
@@ -82,6 +82,7 @@ urllib.request.urlopen(req, timeout=5)
 - Checking starts when you register. Earlier occurrences are not checked.
 - If no receipt with that `command` starts between the due time and the grace period, a **cron never started** alert opens. It resolves once the next scheduled run is observed.
 - If a `running` receipt is still open after `max_runtime_seconds`, a **cron never finished** alert opens. See [start and finish receipts](/check-in/start-finish/).
+- If a run completes but took longer than `max_runtime_seconds`, a **cron ran too long** alert opens. The next run inside the limit resolves it.
 - `check_monitoring_coverage` over MCP names the registered jobs instead of reporting the inventory as unknown. It does not read crontab or an agent runner.
 
 Registering is separate from the Laravel `php artisan crontinel:schedule` command, which reports a Laravel schedule as passive inventory.

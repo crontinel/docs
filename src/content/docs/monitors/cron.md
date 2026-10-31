@@ -34,6 +34,12 @@ No code changes to your `schedule()` method are needed. Every command defined th
 
 A run is marked `late` if the command didn't execute within `late_alert_after_seconds` of its expected window. This catches the case where the scheduler itself is running but a command is being skipped.
 
+## Slow runs (SaaS)
+
+When a job has a cron schedule monitor with a maximum runtime, a completed run that took longer opens a **cron ran too long** alert. The next run that finishes inside the limit resolves it.
+
+If the same run already opened a **cron never finished** alert, the slow-run alert is skipped, so one overrun alerts once. Set the limit with `max_runtime_seconds` when you [register the job](/check-in/schedule/).
+
 ## Configuration
 
 ```php
