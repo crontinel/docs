@@ -36,7 +36,7 @@ Returns: command name, last status, exit code, duration, started_at, output.
 - `limit` (optional, 1 to 100)  –  runs per page
 - `after_id` (optional)  –  continue from `next_after_id` in the last response
 
-Returns per run: status, exit code, duration, times, attempt, `outcome_status`, and `quality`. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
+Returns per run: status, exit code, duration, times, attempt, `outcome_status`, `outcome_missing_keys`, and `quality`. `outcome_status` is `passed`, `failed`, `unknown`, or null when no outcome rule applies. `unknown` means the receipt did not include the evidence named in `outcome_missing_keys`; it is not a success. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
 
 ## `get_queue_status`
 

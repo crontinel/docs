@@ -33,6 +33,7 @@ export default defineConfig({
           { label: 'Check-in from any runtime', link: '/check-in/recipes/' },
           { label: 'Register expected jobs', link: '/check-in/schedule/' },
           { label: 'Start and finish receipts', link: '/check-in/start-finish/' },
+          { label: 'Ping URLs (no API key)', link: '/check-in/ping-urls/' },
           { label: 'Installation (Laravel)', link: '/installation/' },
           { label: 'Billing & Plans', link: '/billing/' },
         ]},

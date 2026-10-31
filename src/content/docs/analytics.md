@@ -13,16 +13,17 @@ Days follow the app's timezone setting. If the app has no timezone set, days are
 
 ## What it shows
 
-Summary tiles at the top: runs, success rate, failures, and incidents.
+Summary tiles at the top: runs, success rate, failures, outcome unknown, and incidents.
 
 Then one row per job:
 
 | Column | Meaning |
 |---|---|
 | Runs | Runs in the range |
-| Success | Share of finished runs that succeeded |
+| Success | Share of finished runs that succeeded. Runs with an unknown outcome are left out of both the count and the total. |
 | Failed | Runs that failed |
-| Outcome failed | Runs that exited 0 but failed an [outcome rule](/check-in/start-finish/) |
+| Outcome failed | Runs that exited 0 but failed an [outcome rule](/check-in/start-finish/#outcome-rules-and-missing-evidence) |
+| Outcome unknown | Runs that exited 0 but did not send the evidence an outcome rule needs. Not a success and not a failure. |
 | Late | Runs marked late |
 | Missed | Runs that never started when expected |
 | p50, p95 | Median and 95th percentile duration |
@@ -34,7 +35,7 @@ Missed and incident counts come from incident history. Full history starts on 20
 
 ## Run history
 
-**All runs** opens the run history: 50 runs per page, newest first. Filter by range, job, and status (`completed`, `failed`, `late`, `running`, or `outcome failed`). The **Quality (AI)** column shows the grade when the job has a quality check.
+**All runs** opens the run history: 50 runs per page, newest first. Filter by range, job, and status (`completed`, `failed`, `late`, `running`, `outcome failed`, or `outcome unknown`). `completed` lists only runs whose outcome is passed or has no rule. The **Quality (AI)** column shows the grade when the job has a quality check.
 
 The dashboard's history tab also links here with **View all runs**.
 
