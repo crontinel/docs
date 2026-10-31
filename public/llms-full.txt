@@ -407,16 +407,17 @@ Days follow the app's timezone setting. If the app has no timezone set, days are
 
 ## What it shows
 
-Summary tiles at the top: runs, success rate, failures, and incidents.
+Summary tiles at the top: runs, success rate, failures, outcome unknown, and incidents.
 
 Then one row per job:
 
 | Column | Meaning |
 |---|---|
 | Runs | Runs in the range |
-| Success | Share of finished runs that succeeded |
+| Success | Share of finished runs that succeeded. Runs with an unknown outcome are left out of both the count and the total. |
 | Failed | Runs that failed |
-| Outcome failed | Runs that exited 0 but failed an [outcome rule](/check-in/start-finish/) |
+| Outcome failed | Runs that exited 0 but failed an [outcome rule](/check-in/start-finish/#outcome-rules-and-missing-evidence) |
+| Outcome unknown | Runs that exited 0 but did not send the evidence an outcome rule needs. Not a success and not a failure. |
 | Late | Runs marked late |
 | Missed | Runs that never started when expected |
 | p50, p95 | Median and 95th percentile duration |
@@ -428,7 +429,7 @@ Missed and incident counts come from incident history. Full history starts on 20
 
 ## Run history
 
-**All runs** opens the run history: 50 runs per page, newest first. Filter by range, job, and status (`completed`, `failed`, `late`, `running`, or `outcome failed`). The **Quality (AI)** column shows the grade when the job has a quality check.
+**All runs** opens the run history: 50 runs per page, newest first. Filter by range, job, and status (`completed`, `failed`, `late`, `running`, `outcome failed`, or `outcome unknown`). `completed` lists only runs whose outcome is passed or has no rule. The **Quality (AI)** column shows the grade when the job has a quality check.
 
 The dashboard's history tab also links here with **View all runs**.
 
@@ -507,10 +508,88 @@ Manage billing from the [Billing page](https://app.crontinel.com/team/billing) i
 
 ---
 
+# Ping URLs (no API key)
+URL: https://docs.crontinel.com/check-in/ping-urls/
+
+Each cron schedule in Crontinel has a ping URL. The token in the URL is the credential, so the job needs no API key and no JSON. Find the URL on the app's **Cron schedules** page, next to each schedule. Only members who can configure the app see it.
+
+A ping goes through the same path as a [JSON receipt](/check-in/recipes/). Schedule checks, outcome rules, AI quality checks, alerts, and the monthly ingest allowance all work the same way.
+
+## Endpoints
+
+`GET` and `POST` both work.
+
+| URL | Records |
+|---|---|
+| `https://app.crontinel.com/ping/<token>` | A completed run |
+| `https://app.crontinel.com/ping/<token>/start` | A running run |
+| `https://app.crontinel.com/ping/<token>/fail` | A failed run |
+| `https://app.crontinel.com/ping/<token>/<exit_code>` | Completed for `0`, failed for anything else. The exit code is stored. |
+
+A successful ping returns `200` with the body `OK`.
+
+## Examples
+
+```bash
+# Finished
+curl -fsS -m 10 --retry 3 https://app.crontinel.com/ping/<token>
+
+# Failed
+curl -fsS -m 10 --retry 3 https://app.crontinel.com/ping/<token>/fail
+
+# Report the job's exit code
+./backup.sh
+curl -fsS -m 10 --retry 3 https://app.crontinel.com/ping/<token>/$?
+
+# Send the job's output (first 10,000 characters are kept)
+./backup.sh > /tmp/backup.log 2>&1
+curl -fsS -m 10 --retry 3 --data-binary @/tmp/backup.log https://app.crontinel.com/ping/<token>/$?
+```
+
+In a crontab line:
+
+```bash
+0 2 * * * /opt/jobs/backup.sh && curl -fsS -m 10 --retry 3 https://app.crontinel.com/ping/<token>
+```
+
+## Start and finish
+
+Ping `/start` when the job begins to get an alert for a run that starts and never finishes within the schedule's maximum runtime.
+
+```bash
+RID="$(date -u +%Y%m%dT%H%M%SZ)"
+curl -fsS -m 10 --retry 3 "https://app.crontinel.com/ping/<token>/start?rid=$RID"
+./backup.sh
+curl -fsS -m 10 --retry 3 "https://app.crontinel.com/ping/<token>/$??rid=$RID"
+```
+
+- `rid` (run id) pairs the start with the finish. Use 1 to 64 letters, digits, `.`, `-`, `_` or `:`. Pass it in the query string.
+- Without `rid`, a finish closes the latest open run that this URL started. That works when runs of the job never overlap.
+- Repeating a finish for a run that already finished returns `OK` and changes nothing, so `--retry` is safe.
+- The run's duration is the time between the start and finish pings.
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `404` | Unknown or regenerated token. The body is `Not found`, with no other details. |
+| `422` | Invalid `rid` |
+| `429` | Too many pings: 60 per minute per URL. Or the organization used its monthly ingest allowance; that response is the same JSON as the [ingest API](/reference/api/). |
+
+## Regenerate the URL
+
+If a URL leaks, click **Regenerate ping URL** on the schedule. The old URL stops working at once and returns `404`. The change is recorded in the audit log.
+
+## Outcome rules with pings
+
+A ping carries no `outcomes` metrics. If an outcome rule applies to the job, its runs will show the outcome as [unknown](/check-in/start-finish/#outcome-rules-and-missing-evidence). Use a [JSON receipt](/check-in/recipes/) when the job needs to report numbers such as `processed_records`.
+
+---
+
 # Check-in from any runtime
 URL: https://docs.crontinel.com/check-in/recipes/
 
-Crontinel is an outcome monitor for background work in whatever runtime already runs it. Every runtime posts the same JSON receipt. Exit code 0 can still fail an outcome rule when `processed_records` is 0 or missing and the rule requires work.
+Crontinel is an outcome monitor for background work in whatever runtime already runs it. Every runtime posts the same JSON receipt. Exit code 0 can still fail an outcome rule when `processed_records` is 0 and the rule requires work. If the number is missing, the outcome is [unknown](/check-in/start-finish/#outcome-rules-and-missing-evidence), never healthy.
 
 **First-class runtimes on this page:** system cron (curl), Node.js, Python, Sidekiq/Ruby, and GitHub Actions. Laravel is the maintained deep package for schedule attach, queue depth, and Horizon — not a requirement for outcome monitoring.
 
@@ -907,11 +986,32 @@ Rules for the pair:
 
 | You send | Alert you get |
 |---|---|
-| Only the finish receipt | Outcome failures (exit code, `processed_records`). |
+| Only the finish receipt | Outcome failures (exit code, `processed_records`) and unknown outcomes when the metric is missing. |
 | Finish receipt plus a [registered schedule](/check-in/schedule/) | Also: the run never started. |
 | `running` plus a registered schedule | Also: the run started and never finished within `max_runtime_seconds`. |
 
-Fields are listed in the [ingest reference](/reference/api/#post-ingestcron).
+Fields are listed in the [ingest reference](/reference/api/#post-ingestcron). For jobs that can only run curl, the [ping URL](/check-in/ping-urls/) of a schedule does the same without an API key.
+
+## Outcome rules and missing evidence
+
+An outcome rule checks a metric or timestamp from the finish receipt, for example `processed_records` at least 1. Each completed run gets one of three outcome results:
+
+| Outcome | When |
+|---|---|
+| `passed` | Every rule had its evidence and met it. |
+| `failed` | At least one rule had its evidence and did not meet it. |
+| `unknown` | No rule failed, but at least one rule's metric or timestamp was not in the receipt. |
+
+Unknown is not success. It is never shown in green, on the dashboard, in run history, in analytics, or over MCP.
+
+### Missing-value policy
+
+Each rule has a setting for missing evidence, under **When the evidence is missing** on the **Outcome rules** page:
+
+- **Unknown** (default). The run's outcome is unknown. Crontinel opens an **outcome unknown** alert with the text "No evidence received for `<metric>`". It is separate from the outcome-failed alert. It recovers on the next run whose receipt includes the evidence. An unknown run does not close an open outcome-failed alert.
+- **Fail the rule.** Missing evidence fails the rule, as a value below the minimum would. Use it when a missing number means the job is broken.
+
+Rules created before this setting existed use **Unknown**.
 
 ---
 
@@ -1476,7 +1576,7 @@ Returns: command name, last status, exit code, duration, started_at, output.
 - `limit` (optional, 1 to 100)  –  runs per page
 - `after_id` (optional)  –  continue from `next_after_id` in the last response
 
-Returns per run: status, exit code, duration, times, attempt, `outcome_status`, and `quality`. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
+Returns per run: status, exit code, duration, times, attempt, `outcome_status`, `outcome_missing_keys`, and `quality`. `outcome_status` is `passed`, `failed`, `unknown`, or null when no outcome rule applies. `unknown` means the receipt did not include the evidence named in `outcome_missing_keys`; it is not a success. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
 
 ## `get_queue_status`
 
@@ -1848,6 +1948,10 @@ Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `crit
 
 Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
 
+### GET|POST /ping/{token}
+
+A cron schedule's ping URL, at `https://app.crontinel.com/ping/<token>` (no `/api` prefix, no API key). Add `/start`, `/fail`, or `/<exit_code>`, and `?rid=` to pair a start with its finish. It records a run through the same path as `POST /ingest/cron`. See [ping URLs](/check-in/ping-urls/).
+
 ## Read endpoints
 
 ### GET /apps
@@ -1910,6 +2014,7 @@ Last 50 cron runs, newest first.
 | `exit_code` | int \| null | Process exit code (null if still running) |
 | `duration_ms` | int \| null | Execution time in milliseconds |
 | `started_at` | string | ISO 8601 timestamp |
+| `outcome_result` | object \| null | Outcome rule verdict. `status` is `passed`, `failed`, or `unknown`. Unknown means a rule's evidence was not received; it is not a success. |
 
 ### GET /apps/{slug}/alerts
 

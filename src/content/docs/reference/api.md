@@ -67,6 +67,10 @@ Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `crit
 
 Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
 
+### GET|POST /ping/{token}
+
+A cron schedule's ping URL, at `https://app.crontinel.com/ping/<token>` (no `/api` prefix, no API key). Add `/start`, `/fail`, or `/<exit_code>`, and `?rid=` to pair a start with its finish. It records a run through the same path as `POST /ingest/cron`. See [ping URLs](/check-in/ping-urls/).
+
 ## Read endpoints
 
 ### GET /apps
@@ -129,6 +133,7 @@ Last 50 cron runs, newest first.
 | `exit_code` | int \| null | Process exit code (null if still running) |
 | `duration_ms` | int \| null | Execution time in milliseconds |
 | `started_at` | string | ISO 8601 timestamp |
+| `outcome_result` | object \| null | Outcome rule verdict. `status` is `passed`, `failed`, or `unknown`. Unknown means a rule's evidence was not received; it is not a success. |
 
 ### GET /apps/{slug}/alerts
 
