@@ -1,6 +1,6 @@
 ---
 title: Configuration API
-description: Create, update and delete cron schedules, heartbeats, outcome rules, quality checks, mutes and escalation over REST with a scoped key. PUT is an idempotent upsert for config-as-code.
+description: Manage cron schedules, heartbeats, outcome rules, quality checks, mutes, escalation and maintenance windows over REST with a scoped key.
 ---
 
 The configuration API manages the same records as the dashboard. Both go through one service, so validation, plan limits, roles and audit entries are identical. A schedule created by `PUT` looks the same as one added on the Cron schedules page.
@@ -199,6 +199,36 @@ curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/escalation \
   -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
   -d '{"steps":[{"wait_minutes":15,"channel_ids":[12]},{"wait_minutes":30,"channel_ids":[14]}]}'
 ```
+
+## Maintenance windows
+
+Read and change the app's [maintenance windows](/alerts/channels/#maintenance-windows-saas). `PUT` upserts by `name`.
+
+| Method and path | Body |
+|---|---|
+| `GET /maintenance-windows` | none |
+| `PUT /maintenance-windows` | a window, see below |
+| `GET /maintenance-windows/{id}` | none |
+| `DELETE /maintenance-windows/{id}` | none |
+
+| Field | Notes |
+|---|---|
+| `name` | Required, up to 100 characters. Stable key |
+| `type` | Required. `once` or `weekly` |
+| `starts_at`, `ends_at` | `once` only. ISO 8601. Without an offset, read in the app's time zone. Stored in UTC. `ends_at` must be after `starts_at` |
+| `days` | `weekly` only. List of 0 (Sunday) to 6 |
+| `start_time` | `weekly` only. `HH:MM` in the app's time zone (UTC if unset). Follows daylight saving |
+| `duration_minutes` | `weekly` only. 5 to 10080 |
+| `monitor_ids` | Optional. Monitors of this app |
+| `tags` | Optional. Monitors with any of these tags. No `monitor_ids` and no `tags` covers the whole app |
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/maintenance-windows \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"name":"Patch night","type":"weekly","days":[2],"start_time":"02:00","duration_minutes":90,"tags":["db"]}'
+```
+
+The response adds an `id`. An app can have up to 20 windows.
 
 ## Tags
 

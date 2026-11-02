@@ -88,6 +88,25 @@ Mute alerts for 1 hour, 4 hours, 24 hours, or 7 days, or unmute early. Only peop
 
 While muted, Crontinel still records incidents and state. Only the notification is held back. An app mute wins over monitor settings. Test sends still go out. The mute ends by itself, and each mute and unmute is in the audit log.
 
+## Maintenance windows (SaaS)
+
+Plan quiet time ahead instead of muting by hand. Add windows on the app's **Settings** tab, under **Maintenance windows**. You need configure access to the app.
+
+- **Once:** a start and end date and time.
+- **Weekly:** the days, a start time and a duration (5 minutes to 7 days). Times use the app's time zone, or UTC if it has none, and follow daylight saving changes. A Sunday 09:00 window stays at 09:00 local time all year.
+- **Scope:** the whole app, or only the monitors you pick, or only monitors with the tags you list. With no monitors and no tags, the window covers the whole app. A cron schedule in scope also covers run alerts for its command.
+
+During a window:
+
+- Alerts in scope send no notifications and no escalation steps. Escalation steps are not used up.
+- Incidents are still recorded. Open alerts show **During maintenance**.
+- A cron schedule occurrence due inside the window does not raise a "never started" alert, even after the window ends.
+- The app header shows **In maintenance until** the window's end, with **(selected monitors)** when the window has a scope.
+
+When a window ends, an incident in scope that is still open and unacknowledged gets one normal notification, and escalation starts its wait again from that point. An incident that recovered during the window sends nothing.
+
+Each add, edit and delete is in the audit log. You can also manage windows with the [Configuration API](/reference/config-api/#maintenance-windows). Status page maintenance windows are separate and do not affect alerts.
+
 ## Acknowledging alerts (SaaS)
 
 Acknowledge an open alert to say someone is on it. It stops escalation for that incident only.
@@ -104,7 +123,7 @@ Set an escalation policy per app on the app's **Settings** tab, under **Escalati
 - The first notification goes out as it always does. Channels you pick in a step are held back until that step, so a PagerDuty or SMS channel can wait for step 1.
 - Escalation stops when someone acknowledges the alert or the alert recovers.
 - Each step sends once per incident. Escalation messages start with `Escalation step N, not acknowledged:`.
-- A muted app holds escalation back. The step is not used up; it sends once the mute ends if the alert is still open and unacknowledged.
+- A muted app or a [maintenance window](#maintenance-windows-saas) holds escalation back. The step is not used up; it sends once the mute or window ends if the alert is still open and unacknowledged.
 - Recovery notifies every channel the incident reached, including escalation channels.
 
 Open alerts show **Escalated to step N** once a step has gone out. You can also read and replace the policy with the [Configuration API](/reference/config-api/#escalation-policy).
