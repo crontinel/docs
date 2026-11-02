@@ -8,6 +8,7 @@ description: MCP tools for listing scheduled jobs, reading a cron run, checking 
 | `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
 | `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
 | `list_runs` | Recent runs for an app, with outcome status and the AI quality grade when enabled |
+| `list_deploys` | Deploy markers for an app (version, environment, commit SHA, time). Hosted MCP, needs `run:read` |
 | `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
 | `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |

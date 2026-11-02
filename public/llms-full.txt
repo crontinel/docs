@@ -548,6 +548,68 @@ Manage billing from the [Billing page](https://app.crontinel.com/team/billing) i
 
 ---
 
+# Deploy markers
+URL: https://docs.crontinel.com/check-in/deploy-markers/
+
+Send one request from your deploy pipeline and Crontinel records a deploy marker. When a job starts failing, you can see whether a release went out just before it.
+
+Markers show up in four places:
+
+- **Analytics.** A purple vertical line on each day of the daily trend that had a deploy.
+- **Run history.** A deploy row between the runs before and after it.
+- **Open alerts.** "Last deploy before this: `v2.4.0 (production)` (40 minutes earlier)" under each open alert.
+- **Incident evidence.** AI investigations and the MCP `get_incident_evidence` tool get up to 3 deploys from the 24 hours before the incident. They get the version, environment, commit SHA, and time, never the description or URL. A deploy near an incident is timing only. It does not prove the deploy caused it.
+
+## Send a deploy
+
+Use the app **ingest key** (`CRONTINEL_INGEST_KEY`), the same key as [run receipts](/check-in/recipes/).
+
+```bash
+curl -fsS -m 10 --retry 3 -X POST "https://app.crontinel.com/api/v1/ingest/deploy" \
+  -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"version":"v2.4.0","environment":"production","commit_sha":"9fceb02d0ae598e95dc970b74767f19372d61af8"}'
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `version` | yes | Release name, tag, or build number. Up to 100 characters. |
+| `environment` | no | For example `production` or `staging`. Up to 100 characters. |
+| `commit_sha` | no | Hex, 4 to 64 characters. |
+| `deployed_at` | no | ISO 8601. Defaults to now. Must not be more than five minutes in the future. |
+| `url` | no | `https://` only, for example the CI run or release page. |
+| `description` | no | Up to 500 characters. Shown in run history. |
+
+The first request for a version returns `201` with `"created": true`. Sending the same version for the same environment again returns `200` with `"created": false` and the same `deploy_id`. The stored marker stays as it was, so retries are safe. The same version in two environments makes two markers.
+
+Each request counts against the monthly ingest allowance like any other receipt. When it runs out you get the same [typed `429`](/reference/api/#ingest-endpoints) with `Retry-After`.
+
+## GitHub Actions
+
+Add a step after your deploy step. Store `CRONTINEL_INGEST_KEY` as a repository secret. `|| true` keeps a monitoring hiccup from failing the deploy.
+
+```yaml
+- name: Record deploy in Crontinel
+  if: success()
+  env:
+    CRONTINEL_INGEST_KEY: ${{ secrets.CRONTINEL_INGEST_KEY }}
+  run: |
+    curl -fsS -m 10 --retry 3 -X POST "https://app.crontinel.com/api/v1/ingest/deploy" \
+      -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"version\":\"${{ github.ref_name }}-${{ github.run_number }}\",\"environment\":\"production\",\"commit_sha\":\"${{ github.sha }}\",\"url\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+      || true
+```
+
+Re-running the workflow reuses `github.run_number`, so a re-run lands on the same marker.
+
+## Read deploys back
+
+- REST: `GET /api/v1/apps/{slug}/deploys` returns the 50 most recent markers, newest first. Add `?environment=production` to filter. See the [REST API](/reference/api/#get-appsslugdeploys).
+- MCP: `list_deploys` (needs `run:read`) lists markers for an app. Values come from your pipeline, so assistants treat them as untrusted data.
+
+---
+
 # Ping URLs (no API key)
 URL: https://docs.crontinel.com/check-in/ping-urls/
 
@@ -1588,6 +1650,7 @@ URL: https://docs.crontinel.com/mcp/tools/
 | `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
 | `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
 | `list_runs` | Recent runs for an app, with outcome status and the AI quality grade when enabled |
+| `list_deploys` | Deploy markers for an app (version, environment, commit SHA, time). Hosted MCP, needs `run:read` |
 | `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
 | `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
 | `list_recent_alerts` | Alerts fired in the last N hours |
@@ -1986,6 +2049,10 @@ Register the jobs you expect. See [register expected jobs](/check-in/schedule/).
 
 Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `critical`, `resolved`), optional `payload` and `occurred_at`.
 
+### POST /ingest/deploy
+
+Record a deploy marker: `version` (required), optional `environment`, `commit_sha`, `deployed_at`, `url` (https only), and `description`. Idempotent on app, environment, and version: `201` the first time, `200` with `"created": false` after. See [deploy markers](/check-in/deploy-markers/).
+
 ### POST /ingest/ping
 
 Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
@@ -2080,6 +2147,27 @@ Active (unresolved) alerts for the app.
 | `alert_key` | string | Unique key like `horizon:paused`, `queue:default:depth`, `cron:send-invoices:failed` |
 | `fired_at` | string | When the alert first fired |
 | `fire_count` | int | How many times the condition was re-evaluated as firing |
+
+### GET /apps/{slug}/deploys
+
+Last 50 deploy markers, newest first. Optional `?environment=` filter.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "version": "v2.4.0",
+      "environment": "production",
+      "commit_sha": "9fceb02d0ae598e95dc970b74767f19372d61af8",
+      "deployed_at": "2026-11-02T09:30:00+00:00",
+      "url": "https://github.com/acme/app/actions/runs/123",
+      "description": null
+    }
+  ]
+}
+```
 
 ## OpenAPI spec
 

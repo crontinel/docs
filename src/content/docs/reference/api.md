@@ -65,6 +65,10 @@ Register the jobs you expect. See [register expected jobs](/check-in/schedule/).
 
 Record a custom event: `type` (not `ping`), `severity` (`info`, `warning`, `critical`, `resolved`), optional `payload` and `occurred_at`.
 
+### POST /ingest/deploy
+
+Record a deploy marker: `version` (required), optional `environment`, `commit_sha`, `deployed_at`, `url` (https only), and `description`. Idempotent on app, environment, and version: `201` the first time, `200` with `"created": false` after. See [deploy markers](/check-in/deploy-markers/).
+
 ### POST /ingest/ping
 
 Package heartbeat with optional Horizon and queue snapshots. HTTP-only apps do not need it, and an app that has never sent a ping gets no app heartbeat alert.
@@ -159,6 +163,27 @@ Active (unresolved) alerts for the app.
 | `alert_key` | string | Unique key like `horizon:paused`, `queue:default:depth`, `cron:send-invoices:failed` |
 | `fired_at` | string | When the alert first fired |
 | `fire_count` | int | How many times the condition was re-evaluated as firing |
+
+### GET /apps/{slug}/deploys
+
+Last 50 deploy markers, newest first. Optional `?environment=` filter.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "version": "v2.4.0",
+      "environment": "production",
+      "commit_sha": "9fceb02d0ae598e95dc970b74767f19372d61af8",
+      "deployed_at": "2026-11-02T09:30:00+00:00",
+      "url": "https://github.com/acme/app/actions/runs/123",
+      "description": null
+    }
+  ]
+}
+```
 
 ## OpenAPI spec
 

@@ -8,6 +8,7 @@
 
 ## check-in
 
+- [Deploy markers](https://docs.crontinel.com/check-in/deploy-markers/): Tell Crontinel when you deploy. Markers show on the analytics trend, between runs in run history, next to open alerts, and in incident evidence.
 - [Ping URLs (no API key)](https://docs.crontinel.com/check-in/ping-urls/): Every cron schedule has its own ping URL. Hit it with curl when a job finishes, starts, or fails. No API key or JSON needed.
 - [Check-in from any runtime](https://docs.crontinel.com/check-in/recipes/): Five first-class runtimes post one HTTP outcome receipt — curl, Node, Python, Sidekiq, and GitHub Actions. Laravel is the deep package path.
 - [Register expected jobs over HTTP](https://docs.crontinel.com/check-in/schedule/): Name the jobs you run and their cron schedule with one POST. Crontinel then alerts when a run never starts or never finishes, from any runtime.
