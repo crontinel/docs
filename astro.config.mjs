@@ -74,6 +74,7 @@ export default defineConfig({
         { label: 'Reference', items: [
           { label: 'Configuration', link: '/reference/configuration/' },
           { label: 'REST API', link: '/reference/api/' },
+          { label: 'Configuration API', link: '/reference/config-api/' },
           { label: 'Security', link: '/security/' },
           { label: 'Self-Hosting', link: '/self-hosting/' },
           { label: 'Status Page', link: '/status-page/' },
