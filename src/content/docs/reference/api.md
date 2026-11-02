@@ -28,6 +28,8 @@ Or as a header:
 X-Api-Key: your-api-key
 ```
 
+To create or change cron schedules, heartbeats, outcome rules, quality checks and mutes, use the [Configuration API](/reference/config-api/). It takes a generated `ct_mcp_` key with `monitor:read` or `monitor:write`, not the app key.
+
 ## Base URL
 
 ```

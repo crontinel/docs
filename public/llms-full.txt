@@ -1909,6 +1909,8 @@ Or as a header:
 X-Api-Key: your-api-key
 ```
 
+To create or change cron schedules, heartbeats, outcome rules, quality checks and mutes, use the [Configuration API](/reference/config-api/). It takes a generated `ct_mcp_` key with `monitor:read` or `monitor:write`, not the app key.
+
 ## Base URL
 
 ```
@@ -2046,6 +2048,235 @@ Download the full spec at:
 ```
 https://app.crontinel.com/openapi.json
 ```
+
+---
+
+# Configuration API
+URL: https://docs.crontinel.com/reference/config-api/
+
+The configuration API manages the same records as the dashboard. Both go through one service, so validation, plan limits, roles and audit entries are identical. A schedule created by `PUT` looks the same as one added on the Cron schedules page.
+
+Base URL: `https://app.crontinel.com/api/v1/apps/{slug}`, where `{slug}` is the app's slug from [`GET /apps`](/reference/api/#get-apps).
+
+## Keys and scopes
+
+The app ingest key can't call these endpoints. Create a scoped key in the app under **Settings > AI connections** (`/settings/ai-connections`):
+
+1. Name the key, pick the organization and the apps it may touch.
+2. Tick `monitor:read` to list and get. Tick `monitor:write` to create, update, delete and mute. `monitor:write` starts unticked.
+3. Copy the `ct_mcp_...` secret. It's shown once. Keys expire after at most 90 days.
+
+```bash
+export CRONTINEL_KEY=ct_mcp_...
+```
+
+What a key can do is the intersection of:
+
+- its scopes (`GET` needs `monitor:read`, every other method needs `monitor:write`)
+- the apps you picked (other apps return 404)
+- the key owner's current role on the app (viewers can read but not write)
+- the organization's plan limits
+
+Every write is audit-logged with the key owner as the actor, plus `via: api_key` and the key's grant id.
+
+## Upsert semantics
+
+`PUT` on a collection creates or updates by a stable key. Send the same body twice and you get one record: `201` the first time, `200` after that. Fields you leave out go back to their defaults (for example `tags` becomes empty and `enabled` becomes `true`), so `PUT` the full definition each time.
+
+| Resource | Stable key |
+|---|---|
+| Cron schedule | `command` |
+| Heartbeat | `name` |
+| Outcome rule | `command`, `job_name`, `environment`, `expression`, `key`, `kind` |
+| Quality check | `command`, `job_name`, `environment`, `expression` |
+
+`PATCH` on one record changes only the fields you send. Renaming a record onto a stable key that another record already uses returns `409`.
+
+Changing a cron schedule's command, expression or time zone restarts monitoring at that moment, the same as adding a new schedule. Earlier occurrences aren't checked.
+
+The dashboard follows the same rule: adding a schedule or outcome rule whose stable key already exists updates it.
+
+## Cron schedules
+
+| Method and path | Scope |
+|---|---|
+| `GET /cron-schedules?tag=` | `monitor:read` |
+| `PUT /cron-schedules` | `monitor:write` |
+| `GET /cron-schedules/{id}` | `monitor:read` |
+| `PATCH /cron-schedules/{id}` | `monitor:write` |
+| `DELETE /cron-schedules/{id}` | `monitor:write` |
+| `POST /cron-schedules/{id}/ping-token` | `monitor:write` |
+
+| Field | Required | Notes |
+|---|---|---|
+| `command` | yes | The exact command your runs report, up to 255 characters |
+| `expression` | yes | Five-field cron expression |
+| `timezone` | yes | IANA name, for example `UTC` or `Europe/Berlin` |
+| `grace_seconds` | yes | 0 to 86400. How late a start may be |
+| `max_runtime_seconds` | yes | 60 to 604800 |
+| `enabled` | no | Default `true` |
+| `tags` | no | See [Tags](#tags) |
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/cron-schedules \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"command":"reports:send","expression":"0 6 * * *","timezone":"UTC",
+       "grace_seconds":300,"max_runtime_seconds":3600,"tags":["billing","nightly"]}'
+```
+
+```json
+{
+  "data": {
+    "id": 42,
+    "command": "reports:send",
+    "expression": "0 6 * * *",
+    "timezone": "UTC",
+    "grace_seconds": 300,
+    "max_runtime_seconds": 3600,
+    "enabled": true,
+    "tags": ["billing", "nightly"],
+    "status": "unknown",
+    "muted_until": null,
+    "last_checked_at": null,
+    "updated_at": "2026-11-02T09:00:00+00:00",
+    "activated_at": "2026-11-02T09:00:00+00:00",
+    "ping_url": "https://app.crontinel.com/ping/…"
+  }
+}
+```
+
+`ping_url` is a credential. It's returned only when the schedule is created and when you regenerate it, never by list or get. Regenerating stops the old URL at once:
+
+```bash
+curl -fsS -X POST https://app.crontinel.com/api/v1/apps/billing/cron-schedules/42/ping-token \
+  -H "Authorization: Bearer $CRONTINEL_KEY"
+```
+
+Pause a schedule without deleting it:
+
+```bash
+curl -fsS -X PATCH https://app.crontinel.com/api/v1/apps/billing/cron-schedules/42 \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"enabled":false}'
+```
+
+Deleting a schedule closes its open alerts without sending recovery notifications. An app can have up to 20 cron schedules.
+
+## Heartbeats
+
+Same routes under `/heartbeats`. Fields: `name` (required, the stable key), `interval_minutes` (required, 1 to 10080), `grace_minutes` (1 to 1440), `enabled`, `tags`.
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/heartbeats \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"name":"queue-worker","interval_minutes":5,"grace_minutes":2,"tags":["ops"]}'
+```
+
+## Outcome rules
+
+| Method and path | Scope |
+|---|---|
+| `GET /outcome-rules` | `monitor:read` |
+| `PUT /outcome-rules` | `monitor:write` |
+| `GET /outcome-rules/{id}` | `monitor:read` |
+| `DELETE /outcome-rules/{id}` | `monitor:write` |
+
+| Field | Required | Notes |
+|---|---|---|
+| `command` | yes | Which runs the rule applies to |
+| `job_name`, `environment`, `expression` | no | Narrow the match |
+| `key` | yes | Metric or timestamp name in the run receipt |
+| `kind` | yes | `numeric_min`, `numeric_max` or `freshness` |
+| `threshold` | yes | The bound, or the maximum age in seconds for `freshness` |
+| `missing` | no | `unknown` (default) or `fail`. What happens when a run reports no value. See [unknown outcomes](/check-in/start-finish/#missing-value-policy) |
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/outcome-rules \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"command":"reports:send","key":"emails_sent","kind":"numeric_min","threshold":1,"missing":"fail"}'
+```
+
+Rule ids are UUIDs. An app can have up to 20 rules. Rules apply to runs received after the change.
+
+## Quality checks
+
+`GET`, `PUT`, `GET /{id}` and `DELETE /{id}` under `/quality-checks`. A quality check sends run output to the hosted model for grading, so two things are required:
+
+- `"consent": true` in the body, every time
+- the organization's AI switch turned on (otherwise `403 unsupported_feature`)
+
+Fields: `command` (required), `job_name`, `environment`, `expression`, `rubric` (10 to 1000 characters), `pass_score` (1 to 5), `consent`.
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/quality-checks \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"command":"agent:digest","rubric":"Lists every open pull request with its author.","pass_score":3,"consent":true}'
+```
+
+The response records `consented_by` (the key owner) and `consented_at`. An app can have up to 10 quality checks. See [AI quality checks](/mcp/ai-agent-monitoring/#quality-check-ai-optional).
+
+## Mute and unmute
+
+Mute holds back notifications. Incidents still open and close.
+
+| Method and path | Body |
+|---|---|
+| `PUT /mute` | `{"minutes": 60}`. One of 0, 60, 240, 1440, 10080. 0 unmutes |
+| `DELETE /mute` | none, unmutes the app |
+| `PUT /monitors/{id}/mute` | same as the app |
+| `DELETE /monitors/{id}/mute` | none |
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/mute \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"minutes":240}'
+```
+
+An app mute wins over a monitor mute.
+
+## Tags
+
+Cron schedules and heartbeats take up to 10 tags. Tags are lowercase slugs: letters, numbers, dashes and underscores, up to 32 characters. Uppercase input is lowercased and duplicates are dropped.
+
+Filter lists with `?tag=`:
+
+```bash
+curl -fsS "https://app.crontinel.com/api/v1/apps/billing/cron-schedules?tag=nightly" \
+  -H "Authorization: Bearer $CRONTINEL_KEY"
+```
+
+In the dashboard, set tags on the schedule and monitor forms (comma-separated). The app's Monitors tab and the [Analytics](/analytics/) page filter by tag. On Analytics a tag narrows the jobs table to commands of schedules with that tag; incident counts and queues stay app-wide.
+
+## Errors
+
+Errors are JSON with an `error` code and a `message`. Validation errors add `errors`, keyed by field.
+
+```json
+{
+  "error": "validation_failed",
+  "message": "The interval minutes field must be at least 1.",
+  "errors": { "interval_minutes": ["The interval minutes field must be at least 1."] }
+}
+```
+
+| Status | `error` | When |
+|---|---|---|
+| 401 | `unauthenticated` | Missing, invalid, expired or revoked key |
+| 403 | `insufficient_scope` | The key lacks the scope, or it's an app ingest key |
+| 403 | `forbidden` | The key owner is a viewer on this app |
+| 403 | `unsupported_feature` | Quality check while the organization's AI switch is off |
+| 404 | `not_found` | Unknown record, or an app the key wasn't given |
+| 409 | `conflict` | A `PATCH` would give two records the same stable key |
+| 422 | `validation_failed` | Field errors in `errors` |
+| 429 | `quota_exceeded` | Plan monitor limit, or a per-app cap (20 schedules, 20 rules, 10 quality checks). Updating an existing record still works |
+| 429 | `rate_limited` | More than 60 requests a minute. Wait `Retry-After` seconds |
+
+## Not in the API yet
+
+- MCP write tools. MCP is read-only plus hosted investigations for now; use this API for changes.
+- Pagination. Lists return every record, bounded by the per-app caps and your plan's monitor limit.
+
+The machine-readable contract is in [openapi.json](https://app.crontinel.com/openapi.json) under the `Configuration` tag.
 
 ---
 
@@ -3127,6 +3358,36 @@ Outcome::timestamp('latest_artifact', $backup->toIso8601String());
 ```
 
 Zero is a real value. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` so the count survives the child process.
+
+An AI agent job can report its spend the same way. The hosted app checks `tokens_used`, `cost_usd` and `tool_calls` against an agent ceiling:
+
+```php
+Outcome::metric('tokens_used', $usage->totalTokens);
+Outcome::metric('cost_usd', 0.42);
+Outcome::metric('tool_calls', 17);
+```
+
+## Run output
+
+Requires `crontinel/laravel` 0.9.0 or later. A successful run sends no output unless you choose to. Set the text for the run:
+
+```php
+Outcome::output('Sent 42 invoices, skipped 3 with no email.');
+```
+
+It goes on the terminal receipt only and is cut to the first 10,000 characters. A failed run keeps the exception message and adds this text after it. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` for it, the same as metrics.
+
+To send the task's output file instead, set `CRONTINEL_CAPTURE_OUTPUT=true` (`crontinel.cron.capture_output`) and give the task a file with `sendOutputTo()`, `appendOutputTo()` or `storeOutput()`:
+
+```php
+$schedule->command('reports:send')->daily()->storeOutput();
+```
+
+At the end of the run the package reads the last 10,000 characters of that file and sends them, for `runInBackground()` tasks too. `Outcome::output()` wins when both are set. A missing or unreadable file sends the receipt without output. With `appendOutputTo()` the tail can include earlier runs.
+
+Capture is off by default because command output can hold customer data or secrets. Turn it on only where you are fine storing that output in Crontinel.
+
+The hosted AI quality check grades this output. It is opt-in per job in the hosted app; sending output does not turn it on.
 
 ## Stable job names
 
@@ -4846,6 +5107,18 @@ php artisan vendor:publish --tag=crontinel-config
 This will prompt before overwriting your file. Decline the overwrite, then diff the new defaults against your current config.
 
 2. Check the version-specific notes below and add the new keys manually. This is faster when only a few options changed.
+
+## v0.8.x to v0.9.0
+
+Released: 2026-11-02
+
+### New features
+
+- **`Outcome::output()`:** Set the text sent as a run's output, cut to 10,000 characters. A failure keeps the exception message and adds this text.
+- **`CRONTINEL_CAPTURE_OUTPUT=true`:** Opt-in. Sends the last 10,000 characters of the task's `sendOutputTo()` / `appendOutputTo()` / `storeOutput()` file. Off by default because output may hold sensitive data. Add `'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),` under `cron` in a published config.
+- **Agent metric names:** `tokens_used`, `cost_usd` and `tool_calls` through `Outcome::metric()`.
+
+Pin with `composer require crontinel/laravel:^0.9`. See [Run output](/sdks/laravel/#run-output).
 
 ## v0.7.x to v0.8.0
 
