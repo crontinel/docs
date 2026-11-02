@@ -34,6 +34,18 @@ This will prompt before overwriting your file. Decline the overwrite, then diff 
 
 2. Check the version-specific notes below and add the new keys manually. This is faster when only a few options changed.
 
+## v0.8.x to v0.9.0
+
+Released: 2026-11-02
+
+### New features
+
+- **`Outcome::output()`:** Set the text sent as a run's output, cut to 10,000 characters. A failure keeps the exception message and adds this text.
+- **`CRONTINEL_CAPTURE_OUTPUT=true`:** Opt-in. Sends the last 10,000 characters of the task's `sendOutputTo()` / `appendOutputTo()` / `storeOutput()` file. Off by default because output may hold sensitive data. Add `'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),` under `cron` in a published config.
+- **Agent metric names:** `tokens_used`, `cost_usd` and `tool_calls` through `Outcome::metric()`.
+
+Pin with `composer require crontinel/laravel:^0.9`. See [Run output](/sdks/laravel/#run-output).
+
 ## v0.7.x to v0.8.0
 
 Released: 2026-10-09

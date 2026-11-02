@@ -42,6 +42,36 @@ Outcome::timestamp('latest_artifact', $backup->toIso8601String());
 
 Zero is a real value. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` so the count survives the child process.
 
+An AI agent job can report its spend the same way. The hosted app checks `tokens_used`, `cost_usd` and `tool_calls` against an agent ceiling:
+
+```php
+Outcome::metric('tokens_used', $usage->totalTokens);
+Outcome::metric('cost_usd', 0.42);
+Outcome::metric('tool_calls', 17);
+```
+
+## Run output
+
+Requires `crontinel/laravel` 0.9.0 or later. A successful run sends no output unless you choose to. Set the text for the run:
+
+```php
+Outcome::output('Sent 42 invoices, skipped 3 with no email.');
+```
+
+It goes on the terminal receipt only and is cut to the first 10,000 characters. A failed run keeps the exception message and adds this text after it. Background tasks need `CRONTINEL_BACKGROUND_CORRELATION=true` for it, the same as metrics.
+
+To send the task's output file instead, set `CRONTINEL_CAPTURE_OUTPUT=true` (`crontinel.cron.capture_output`) and give the task a file with `sendOutputTo()`, `appendOutputTo()` or `storeOutput()`:
+
+```php
+$schedule->command('reports:send')->daily()->storeOutput();
+```
+
+At the end of the run the package reads the last 10,000 characters of that file and sends them, for `runInBackground()` tasks too. `Outcome::output()` wins when both are set. A missing or unreadable file sends the receipt without output. With `appendOutputTo()` the tail can include earlier runs.
+
+Capture is off by default because command output can hold customer data or secrets. Turn it on only where you are fine storing that output in Crontinel.
+
+The hosted AI quality check grades this output. It is opt-in per job in the hosted app; sending output does not turn it on.
+
 ## Stable job names
 
 Name the schedule when the command string can change, including a closure:
