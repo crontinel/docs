@@ -88,6 +88,27 @@ Mute alerts for 1 hour, 4 hours, 24 hours, or 7 days, or unmute early. Only peop
 
 While muted, Crontinel still records incidents and state. Only the notification is held back. An app mute wins over monitor settings. Test sends still go out. The mute ends by itself, and each mute and unmute is in the audit log.
 
+## Acknowledging alerts (SaaS)
+
+Acknowledge an open alert to say someone is on it. It stops escalation for that incident only.
+
+- **Dashboard:** the app's Monitors tab lists open alerts. Click **Acknowledge**. You need configure access to the app.
+- **Email and Slack:** firing alerts include an **Acknowledge this alert** link. It works without signing in, covers that one incident, and expires after 24 hours. The link opens a confirm page; nothing changes until you press **Acknowledge**.
+
+Each open alert shows who acknowledged it and when. Every acknowledgement is in the audit log, with the user or the channel link as the actor. The recovery notification still goes to every channel that was notified. If the alert fires again after it recovered, that is a new incident and starts unacknowledged.
+
+## Escalation (SaaS)
+
+Set an escalation policy per app on the app's **Settings** tab, under **Escalation**. A policy has up to 5 steps. Each step waits 5 to 1440 minutes after the previous step, then notifies the channels you pick.
+
+- The first notification goes out as it always does. Channels you pick in a step are held back until that step, so a PagerDuty or SMS channel can wait for step 1.
+- Escalation stops when someone acknowledges the alert or the alert recovers.
+- Each step sends once per incident. Escalation messages start with `Escalation step N, not acknowledged:`.
+- A muted app holds escalation back. The step is not used up; it sends once the mute ends if the alert is still open and unacknowledged.
+- Recovery notifies every channel the incident reached, including escalation channels.
+
+Open alerts show **Escalated to step N** once a step has gone out. You can also read and replace the policy with the [Configuration API](/reference/config-api/#escalation-policy).
+
 ## SaaS alert management
 
 In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.
