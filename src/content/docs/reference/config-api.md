@@ -1,6 +1,6 @@
 ---
 title: Configuration API
-description: Create, update and delete cron schedules, heartbeats, outcome rules, quality checks and mutes over REST with a scoped key. PUT is an idempotent upsert, so config-as-code can run on every deploy.
+description: Create, update and delete cron schedules, heartbeats, outcome rules, quality checks, mutes and escalation over REST with a scoped key. PUT is an idempotent upsert for config-as-code.
 ---
 
 The configuration API manages the same records as the dashboard. Both go through one service, so validation, plan limits, roles and audit entries are identical. A schedule created by `PUT` looks the same as one added on the Cron schedules page.
@@ -182,6 +182,23 @@ curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/mute \
 ```
 
 An app mute wins over a monitor mute.
+
+## Escalation policy
+
+Read or replace the app's [escalation steps](/alerts/channels/#escalation-saas).
+
+| Method and path | Body |
+|---|---|
+| `GET /escalation` | none |
+| `PUT /escalation` | `{"steps": [{"wait_minutes": 15, "channel_ids": [12]}]}`. Replaces every step. `{"steps": []}` removes escalation |
+
+Up to 5 steps. `wait_minutes` is 5 to 1440, counted from the previous step. `channel_ids` are alert channels of this app or its organization.
+
+```bash
+curl -fsS -X PUT https://app.crontinel.com/api/v1/apps/billing/escalation \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"steps":[{"wait_minutes":15,"channel_ids":[12]},{"wait_minutes":30,"channel_ids":[14]}]}'
+```
 
 ## Tags
 
