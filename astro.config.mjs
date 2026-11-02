@@ -34,6 +34,7 @@ export default defineConfig({
           { label: 'Register expected jobs', link: '/check-in/schedule/' },
           { label: 'Start and finish receipts', link: '/check-in/start-finish/' },
           { label: 'Ping URLs (no API key)', link: '/check-in/ping-urls/' },
+          { label: 'Deploy markers', link: '/check-in/deploy-markers/' },
           { label: 'Installation (Laravel)', link: '/installation/' },
           { label: 'Billing & Plans', link: '/billing/' },
         ]},
