@@ -1,2 +1,5 @@
 /*
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/outcome_checkin.py
+  Content-Type: text/x-python; charset=utf-8

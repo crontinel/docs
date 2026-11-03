@@ -23,7 +23,11 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
 
 ### Python
 
-Copy `outcome_checkin.py` from the [Crontinel workspace](https://github.com/crontinel/workspace) (`scripts/outcome_checkin.py`). There is no supported PyPI package for this path.
+Download `outcome_checkin.py` once. It uses only the Python standard library (3.8+). There is no supported PyPI package for this path.
+
+```bash
+curl -fsSLO https://docs.crontinel.com/outcome_checkin.py
+```
 
 ```bash
 python3 outcome_checkin.py \
