@@ -122,6 +122,7 @@ Set an escalation policy per app on the app's **Settings** tab, under **Escalati
 
 - The first notification goes out as it always does. Channels you pick in a step are held back until that step, so a PagerDuty or SMS channel can wait for step 1.
 - Escalation stops when someone acknowledges the alert or the alert recovers.
+- Only alerts that open after you first add a policy escalate. Alerts already open at that time do not. Editing the policy later does not change this.
 - Each step sends once per incident. Escalation messages start with `Escalation step N, not acknowledged:`.
 - A muted app or a [maintenance window](#maintenance-windows-saas) holds escalation back. The step is not used up; it sends once the mute or window ends if the alert is still open and unacknowledged.
 - Recovery notifies every channel the incident reached, including escalation channels.
