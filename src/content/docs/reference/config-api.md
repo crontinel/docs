@@ -269,7 +269,7 @@ Errors are JSON with an `error` code and a `message`. Validation errors add `err
 
 ## Not in the API yet
 
-- MCP write tools. MCP is read-only plus hosted investigations for now; use this API for changes.
+- MCP covers saving cron schedules, heartbeats and outcome rules ([MCP tools](/mcp/tools/#configuration-writes-hosted-mcp)). Use this API for deletes, mutes, escalation, maintenance windows and quality checks.
 - Pagination. Lists return every record, bounded by the per-app caps and your plan's monitor limit.
 
 The machine-readable contract is in [openapi.json](https://app.crontinel.com/openapi.json) under the `Configuration` tag.
