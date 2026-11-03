@@ -1,6 +1,6 @@
 ---
 title: Available MCP Tools
-description: MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, and creating or dismissing alerts.
+description: MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, creating or dismissing alerts, and saving monitors and outcome rules.
 ---
 
 | Tool | Description |
@@ -14,6 +14,9 @@ description: MCP tools for listing scheduled jobs, reading a cron run, checking 
 | `list_recent_alerts` | Alerts fired in the last N hours |
 | `acknowledge_alert` | Dismiss an active alert by its key |
 | `create_alert` | Create a new alert channel (Slack, email, or webhook) for an app |
+| `save_cron_schedule` | Hosted MCP, needs `monitor:write`. Create or update the schedule monitor for one command |
+| `save_heartbeat` | Hosted MCP, needs `monitor:write`. Create or update a heartbeat monitor by name |
+| `save_outcome_rule` | Hosted MCP, needs `monitor:write`. Create or update the evidence a run must report to count as done |
 
 ## `list_scheduled_jobs`
 
@@ -102,3 +105,14 @@ Not limited to a retired “Pro or Team” gate. Supported channel types follow 
 ```
 
 Returns the new alert channel ID on success.
+
+## Configuration writes (hosted MCP)
+
+The three `save_*` tools appear only when the connection has `monitor:write`. It is never granted by default: tick it when you create an API key, or let your assistant request it over OAuth, where the consent screen says what it allows.
+
+- The key or OAuth user needs operator access to the app. Viewers cannot write.
+- Each tool creates the record or updates the one with the same key (command for schedules, name for heartbeats, command plus metric key for outcome rules). Calling it twice does not make a duplicate.
+- Changes use the same checks, plan limits and audit log as the dashboard and the [Configuration API](/reference/config-api/). The audit entry shows `via: mcp`.
+- Ping URLs are not returned over MCP. Copy them from the dashboard.
+- Deleting monitors, muting and maintenance windows are not MCP tools. Use the dashboard or the Configuration API.
+
