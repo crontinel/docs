@@ -85,11 +85,13 @@ $schedule->call(function () {
 
 The receipt keeps the command and also sends `job_name`, `environment` when only one environment is set, and `expression`.
 
-List the schedule in Crontinel and set the `processed_records` minimum that means the run counted:
+Name the schedule in Crontinel and set the `processed_records` minimum that means the run counted:
 
 ```bash
 php artisan crontinel:schedule --minimum=1
 ```
+
+From v0.9.2 this also turns on missed-run alerts: each task's cron expression and timezone (the task's own, else `app.schedule_timezone`, else `app.timezone`) are stored, and a run that doesn't start on time alerts. Run it again after you change the schedule or upgrade from an earlier version. Crontinel's own `crontinel:report` task is not listed or reported as a run.
 
 ## Horizon and queues
 

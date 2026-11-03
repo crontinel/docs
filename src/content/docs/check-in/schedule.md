@@ -85,4 +85,4 @@ urllib.request.urlopen(req, timeout=5)
 - If a run completes but took longer than `max_runtime_seconds`, a **cron ran too long** alert opens. The next run inside the limit resolves it.
 - `check_monitoring_coverage` over MCP names the registered jobs instead of reporting the inventory as unknown. It does not read crontab or an agent runner.
 
-Registering is separate from the Laravel `php artisan crontinel:schedule` command, which reports a Laravel schedule as passive inventory.
+Laravel apps don't need this request: `php artisan crontinel:schedule` (package v0.9.2 or later) registers the Laravel schedule the same way, with timezones. Earlier versions stored it as inventory only.

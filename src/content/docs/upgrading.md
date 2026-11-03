@@ -54,7 +54,7 @@ Released: 2026-10-09
 
 - **`Outcome::metric()` / `Outcome::timestamp()`:** Record a business count or artifact time on the terminal receipt. Exit 0 still means the process finished. Zero is sent when you record it. A run that records nothing omits `outcomes`.
 - **Stable `job_name`:** `Schedule::name()` (plus expression and a single environment) travels with the receipt so a renamed command or `Schedule::call` closure can keep a rule.
-- **`php artisan crontinel:schedule`:** Lists the Laravel schedule in Crontinel and can set the `processed_records` minimum.
+- **`php artisan crontinel:schedule`:** Names the Laravel schedule in Crontinel and can set the `processed_records` minimum. From v0.9.2 it also turns on missed-run alerts; run it again after upgrading.
 
 Pin with `composer require crontinel/laravel:^0.8`. Dogfood evidence for the Packagist artifact lives in the workspace planning notes.
 
