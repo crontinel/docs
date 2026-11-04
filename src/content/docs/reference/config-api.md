@@ -300,7 +300,7 @@ resource "crontinel_cron_schedule" "nightly_import" {
 }
 ```
 
-Quality checks, maintenance windows and escalation policies are not Terraform resources yet.
+It manages cron schedules, heartbeats, outcome rules, maintenance windows and the escalation policy. Quality checks, alert channels and mutes are not Terraform resources yet.
 
 ## Not in the API yet
 
