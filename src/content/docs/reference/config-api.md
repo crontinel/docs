@@ -41,6 +41,18 @@ Every write is audit-logged with the key owner as the actor, plus `via: api_key`
 
 `PATCH` on one record changes only the fields you send. Renaming a record onto a stable key that another record already uses returns `409`.
 
+## Avoiding lost updates
+
+Every record in a response has a `version`. It changes whenever the record changes. To make sure you don't overwrite someone else's edit, send the version you read back as `if_version` on `PUT` or `PATCH`:
+
+```bash
+curl -X PATCH "$CRONTINEL_URL/api/v1/apps/billing/cron-schedules/42" \
+  -H "Authorization: Bearer $CRONTINEL_KEY" -H "Content-Type: application/json" \
+  -d '{"grace_seconds": 600, "if_version": "3f9c2a1b7d6e4c08"}'
+```
+
+If the record changed since that read, the request returns `409` `conflict` and nothing is saved. Read it again and retry with the new version. Leave `if_version` out and the last write wins. The escalation policy has one `version` for all its steps. Deletes and mutes don't check versions.
+
 Changing a cron schedule's command, expression or time zone restarts monitoring at that moment, the same as adding a new schedule. Earlier occurrences aren't checked.
 
 The dashboard follows the same rule: adding a schedule or outcome rule whose stable key already exists updates it.
@@ -262,7 +274,7 @@ Errors are JSON with an `error` code and a `message`. Validation errors add `err
 | 403 | `forbidden` | The key owner is a viewer on this app |
 | 403 | `unsupported_feature` | Quality check while the organization's AI switch is off |
 | 404 | `not_found` | Unknown record, or an app the key wasn't given |
-| 409 | `conflict` | A `PATCH` would give two records the same stable key |
+| 409 | `conflict` | A `PATCH` would give two records the same stable key, or `if_version` no longer matches the record |
 | 422 | `validation_failed` | Field errors in `errors` |
 | 429 | `quota_exceeded` | Plan monitor limit, or a per-app cap (20 schedules, 20 rules, 10 quality checks). Updating an existing record still works |
 | 429 | `rate_limited` | More than 60 requests a minute. Wait `Retry-After` seconds |
