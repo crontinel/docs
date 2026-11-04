@@ -114,5 +114,6 @@ The three `save_*` tools appear only when the connection has `monitor:write`. It
 - Each tool creates the record or updates the one with the same key (command for schedules, name for heartbeats, command plus metric key for outcome rules). Calling it twice does not make a duplicate.
 - Changes use the same checks, plan limits and audit log as the dashboard and the [Configuration API](/reference/config-api/). The audit entry shows `via: mcp`.
 - Ping URLs are not returned over MCP. Copy them from the dashboard.
+- Each save returns a `version`. Pass it back as `if_version` on the next save, and the save is refused if someone changed the record in between.
 - Deleting monitors, muting and maintenance windows are not MCP tools. Use the dashboard or the Configuration API.
 
