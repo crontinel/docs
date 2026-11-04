@@ -279,6 +279,29 @@ Errors are JSON with an `error` code and a `message`. Validation errors add `err
 | 429 | `quota_exceeded` | Plan monitor limit, or a per-app cap (20 schedules, 20 rules, 10 quality checks). Updating an existing record still works |
 | 429 | `rate_limited` | More than 60 requests a minute. Wait `Retry-After` seconds |
 
+## Terraform
+
+Manage cron schedules, heartbeats and outcome rules as code with the [Crontinel Terraform provider](https://registry.terraform.io/providers/crontinel/crontinel/latest). It uses this API with a generated key (`monitor:read` and `monitor:write`), and refuses an update if the record changed in Crontinel after Terraform last read it.
+
+```hcl
+terraform {
+  required_providers {
+    crontinel = { source = "crontinel/crontinel" }
+  }
+}
+
+provider "crontinel" {} # reads CRONTINEL_API_KEY
+
+resource "crontinel_cron_schedule" "nightly_import" {
+  app        = "billing"
+  command    = "nightly-import"
+  expression = "0 2 * * *"
+  timezone   = "UTC"
+}
+```
+
+Quality checks, maintenance windows and escalation policies are not Terraform resources yet.
+
 ## Not in the API yet
 
 - MCP covers saving cron schedules, heartbeats and outcome rules ([MCP tools](/mcp/tools/#configuration-writes-hosted-mcp)). Use this API for deletes, mutes, escalation, maintenance windows and quality checks.
