@@ -17,7 +17,7 @@ The Laravel package can also run a local `/crontinel` dashboard without a hosted
 
 ## How do I send my first receipt?
 
-1. Create an app at [app.crontinel.com](https://app.crontinel.com/register).
+1. Create an app at [app.crontinel.com](https://app.crontinel.com/login).
 2. Copy the ingest key.
 3. POST to `/api/v1/ingest/cron` when the job finishes (curl, Node `fetch`, `outcome_checkin.py`, Sidekiq, or GitHub Actions).
 4. Send `processed_records: 0`, confirm the outcome alert, then send a later count and confirm recovery.

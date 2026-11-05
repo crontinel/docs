@@ -1134,7 +1134,7 @@ The Laravel package can also run a local `/crontinel` dashboard without a hosted
 
 ## How do I send my first receipt?
 
-1. Create an app at [app.crontinel.com](https://app.crontinel.com/register).
+1. Create an app at [app.crontinel.com](https://app.crontinel.com/login).
 2. Copy the ingest key.
 3. POST to `/api/v1/ingest/cron` when the job finishes (curl, Node `fetch`, `outcome_checkin.py`, Sidekiq, or GitHub Actions).
 4. Send `processed_records: 0`, confirm the outcome alert, then send a later count and confirm recovery.
@@ -1196,7 +1196,7 @@ The rest of this page is for Laravel apps that want the package to attach that r
 
 - PHP 8.2+
 - Laravel 11, 12, or 13
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 
 ### 2. Install
 
@@ -1530,7 +1530,7 @@ The allowance resets at 00:00 UTC on the 1st. A grade that fails still counts. U
 URL: https://docs.crontinel.com/mcp/claude-code/
 
 :::note
-The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/register) to get started.
+The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/login) to get started.
 :::
 
 ## 1. Get your API key
@@ -1933,7 +1933,7 @@ Every runtime uses the same HTTP receipt. First-class paths: **curl**, **Node**,
 
 ## 1. Create an app
 
-1. Sign up at [app.crontinel.com](https://app.crontinel.com/register).
+1. Sign up at [app.crontinel.com](https://app.crontinel.com/login).
 2. Create an app and copy its **ingest key**. That key is not an MCP key.
 3. Put it in the job environment as `CRONTINEL_INGEST_KEY`.
 
@@ -2937,7 +2937,7 @@ Get from zero to your first ping in under 2 minutes.
 
 ### 1. Prerequisites
 
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -3136,7 +3136,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - .NET 8.0+ or .NET Standard 2.0
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -3330,7 +3330,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - Go 1.21+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -3617,7 +3617,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 ### 1. Prerequisites
 
 - Node.js 18+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -3790,7 +3790,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - PHP 8.1+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -3932,7 +3932,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 ### 1. Prerequisites
 
 - Python 3.9+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -4107,7 +4107,7 @@ Get from zero to your first data in under 3 minutes.
 
 - Ruby 3.0+
 - Rails 6.1+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -4287,7 +4287,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - Ruby 3.0+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
@@ -4439,7 +4439,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - Rust 1.75+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 
