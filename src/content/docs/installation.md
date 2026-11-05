@@ -17,7 +17,7 @@ The rest of this page is for Laravel apps that want the package to attach that r
 
 - PHP 8.2+
 - Laravel 11, 12, or 13
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 
 ### 2. Install
 

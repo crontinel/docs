@@ -18,7 +18,7 @@ Get from zero to your first data in under 3 minutes.
 ### 1. Prerequisites
 
 - PHP 8.1+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 

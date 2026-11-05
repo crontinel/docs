@@ -16,7 +16,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 ### 1. Prerequisites
 
 - Node.js 18+
-- A Crontinel account ([sign up free](https://app.crontinel.com/register))
+- A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
 - Your API key (`crn_live_...`) from app settings
 

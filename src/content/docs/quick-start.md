@@ -7,7 +7,7 @@ Every runtime uses the same HTTP receipt. First-class paths: **curl**, **Node**,
 
 ## 1. Create an app
 
-1. Sign up at [app.crontinel.com](https://app.crontinel.com/register).
+1. Sign up at [app.crontinel.com](https://app.crontinel.com/login).
 2. Create an app and copy its **ingest key**. That key is not an MCP key.
 3. Put it in the job environment as `CRONTINEL_INGEST_KEY`.
 
