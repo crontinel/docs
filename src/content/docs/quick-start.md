@@ -24,7 +24,7 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
   -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
 ```
 
-**Python** — use `outcome_checkin.py` from the workspace (no supported PyPI package on this path).
+**Python** — download [outcome_checkin.py](https://docs.crontinel.com/outcome_checkin.py) (standard library only, no supported PyPI package on this path).
 
 **Node** — `fetch` the same JSON body (no supported npm package on this path).
 
@@ -32,7 +32,11 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
 
 **GitHub Actions** — repository secret + curl (or Python) after the job step.
 
-## 3. Verify
+## 3. Set the minimum
+
+A receipt only fails when a rule says what counts as real work. After your first receipt, the dashboard shows "Set a minimum" next to the job. Follow it, or open the app and choose **Outcome rules**. Add a rule with the key `processed_records`, type **Numeric minimum**, threshold `1`.
+
+## 4. Verify
 
 1. Confirm the run appears on the dashboard.
 2. With a minimum rule of 1, `processed_records: 0` should open an outcome alert even when exit code is 0.
