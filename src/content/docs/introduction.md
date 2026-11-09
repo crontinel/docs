@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
+description: Crontinel tells you when a background job finished without doing the work. Check in from any runtime, with extra Horizon evidence on Laravel.
 ---
 
 **Completed is not done.** A process can exit 0 and still produce nothing. Crontinel keeps process status and business result as separate states. Missing evidence is never shown as healthy.

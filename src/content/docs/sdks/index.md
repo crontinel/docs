@@ -1,6 +1,6 @@
 ---
 title: SDKs & Packages
-description: HTTP check-in is the path for every runtime. The Laravel package is the maintained deep integration. Other language repos are not a support claim until they send the outcome receipt and have an owner.
+description: HTTP check-in works from every runtime. The Laravel package is the maintained deep integration; other language repos are not a supported path yet.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';

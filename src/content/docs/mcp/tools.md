@@ -1,6 +1,6 @@
 ---
 title: Available MCP Tools
-description: MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, creating or dismissing alerts, and saving monitors and outcome rules.
+description: MCP tools to list scheduled jobs, read a cron run, check queue depth and Horizon, manage alerts, and save monitors and outcome rules.
 ---
 
 | Tool | Description |
