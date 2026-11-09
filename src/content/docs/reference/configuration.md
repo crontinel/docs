@@ -45,11 +45,15 @@ Middleware applied to all dashboard routes. Default: `['web', 'auth']`
 'middleware' => ['web', 'auth'],
 ```
 
-You almost certainly want `'web'` and `'auth'`. Add a role or ability check to restrict access:
+Keep `'web'` and `'auth'`. The dashboard refuses guests either way, and your app needs a `login` route for `auth` to redirect to.
+
+Any signed-in user can open the dashboard by default. To limit it, redefine the `crontinel.view` gate in a service provider's `boot` method:
 
 ```php
-'middleware' => ['web', 'auth', 'can:viewCrontinel'],
+Gate::define('crontinel.view', fn ($user) => $user->is_admin);
 ```
+
+The dashboard and status API show each command's name without its arguments.
 
 ---
 

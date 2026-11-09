@@ -37,7 +37,9 @@ CRONTINEL_PATH=crontinel
 
 ### 4. Open the dashboard
 
-Visit `/crontinel` in your browser. You'll see the monitoring dashboard.
+Visit `/crontinel` while signed in to your app. You'll see the monitoring dashboard.
+
+The dashboard needs a signed-in user, so your app needs a `login` route. `crontinel:install` warns you if it doesn't have one. Any signed-in user can open the dashboard until you limit it, so if your customers can sign in to this app, [define the `crontinel.view` gate](/reference/configuration/#middleware).
 
 > **What you should see:** The Horizon and Queue sections populate immediately. The Cron section will be empty until your scheduler has run at least once — this is normal.
 
@@ -61,7 +63,7 @@ After the first scheduler tick:
 
 1. Go to `/crontinel` in your browser
 2. The **Cron** section now shows your registered scheduled commands
-3. Each command displays its last run time, exit code, and duration
+3. Each command displays its last run time, duration, and status
 
 <Aside>
 The Laravel package works fully offline with no external API key required. To send data to the Crontinel SaaS, add `CRONTINEL_API_KEY` to your `.env`.
@@ -89,14 +91,6 @@ php artisan migrate
 After running the installer, `config/crontinel.php` is published to your project. Review it to set the dashboard path, middleware, and alert thresholds. See the [configuration reference](/reference/configuration/) for all available options.
 
 > **Using Horizon?** Set `'horizon' => ['enabled' => true]` in `config/crontinel.php`. If you're not using Horizon, set it to `false` to hide the Horizon panel.
-
-## Requirements check
-
-Run the health check to confirm everything is wired up correctly:
-
-```bash
-php artisan crontinel:check
-```
 
 ## Dashboard path
 
@@ -136,7 +130,7 @@ All Crontinel environment variables and their defaults. Set these in `.env` or d
 CRONTINEL_PATH=crontinel
 
 # Horizon integration (set to false if you don't use Horizon)
-CRONTINEL_HORIZON_ENABLED=true
+CRONTINEL_HORIZON=true
 CRONTINEL_HORIZON_CONNECTION=horizon
 
 # Alert channel (slack, email, webhook)
@@ -161,7 +155,7 @@ Pull the latest version through Composer:
 composer update crontinel/laravel
 ```
 
-If you want to pin a specific version, use `composer require crontinel/laravel:^0.8` instead.
+If you want to pin a specific version, use `composer require crontinel/laravel:^0.9` instead.
 
 ### Run new migrations
 
@@ -199,7 +193,7 @@ Once you've migrated and updated your config, run the health check:
 php artisan crontinel:check
 ```
 
-This confirms your database tables are current, the API key is valid, and the agent can reach the Crontinel servers. If something's off, it'll tell you exactly what failed.
+This reads Horizon, your queues and your scheduled commands, then exits `1` if any of them is in an alert state. It doesn't test your API key or the connection to Crontinel.
 
 So, the full upgrade sequence looks like this:
 
