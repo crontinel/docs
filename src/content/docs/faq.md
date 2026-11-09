@@ -51,7 +51,7 @@ Paid plans are **Starter**, **Pro**, and **Max** (internal Max key remains `team
 ## How do I upgrade the Laravel package?
 
 ```bash
-composer require crontinel/laravel:^0.8
+composer require crontinel/laravel:^0.9
 php artisan migrate
 php artisan crontinel:check
 ```

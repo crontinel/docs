@@ -56,7 +56,7 @@ Released: 2026-10-09
 - **Stable `job_name`:** `Schedule::name()` (plus expression and a single environment) travels with the receipt so a renamed command or `Schedule::call` closure can keep a rule.
 - **`php artisan crontinel:schedule`:** Names the Laravel schedule in Crontinel and can set the `processed_records` minimum. From v0.9.2 it also turns on missed-run alerts; run it again after upgrading.
 
-Pin with `composer require crontinel/laravel:^0.8`. Dogfood evidence for the Packagist artifact lives in the workspace planning notes.
+Pin with `composer require crontinel/laravel:^0.9`. Dogfood evidence for the Packagist artifact lives in the workspace planning notes.
 
 ## v0.1.0 to v0.2.0
 
