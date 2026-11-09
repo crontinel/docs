@@ -109,4 +109,4 @@ See the [Agent Guide](/agent/guide/).
 
 ## Configuration
 
-Review `config/crontinel.php` after install. Full options: [configuration reference](/reference/configuration).
+Review `config/crontinel.php` after install. Full options: [configuration reference](/reference/configuration/).
