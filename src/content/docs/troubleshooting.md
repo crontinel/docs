@@ -226,7 +226,7 @@ If the key is missing or wrong, the package falls back to local-only mode silent
 Your server needs outbound HTTPS access to `app.crontinel.com` on port 443. In containerized environments or strict firewall setups, this can be blocked. Test from your server:
 
 ```bash
-curl -I https://app.crontinel.com/api/v1/ping
+curl -I https://app.crontinel.com/up
 ```
 
 You should get a `200` response. If you get a timeout or connection refused, your firewall or network config is blocking outbound traffic.
