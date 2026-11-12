@@ -9,6 +9,8 @@ Crontinel is an outcome monitor for background work in whatever runtime already 
 
 Use the **app ingest key** (`CRONTINEL_INGEST_KEY`). It is not an MCP key. A monitoring failure must not fail the business job.
 
+The examples under **Universal receipt** show the receipt itself. To catch a job that crashes, wrap the job so it sends `failed` with its exit code instead of nothing: see the runtime sections below. A job that crashes before it sends a receipt is otherwise invisible unless you also [register its schedule](/check-in/schedule/).
+
 ## Universal receipt
 
 ### curl
@@ -27,6 +29,12 @@ Download `outcome_checkin.py` once. It uses only the Python standard library (3.
 
 ```bash
 curl -fsSLO https://docs.crontinel.com/outcome_checkin.py
+```
+
+No `curl`, as on slim container images? Fetch it with Python. Send a `User-Agent`: the docs site refuses Python's default one.
+
+```bash
+python3 -c "import urllib.request as u; r = u.Request('https://docs.crontinel.com/outcome_checkin.py', headers={'User-Agent': 'crontinel-checkin'}); open('outcome_checkin.py', 'wb').write(u.urlopen(r).read())"
 ```
 
 ```bash
@@ -200,49 +208,64 @@ exit "$EXIT_CODE"
 
 ## GitHub Actions
 
-Store `CRONTINEL_INGEST_KEY` as a repository secret. After the job step, post the same receipt. Use a unique `request_key` per run.
+Store `CRONTINEL_INGEST_KEY` as a repository secret. Put this step last. GitHub skips later steps after a failed step unless they say `if: always()`, so without it a failed workflow sends nothing. `job.status` decides whether the receipt says `completed` or `failed`. Replace the `0` with your count. The `request_key` uses `run_id` and `run_attempt`, so a re-run does not collide. `|| true` keeps a Crontinel outage from failing the workflow.
 
 ```yaml
 - name: Report outcome
+  if: always() # also runs when an earlier step failed
   env:
     CRONTINEL_INGEST_KEY: ${{ secrets.CRONTINEL_INGEST_KEY }}
+    JOB_STATUS: ${{ job.status }}
   run: |
-    curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
+    status=completed; code=0; outcomes=',"outcomes":{"metrics":{"processed_records":0}}' # replace 0 with your count
+    if [ "$JOB_STATUS" != success ]; then status=failed; code=1; outcomes=''; fi
+    curl -sS -m 10 -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
       -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
       -H "Content-Type: application/json" \
-      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"started_at\":\"$(date -u +%FT%TZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":0}}}" \
+      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"$status\",\"exit_code\":$code,\"started_at\":\"$(date -u +%FT%TZ)\"$outcomes}" \
       || true
 ```
 
 ## Sidekiq / Ruby
 
-Post the same JSON with `Net::HTTP`. There is no supported gem for this path. Rescue so monitoring never fails the job.
+Wrap the job. A completed run sends the count; a job that raises sends `failed` and re-raises, so Sidekiq still retries as usual. The receipt method rescues, so a Crontinel problem never fails or mislabels the job. There is no supported gem for this path.
 
 ```ruby
-require "json"
 require "net/http"
+require "json"
 require "time"
-require "uri"
 
-begin
-  uri = URI("https://app.crontinel.com/api/v1/ingest/cron")
-  req = Net::HTTP::Post.new(uri)
-  req["Authorization"] = "Bearer #{ENV.fetch("CRONTINEL_INGEST_KEY")}"
-  req["Content-Type"] = "application/json"
-  req.body = {
-    request_key: "sidekiq-#{jid}-#{started}",
-    command: "reports:generate",
-    status: "completed",
-    exit_code: 0,
-    started_at: started,
-    finished_at: Time.now.utc.iso8601,
-    outcomes: { metrics: { processed_records: records } },
-  }.to_json
-  Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
-rescue StandardError
-  # Monitoring must not fail the business job.
+class ReportsGenerateJob
+  include Sidekiq::Job
+
+  def perform
+    started = Time.now.utc.iso8601
+    records = Reports.generate! # return how many records it processed
+    crontinel_receipt(started, "completed", 0, records)
+  rescue StandardError
+    crontinel_receipt(started, "failed", 1, nil)
+    raise # Sidekiq still sees the failure and retries as usual
+  end
+
+  private
+
+  def crontinel_receipt(started, status, exit_code, records)
+    uri = URI("https://app.crontinel.com/api/v1/ingest/cron")
+    req = Net::HTTP::Post.new(uri)
+    req["Authorization"] = "Bearer #{ENV.fetch("CRONTINEL_INGEST_KEY")}"
+    req["Content-Type"] = "application/json"
+    body = { request_key: "sidekiq-#{jid}-#{started}", command: "reports:generate", status: status,
+             exit_code: exit_code, started_at: started, finished_at: Time.now.utc.iso8601 }
+    body[:outcomes] = { metrics: { processed_records: records } } unless records.nil?
+    req.body = body.to_json
+    Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+  rescue StandardError
+    # Monitoring must never fail the job.
+  end
 end
 ```
+
+A failed run carries no count, so it raises the failed alert and not also an outcome alert.
 
 ## Scheduled agents
 

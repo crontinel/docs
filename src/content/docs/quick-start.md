@@ -28,9 +28,9 @@ curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
 
 **Node** — `fetch` the same JSON body (no supported npm package on this path).
 
-**Sidekiq / Ruby** — thin `Net::HTTP` post after the job (no supported gem on this path).
+**Sidekiq / Ruby** — wrap the job with a `Net::HTTP` receipt that reports `failed` when it raises (no supported gem on this path).
 
-**GitHub Actions** — repository secret + curl (or Python) after the job step.
+**GitHub Actions** — repository secret + a final curl step with `if: always()`, so a failed workflow still reports.
 
 ## 3. Set the minimum
 

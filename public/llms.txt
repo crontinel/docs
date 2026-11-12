@@ -20,7 +20,7 @@
 - [Billing & Plans](https://docs.crontinel.com/billing/): Starter, Pro, and Max prices and monthly ingest / AI allowances. Email alerts are included; Slack and webhooks stay off the sold card until verified.
 - [FAQ](https://docs.crontinel.com/faq/): HTTP check-in for any runtime, optional Laravel package depth, Octane notes, what is sent to the hosted app, and Starter/Pro/Max billing pointers.
 - [Installation](https://docs.crontinel.com/installation/): Start with the HTTP outcome receipt from any runtime. On Laravel, install crontinel/laravel for schedule attach, queue depth, and Horizon.
-- [Introduction](https://docs.crontinel.com/introduction/): Crontinel tells you when a background job finished without doing the work. Check in from curl, Node, Python, Sidekiq, or GitHub Actions. Laravel adds schedule, queue, and Horizon evidence.
+- [Introduction](https://docs.crontinel.com/introduction/): Crontinel tells you when a background job finished without doing the work. Check in from any runtime, with extra Horizon evidence on Laravel.
 - [Quick Start](https://docs.crontinel.com/quick-start/): Send one HTTP outcome receipt from any runtime, then optionally install the Laravel package for schedule, queue, and Horizon.
 - [Security](https://docs.crontinel.com/security/): Lock down the Crontinel dashboard, verify webhook signatures, and protect sensitive operational data in your Laravel application.
 - [Self-Hosting](https://docs.crontinel.com/self-hosting/): Run the Crontinel hosted stack on a server you control when you don't want the dashboard to live only on app.crontinel.com.
@@ -30,7 +30,7 @@
 
 ## SDKs
 
-- [SDKs & Packages](https://docs.crontinel.com/sdks/): HTTP check-in is the path for every runtime. The Laravel package is the maintained deep integration. Other language repos are not a support claim until they send the outcome receipt and have an owner.
+- [SDKs & Packages](https://docs.crontinel.com/sdks/): HTTP check-in works from every runtime. The Laravel package is the maintained deep integration; other language repos are not a supported path yet.
 - [CLI / Docker](https://docs.crontinel.com/sdks/cli/): Prefer the HTTP check-in recipes (curl) for CLI and CronJob wrappers. The CLI package is not claimed as outcome-receipt parity until verified.
 - [.NET](https://docs.crontinel.com/sdks/dotnet/): Prefer the HTTP check-in recipes for .NET. The .NET SDK is not a supported outcome-receipt path until it has a maintenance owner.
 - [Go](https://docs.crontinel.com/sdks/go/): Prefer the HTTP check-in recipes for Go. The Go package is not a supported outcome-receipt path until it has a maintenance owner.
@@ -58,7 +58,7 @@
 - [AI Agent Jobs](https://docs.crontinel.com/mcp/ai-agent-monitoring/): Monitor a scheduled AI agent like any other job, set ceilings on tokens, cost, and tool calls, and add an optional AI check of the output.
 - [Claude Code Setup](https://docs.crontinel.com/mcp/claude-code/): Add the Crontinel MCP server to Claude Code so the assistant can read cron, queue, and Horizon status without leaving the editor.
 - [MCP Integration Overview](https://docs.crontinel.com/mcp/overview/): Connect Cursor, Claude Code, or Codex over MCP. OAuth first; ordinary evidence reads do not spend hosted AI starts.
-- [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): MCP tools for listing scheduled jobs, reading a cron run, checking queue depth and Horizon, and creating or dismissing alerts.
+- [Available MCP Tools](https://docs.crontinel.com/mcp/tools/): MCP tools to list scheduled jobs, read a cron run, check queue depth and Horizon, manage alerts, and save monitors and outcome rules.
 
 ## Agent
 
