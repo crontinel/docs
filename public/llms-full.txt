@@ -2617,13 +2617,13 @@ This must match the connection name in your `config/horizon.php`. Most apps leav
 
 ### `horizon.supervisor_alert_after_seconds`
 
-Alert when a supervisor's heartbeat is older than this. Default: `60`
+How long a supervisor that Horizon is configured to run may be missing before Crontinel reports it. Default: `60`
 
 ```php
 'supervisor_alert_after_seconds' => 60,
 ```
 
-Crontinel tracks each supervisor separately via its heartbeat Redis key. If `lastHeartbeat` is older than this threshold, the supervisor is considered down — even if the top-level `horizon:status` key still says `running`.
+Crontinel compares the supervisors in `horizon.environments` for the current environment (a wildcard key such as `staging*` works) with the ones running. Horizon restarts a crashed supervisor within seconds, so one is reported only after it has been gone for this long. `crontinel:check` then names it and exits non-zero, and the hosted app opens a "Horizon supervisor not running" alert. Package v0.9.10 and later. It needs a cache store shared between checks (`file` or `redis`, not `array`), and a supervisor running on another host with the same name hides a missing one.
 
 ### `horizon.failed_jobs_per_minute_threshold`
 
@@ -5141,6 +5141,10 @@ Crontinel reports the queues of the one connection in `QUEUE_CONNECTION`. If a H
 If you're using Redis, make sure Crontinel can reach the same Redis instance your queues use. The queue monitor reads from whatever connection your `QUEUE_CONNECTION` points to in `config/queue.php`. If you've got a non-default Redis setup (custom host, port, or database number), Crontinel follows the same config, so there's nothing extra to set.
 
 One thing that trips people up: if you use a separate Redis database for queues (say, database `1`) but your default Redis connection points to database `0`, the monitor might not see your queues. Double-check the `connection` value in your `config/queue.php` Redis driver config.
+
+## Horizon says a supervisor is not running
+
+From package v0.9.10, a supervisor that `horizon.environments` lists for this environment but that is not running is reported after [`supervisor_alert_after_seconds`](/reference/configuration/#horizonsupervisor_alert_after_seconds). Two usual causes: the supervisor crashed and Horizon did not bring it back, or you added it to `config/horizon.php` and did not restart Horizon (`php artisan horizon:terminate`, then let your process manager start it again). The alert resolves when the supervisor is running. If your environment name does not match a key in `horizon.environments`, nothing is checked.
 
 ## Horizon monitor not working
 

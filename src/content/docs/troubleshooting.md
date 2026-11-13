@@ -114,6 +114,10 @@ If you're using Redis, make sure Crontinel can reach the same Redis instance you
 
 One thing that trips people up: if you use a separate Redis database for queues (say, database `1`) but your default Redis connection points to database `0`, the monitor might not see your queues. Double-check the `connection` value in your `config/queue.php` Redis driver config.
 
+## Horizon says a supervisor is not running
+
+From package v0.9.10, a supervisor that `horizon.environments` lists for this environment but that is not running is reported after [`supervisor_alert_after_seconds`](/reference/configuration/#horizonsupervisor_alert_after_seconds). Two usual causes: the supervisor crashed and Horizon did not bring it back, or you added it to `config/horizon.php` and did not restart Horizon (`php artisan horizon:terminate`, then let your process manager start it again). The alert resolves when the supervisor is running. If your environment name does not match a key in `horizon.environments`, nothing is checked.
+
 ## Horizon monitor not working
 
 Two things can cause the Horizon section to show nothing.
