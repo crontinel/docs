@@ -897,7 +897,7 @@ exit "$EXIT_CODE"
 
 ## GitHub Actions
 
-Store `CRONTINEL_INGEST_KEY` as a repository secret. Put this step last. GitHub skips later steps after a failed step unless they say `if: always()`, so without it a failed workflow sends nothing. `job.status` decides whether the receipt says `completed` or `failed`. Replace the `0` with your count. The `request_key` uses `run_id` and `run_attempt`, so a re-run does not collide. `|| true` keeps a Crontinel outage from failing the workflow.
+Store `CRONTINEL_INGEST_KEY` as a repository secret. Put this step last. GitHub skips later steps after a failed step unless they say `if: always()`, so without it a failed workflow sends nothing. `job.status` decides whether the receipt says `completed` or `failed`. Replace the `0` with your count. The `request_key` uses `run_id`, `run_attempt` and the job name, so a re-run and a sibling job in the same workflow each record their own run. A matrix repeats the job name, so add `${{ matrix.<key> }}` to the key there. `|| true` keeps a Crontinel outage from failing the workflow.
 
 ```yaml
 - name: Report outcome
@@ -911,7 +911,7 @@ Store `CRONTINEL_INGEST_KEY` as a repository secret. Put this step last. GitHub 
     curl -sS -m 10 -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
       -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
       -H "Content-Type: application/json" \
-      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}\",\"command\":\"reports:generate\",\"status\":\"$status\",\"exit_code\":$code,\"started_at\":\"$(date -u +%FT%TZ)\"$outcomes}" \
+      -d "{\"request_key\":\"gha-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}\",\"command\":\"reports:generate\",\"status\":\"$status\",\"exit_code\":$code,\"started_at\":\"$(date -u +%FT%TZ)\"$outcomes}" \
       || true
 ```
 
