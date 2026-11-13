@@ -141,6 +141,19 @@ To watch specific queues only:
 'watch' => ['default', 'emails', 'notifications'],
 ```
 
+### `queues.connections`
+
+Queues on connections other than `QUEUE_CONNECTION` (package v0.9.9 and later). Default: `[]` (only the default connection is reported)
+
+```php
+'connections' => [
+    'redis_b' => ['emails'],   // watch these queues
+    'sqs'     => [],           // empty list = discover them
+],
+```
+
+These queues are reported as `connection:queue` (for example `redis_b:emails`), so a `default` queue on two connections does not collide. Use that name for thresholds, such as `queue_thresholds.redis_b:emails`, and expect it in alerts. A connection name that is not in `config/queue.php` is ignored. Their failed-job counts come from `failed_jobs` rows with that connection. Verified with a database queue connection; not run against SQS.
+
 ### `queues.depth_alert_threshold`
 
 Alert when a queue exceeds this many pending jobs. Default: `1000`
@@ -436,6 +449,7 @@ return [
     'queues' => [
         'enabled' => true,
         'watch' => [],
+        'connections' => [],
         'depth_alert_threshold' => 1000,
         'wait_time_alert_seconds' => 300,
     ],

@@ -106,7 +106,7 @@ QUEUE_CONNECTION=redis
 
 ### Queues on a second connection
 
-Crontinel reports the queues of the one connection in `QUEUE_CONNECTION`. If a Horizon supervisor works a different connection (for example `redis_b`), its queues are not reported: they show no depth and raise no backlog alert, and `crontinel.queues.watch` does not change that. Horizon itself is still monitored: a running master and a supervisor on any connection show up in its status. Tested with Horizon 5.51 and two Redis connections.
+Crontinel reports the queues of the one connection in `QUEUE_CONNECTION`. If a Horizon supervisor works a different connection (for example `redis_b`), its queues are not reported by default: they show no depth and raise no backlog alert, and `crontinel.queues.watch` does not change that. From package v0.9.9, list the connection in [`crontinel.queues.connections`](/reference/configuration/#queuesconnections) (`'connections' => ['redis_b' => ['emails']]`) and its queues are reported as `redis_b:emails`. Horizon itself is still monitored: a running master and a supervisor on any connection show up in its status. Tested with Horizon 5.51 and two Redis connections on v0.9.8.
 
 ### Redis connection mismatch
 
