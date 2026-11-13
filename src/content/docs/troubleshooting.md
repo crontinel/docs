@@ -104,6 +104,10 @@ Crontinel's queue monitor works with Redis and database drivers. If your `QUEUE_
 QUEUE_CONNECTION=redis
 ```
 
+### Queues on a second connection
+
+Crontinel reports the queues of the one connection in `QUEUE_CONNECTION`. If a Horizon supervisor works a different connection (for example `redis_b`), its queues are not reported: they show no depth and raise no backlog alert, and `crontinel.queues.watch` does not change that. Horizon itself is still monitored: a running master and a supervisor on any connection show up in its status. Tested with Horizon 5.51 and two Redis connections.
+
 ### Redis connection mismatch
 
 If you're using Redis, make sure Crontinel can reach the same Redis instance your queues use. The queue monitor reads from whatever connection your `QUEUE_CONNECTION` points to in `config/queue.php`. If you've got a non-default Redis setup (custom host, port, or database number), Crontinel follows the same config, so there's nothing extra to set.
