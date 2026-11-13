@@ -956,6 +956,8 @@ end
 
 A failed run carries no count, so it raises the failed alert and not also an outcome alert.
 
+Nothing changes when `sidekiq-cron` or `sidekiq-scheduler` enqueues the job: the receipt lives in `perform`, so scheduled and manual runs report the same way. Crontinel does not read their schedules. Register the job with [a schedule](/check-in/schedule/) and a stopped Sidekiq process alerts as a run that never started. Sidekiq's default retries send one `failed` receipt per attempt, so a crashing job shows several failed runs and one alert.
+
 ## Scheduled agents
 
 Reuse the same rules: report items produced as `processed_records` (or artifact time as `latest_artifact`). An empty successful agent run is a failed outcome when the rule requires work. This is not a separate AI-agent product.
