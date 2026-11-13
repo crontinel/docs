@@ -85,13 +85,13 @@ This must match the connection name in your `config/horizon.php`. Most apps leav
 
 ### `horizon.supervisor_alert_after_seconds`
 
-Alert when a supervisor's heartbeat is older than this. Default: `60`
+How long a supervisor that Horizon is configured to run may be missing before Crontinel reports it. Default: `60`
 
 ```php
 'supervisor_alert_after_seconds' => 60,
 ```
 
-Crontinel tracks each supervisor separately via its heartbeat Redis key. If `lastHeartbeat` is older than this threshold, the supervisor is considered down — even if the top-level `horizon:status` key still says `running`.
+Crontinel compares the supervisors in `horizon.environments` for the current environment (a wildcard key such as `staging*` works) with the ones running. Horizon restarts a crashed supervisor within seconds, so one is reported only after it has been gone for this long. `crontinel:check` then names it and exits non-zero, and the hosted app opens a "Horizon supervisor not running" alert. Package v0.9.10 and later. It needs a cache store shared between checks (`file` or `redis`, not `array`), and a supervisor running on another host with the same name hides a missing one.
 
 ### `horizon.failed_jobs_per_minute_threshold`
 
