@@ -251,7 +251,7 @@ These rows live in the `crontinel_runs` table.
 
 Crontinel supports three alert channels: `slack`, `mail`, and `webhook`. Set the active channel via `CRONTINEL_ALERT_CHANNEL`.
 
-Local alerts are evaluated only when `crontinel:check` runs. The service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler:
+Local alerts are evaluated when `crontinel:check` runs. From v0.9.12, setting `CRONTINEL_ALERT_CHANNEL` makes the package schedule it every minute, so your scheduler (`schedule:run` or `schedule:work`) must be running. On earlier versions, add it yourself:
 
 ```php
 $schedule->command('crontinel:check')->everyMinute();
