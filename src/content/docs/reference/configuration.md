@@ -385,6 +385,7 @@ With `durable` on, cron start and completion reports are written to the spool di
 ```php
 'agent' => [
     'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+    'poll_interval' => 5,
     'heartbeat_interval' => 60,
     'max_reconnect_delay' => 60,
     'default_command_timeout' => 300,
@@ -392,7 +393,7 @@ With `durable` on, cron start and completion reports are written to the spool di
 ],
 ```
 
-Settings for `php artisan crontinel:agent`. `allowed_commands` lists the commands the agent may run, matched with `fnmatch()`. The default empty list allows no commands. The Laravel agent cannot connect to the hosted app today; see the [agent guide](/agent/guide/).
+Settings for `php artisan crontinel:agent`. `allowed_commands` lists the commands the agent may run, matched with `fnmatch()`. The default empty list allows no commands. `poll_interval` is how often, in seconds, it asks the hosted app for commands (v0.9.11+). See the [agent guide](/agent/guide/).
 
 ---
 
@@ -581,11 +582,12 @@ return [
     |--------------------------------------------------------------------------
     | Agent Daemon (php artisan crontinel:agent)
     |--------------------------------------------------------------------------
-    | Settings for the remote command execution agent that connects to the
-    | Crontinel SaaS via SSE to receive and execute commands.
+    | Settings for the remote command agent. It polls app.crontinel.com for
+    | commands every poll_interval seconds and runs the allowed ones.
     */
     'agent' => [
         'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+        'poll_interval' => 5,
         'heartbeat_interval' => 60,
         'max_reconnect_delay' => 60,
         'default_command_timeout' => 300,
