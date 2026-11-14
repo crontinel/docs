@@ -47,7 +47,23 @@ See the [pricing page](https://crontinel.com/pricing/) on the marketing site for
 
 ## Upgrading and cancelling
 
-Manage billing from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Cancel anytime; the subscription stays active until the end of the current period, then Free allowances apply.
+Manage billing from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Only the organization owner can change the plan or payment details.
+
+- **Upgrades take effect now.** Moving to a higher plan, or from monthly to yearly billing, charges right away. You pay for the new plan, minus credit for the unused time on the old one. Monthly to yearly also moves your billing date to today.
+- **Downgrades wait for the renewal.** A lower plan, or yearly to monthly, starts at the end of the current period. No refund or negative balance is issued.
+- **Cancel anytime.** The subscription stays active until the end of the current period, then Free allowances apply.
+
+If your bank asks to confirm an upgrade payment (3D Secure), it can't be charged automatically. Contact support@crontinel.com and we will switch the plan.
+
+## Payment method and failed payments
+
+**Update payment method** on the Billing page opens Stripe's secure page, where you can change the card and download invoices.
+
+If a renewal payment fails:
+
+1. The owner gets an email, and the dashboard and Billing page show that the payment is past due.
+2. Stripe retries the card several times. Update the card and pay the open invoice from the Billing page to keep your plan.
+3. If every retry fails, the subscription ends and the organization moves to Free. The owner gets one more email.
 
 ## OSS
 
