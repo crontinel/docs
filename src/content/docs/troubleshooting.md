@@ -174,7 +174,7 @@ If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn'
 
 ### `crontinel:check` is not scheduled
 
-The package evaluates local alerts only when `crontinel:check` runs. Its service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler yourself:
+The package evaluates local alerts only when `crontinel:check` runs. From v0.9.12 it schedules the command itself when `CRONTINEL_ALERT_CHANNEL` is set; check `php artisan schedule:list` and that your scheduler is running. On earlier versions, add it to your scheduler yourself:
 
 ```php
 $schedule->command('crontinel:check')->everyMinute();
@@ -316,7 +316,7 @@ Lower the value if you need tighter alerting. For example, setting it to `60` wi
 
 ### Failed-run alerts require the alert channel and `crontinel:check`
 
-Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured and `crontinel:check` runs on a schedule (`$schedule->command('crontinel:check')->everyMinute();`). If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
+Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured and `crontinel:check` runs on a schedule (automatic from v0.9.12 once the channel is set; on earlier versions add `$schedule->command('crontinel:check')->everyMinute();`). If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
 
 ### Dedup window hiding repeated failures
 
