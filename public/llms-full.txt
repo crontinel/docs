@@ -204,7 +204,7 @@ sudo supervisorctl start crontinel-agent
 
    ```bash
    curl -X POST https://app.crontinel.com/api/v1/triggers \
-     -H "Authorization: Bearer your-app-key" \
+     -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
      -H "Content-Type: application/json" \
      -d '{"command": "php artisan inspire"}'
    ```
