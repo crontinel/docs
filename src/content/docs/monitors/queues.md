@@ -6,7 +6,7 @@ description: Watch Laravel queue depth, failed jobs, and wait time, and see when
 ## What it monitors
 
 - **Depth**  –  number of pending jobs in each queue
-- **Failed count**  –  jobs in the failed jobs table or dead-letter list
+- **Failed count**  –  rows for that queue in Laravel's `failed_jobs` table
 - **Oldest job age**  –  how long the oldest waiting job has been sitting
 
 ## Supported drivers
@@ -20,6 +20,7 @@ description: Watch Laravel queue depth, failed jobs, and wait time, and see when
 'queues' => [
     'enabled' => true,
     'watch' => [],                    // empty = auto-discover all queues
+    'connections' => [],              // queues on other connections (v0.9.9+)
     'depth_alert_threshold' => 1000,
     'wait_time_alert_seconds' => 300,
 ],
@@ -31,18 +32,15 @@ To watch specific queues only:
 'watch' => ['default', 'emails', 'notifications'],
 ```
 
+From package v0.9.9, `queues.connections` reports queues on connections other than the default one, as `['connection' => ['queue', ...]]`. An empty list for a connection discovers its queues. These queues are reported as `connection:queue`. See the [configuration reference](/reference/configuration/#queuesconnections).
+
 ## Alert conditions
 
-An alert fires when any watched queue exceeds `depth_alert_threshold` jobs or `wait_time_alert_seconds` wait time. The alert auto-resolves when the queue drains.
+In the package, `depth_alert_threshold` and `wait_time_alert_seconds` drive local alerts only, which are sent when `crontinel:check` runs. They are not sent to the hosted app; the hosted app uses the per-app settings below.
 
 ## Per-app queue thresholds (SaaS)
 
-On [Crontinel SaaS](https://app.crontinel.com), you can override the depth threshold per app and per queue from the app settings page. This is useful when different apps have naturally different queue volumes.
-
-The lookup order for thresholds is:
-1. Per-queue override (`queue_thresholds.{queue_name}`)
-2. Per-app default (`queue_thresholds.default`)
-3. Global config value (`depth_alert_threshold`, default 1000)
+On [Crontinel SaaS](https://app.crontinel.com), the app settings page has one depth setting, **Queue depth (jobs)**, default 1000. It applies to every queue in that app.
 
 The same settings page has three optional thresholds. Each is off while blank, so an app gets no new alerts until you set one.
 

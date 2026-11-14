@@ -18,7 +18,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 - Python 3.9+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -58,7 +58,7 @@ print("Data sent to Crontinel!")
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 python quickstart.py
 ```
 

@@ -12,10 +12,16 @@ Channels work the same for every runtime. Add them in the Crontinel dashboard: a
 | Slack | `webhook_url` | Incoming webhook URL |
 | Email | `to` | Recipient email address |
 | Webhook | `url` | Any HTTPS endpoint |
-| PagerDuty | — | Coming soon |
-| SMS | — | Coming soon |
-| OpsGenie | — | Future roadmap |
-| VictorOps | — | Future roadmap |
+| Discord | `webhook_url` | Discord webhook URL |
+| Microsoft Teams | `webhook_url` | Teams webhook URL |
+| Telegram | `bot_token`, `chat_id` | Bot token and chat ID |
+| PagerDuty | `routing_key` | Paid plans only |
+| SMS | `phone_number` | Paid plans only. E.164 format, such as `+15551234567` |
+| OpsGenie | `api_key` | Paid plans only |
+
+SMS has a monthly quota per organization: Free 0, Starter 20, Pro 100, Max 500. Messages over the quota are not sent.
+
+The Laravel package's local alerting supports only `mail`, `slack`, and `webhook`.
 
 ## Configuration
 
@@ -39,15 +45,11 @@ Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your S
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=mail  # Required environment variable
 CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
 ```
 
 Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
-
-### PagerDuty (coming soon)
-
-> **Note:** PagerDuty integration is planned and will be available in a future release.
 
 ### Webhook
 
@@ -59,7 +61,22 @@ CRONTINEL_ALERT_CHANNEL=webhook  # Required environment variable
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel  # Required environment variable
 ```
 
-Add a webhook channel with config key `url`. Crontinel sends a POST with:
+The package sends a POST with:
+
+```json
+{
+  "title": "Queue [default] alert",
+  "message": "...",
+  "level": "warning",
+  "resolved": false,
+  "fired_at": "2026-04-07T08:00:00+00:00",
+  "source": "crontinel"
+}
+```
+
+`level` is `critical`, `warning`, or `resolved`. To send extra headers, such as an auth token, set `CRONTINEL_WEBHOOK_HEADERS` to a JSON object, for example `{"Authorization": "Bearer your-token"}`.
+
+In the dashboard, add a webhook channel with config key `url`. Crontinel sends a POST with:
 
 ```json
 {
@@ -71,9 +88,13 @@ Add a webhook channel with config key `url`. Crontinel sends a POST with:
 }
 ```
 
+The hosted payload also includes `delivery_id`, `dashboard_url`, `run_id`, `command`, `status`, and `context`, and sends the delivery ID in the `X-Crontinel-Delivery-Id` header.
+
 ## Alert deduplication
 
-The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start  –  not one every poll cycle.
+In the hosted app, an alert that stays active re-fires once per cooldown, not on every check. The default cooldown is 5 minutes. Set it per app from 1 to 60 minutes. Missed-run, never-finished, and agent schedule alerts use a fixed 15 minutes.
+
+In the Laravel package, an active condition re-fires every 5 minutes while `crontinel:check` keeps finding it.
 
 ## Auto-resolution
 
@@ -132,12 +153,3 @@ Open alerts show **Escalated to step N** once a step has gone out. You can also 
 ## SaaS alert management
 
 In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.
-
-## Future alert channels
-
-The following channels are on the roadmap but not yet available:
-
-- **PagerDuty** — IT alert routing and incident management. Planned for a future release.
-- **SMS** — Direct text message alerts. Sign up for early access at [crontinel.com](https://crontinel.com/) when this launches.
-- **OpsGenie** — IT alert routing and on-call management. Planned for a future release.
-- **VictorOps** — Incident management and PagerDuty alternative. Planned for a future release.

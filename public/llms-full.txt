@@ -15,7 +15,7 @@ By default the agent refuses to run **any** command. You must explicitly configu
 
 ## How It Works
 
-1. The agent registers with Crontinel Cloud using your API key and app ID
+1. The agent connects to Crontinel Cloud using your API key
 2. It connects to receive commands — see [Connection Method](#connection-method) below, since this differs by runtime
 3. When a trigger is scheduled from the dashboard, the agent checks the command against your configured allowlist
 4. If allowed, it executes the command and reports the result (success/failure, output, duration) back to the cloud; if not allowed, it reports a rejection and does **not** run it
@@ -25,19 +25,21 @@ By default the agent refuses to run **any** command. You must explicitly configu
 
 The Laravel agent and the Node.js/Python agents use different transports to receive commands:
 
-- **Laravel** opens a persistent SSE (Server-Sent Events) connection to `/v1/agent/stream` and receives commands as they're dispatched, with no polling interval. Heartbeats are sent separately via `/v1/agent/heartbeat` every 60 seconds.
+- **Laravel** expects a persistent SSE (Server-Sent Events) connection. The hosted app does not offer it yet; see the warning in [Laravel Agent](#laravel-agent).
 - **Node.js and Python** poll `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds, and send heartbeats via `/api/v1/agents/heartbeat` every 60 seconds.
 
-Both approaches deliver the same behavior from your perspective — commands run within seconds of being scheduled — the underlying connection just differs by runtime.
-
 ## Laravel Agent
+
+:::caution[Cannot connect to the hosted app yet]
+The Laravel agent uses SSE endpoints that the hosted app at `app.crontinel.com` does not serve. The hosted app only has the polling endpoints the Node.js and Python agents use. Until that changes, `php artisan crontinel:agent` cannot receive commands from the hosted app.
+:::
 
 The Laravel package (`crontinel/laravel`) includes a built-in agent command.
 
 ### Prerequisites
 
 - `crontinel/laravel` installed via Composer
-- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` set in `.env`
+- `CRONTINEL_API_KEY` set in `.env`
 
 ### Start the Agent
 
@@ -147,7 +149,6 @@ Type=simple
 User=www-data
 WorkingDirectory=/path/to/your/app
 Environment=CRONTINEL_API_KEY=your-api-key
-Environment=CRONTINEL_APP_ID=your-app-slug
 ExecStart=/usr/bin/php artisan crontinel:agent
 Restart=always
 RestartSec=10
@@ -192,31 +193,36 @@ sudo supervisorctl start crontinel-agent
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `CRONTINEL_API_KEY` | Yes | — | Your API key from app.crontinel.com/settings |
-| `CRONTINEL_APP_ID` | Yes | — | Your app slug from the app settings page |
+| `CRONTINEL_APP_ID` | Node/Python only | none | Your app ID. The Laravel agent does not read it |
 | `CRONTINEL_API_URL` | No | `https://app.crontinel.com` | API base URL (change only for self-hosted) |
 | `CRONTINEL_AGENT_ALLOWED_COMMANDS` | Node/Python only | — (fail-closed) | Comma-separated allowlist patterns. Laravel uses `allowed_commands` in `config/crontinel.php` instead — see [Command Allowlisting](#command-allowlisting) |
 
 ## Testing
 
 1. Add the command you want to test to your [allowlist](#command-allowlisting) — untested commands are rejected by default
-2. Go to your app detail page
-3. Click "Schedule Trigger"
-4. Enter the same command (e.g., `php artisan inspire`)
-5. Set it to run "Now"
-6. Watch the agent execute it and report back
+2. Create a trigger with the app's API key:
+
+   ```bash
+   curl -X POST https://app.crontinel.com/api/v1/triggers \
+     -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"command": "php artisan inspire"}'
+   ```
+
+3. Watch the agent run it. The trigger and its result show on the app's **Triggers** tab
 
 ## Troubleshooting
 
 **Agent won't start**
-- Verify `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` are set
+- Verify `CRONTINEL_API_KEY` is set
 - Check network connectivity to `app.crontinel.com`
 
 **Agent starts but no commands received**
 - Verify the app ID matches your app in the dashboard
-- Check that triggers are being dispatched (Dashboard → Triggers)
+- Check that triggers are being dispatched (the app's **Triggers** tab)
 
 **Agent crashes repeatedly**
-- Enable logging: set `CRONTINEL_AGENT_LOG=/var/log/crontinel-agent.log`
+- Check the agent's output in your systemd journal or supervisor log files
 - Ensure the agent user has permission to execute the scheduled commands
 
 **Commands are rejected / never execute**
@@ -238,10 +244,16 @@ Channels work the same for every runtime. Add them in the Crontinel dashboard: a
 | Slack | `webhook_url` | Incoming webhook URL |
 | Email | `to` | Recipient email address |
 | Webhook | `url` | Any HTTPS endpoint |
-| PagerDuty | — | Coming soon |
-| SMS | — | Coming soon |
-| OpsGenie | — | Future roadmap |
-| VictorOps | — | Future roadmap |
+| Discord | `webhook_url` | Discord webhook URL |
+| Microsoft Teams | `webhook_url` | Teams webhook URL |
+| Telegram | `bot_token`, `chat_id` | Bot token and chat ID |
+| PagerDuty | `routing_key` | Paid plans only |
+| SMS | `phone_number` | Paid plans only. E.164 format, such as `+15551234567` |
+| OpsGenie | `api_key` | Paid plans only |
+
+SMS has a monthly quota per organization: Free 0, Starter 20, Pro 100, Max 500. Messages over the quota are not sent.
+
+The Laravel package's local alerting supports only `mail`, `slack`, and `webhook`.
 
 ## Configuration
 
@@ -265,15 +277,11 @@ Set up an [Incoming Webhook](https://api.slack.com/messaging/webhooks) in your S
 
 In your `.env`:
 ```env
-CRONTINEL_ALERT_CHANNEL=email  # Required environment variable
+CRONTINEL_ALERT_CHANNEL=mail  # Required environment variable
 CRONTINEL_ALERT_EMAIL=you@example.com  # Required environment variable
 ```
 
 Add an email channel with config key `to` set to the recipient address. Crontinel sends via Resend  –  no SMTP setup required on your end.
-
-### PagerDuty (coming soon)
-
-> **Note:** PagerDuty integration is planned and will be available in a future release.
 
 ### Webhook
 
@@ -285,7 +293,22 @@ CRONTINEL_ALERT_CHANNEL=webhook  # Required environment variable
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel  # Required environment variable
 ```
 
-Add a webhook channel with config key `url`. Crontinel sends a POST with:
+The package sends a POST with:
+
+```json
+{
+  "title": "Queue [default] alert",
+  "message": "...",
+  "level": "warning",
+  "resolved": false,
+  "fired_at": "2026-04-07T08:00:00+00:00",
+  "source": "crontinel"
+}
+```
+
+`level` is `critical`, `warning`, or `resolved`. To send extra headers, such as an auth token, set `CRONTINEL_WEBHOOK_HEADERS` to a JSON object, for example `{"Authorization": "Bearer your-token"}`.
+
+In the dashboard, add a webhook channel with config key `url`. Crontinel sends a POST with:
 
 ```json
 {
@@ -297,9 +320,13 @@ Add a webhook channel with config key `url`. Crontinel sends a POST with:
 }
 ```
 
+The hosted payload also includes `delivery_id`, `dashboard_url`, `run_id`, `command`, `status`, and `context`, and sends the delivery ID in the `X-Crontinel-Delivery-Id` header.
+
 ## Alert deduplication
 
-The same condition won't re-fire for 5 minutes. If a queue stays above its threshold for an hour, you get one alert at the start  –  not one every poll cycle.
+In the hosted app, an alert that stays active re-fires once per cooldown, not on every check. The default cooldown is 5 minutes. Set it per app from 1 to 60 minutes. Missed-run, never-finished, and agent schedule alerts use a fixed 15 minutes.
+
+In the Laravel package, an active condition re-fires every 5 minutes while `crontinel:check` keeps finding it.
 
 ## Auto-resolution
 
@@ -359,15 +386,6 @@ Open alerts show **Escalated to step N** once a step has gone out. You can also 
 
 In the [Crontinel SaaS](https://app.crontinel.com) you can configure per-app alert channels through the web UI without touching config files.
 
-## Future alert channels
-
-The following channels are on the roadmap but not yet available:
-
-- **PagerDuty** — IT alert routing and incident management. Planned for a future release.
-- **SMS** — Direct text message alerts. Sign up for early access at [crontinel.com](https://crontinel.com/) when this launches.
-- **OpsGenie** — IT alert routing and on-call management. Planned for a future release.
-- **VictorOps** — Incident management and PagerDuty alternative. Planned for a future release.
-
 ---
 
 # CLI Health Check
@@ -387,17 +405,14 @@ Prints a table of all monitor statuses and exits:
 php artisan crontinel:check --format=json
 ```
 
-Returns:
+Returns an object with four keys:
 
-```json
-{
-  "status": "healthy",
-  "horizon": {"status": "running", "paused": false},
-  "queues": [{"name": "default", "depth": 5, "status": "ok"}],
-  "crons": [{"command": "inspire", "last_exit_code": 0, "status": "ok"}],
-  "alerts": []
-}
-```
+- `horizon`: the Horizon status, or `null` when Horizon monitoring is off
+- `missing_supervisors`: configured Horizon supervisors that are not running
+- `queues`: one entry per watched queue
+- `crons`: one entry per scheduled command
+
+The exit code is the same as the table output. There is no overall `status` key; use the exit code.
 
 ## CI/CD usage
 
@@ -414,7 +429,7 @@ php artisan crontinel:check || echo "Warning: monitors unhealthy after deploy"
 
 ## No-alert mode
 
-Run the check without firing alerts (useful for health endpoints):
+By default the command also evaluates and sends [local alerts](/alerts/channels/). Run the check without firing alerts (useful for health endpoints):
 
 ```bash
 php artisan crontinel:check --no-alerts
@@ -422,7 +437,7 @@ php artisan crontinel:check --no-alerts
 
 ## What the check covers
 
-The command reads the same three monitors as the dashboard: Horizon (running or paused), each watched queue (depth against its threshold), and the latest run of each scheduled command (exit code). The `alerts` array in the JSON output lists whatever is currently firing, so a pipeline can print it when the exit code is `1`.
+The command reads the same three monitors as the dashboard: Horizon (running, paused, failed jobs per minute, missing supervisors), each watched queue (depth against its threshold), and the latest run of each scheduled command (exit code, late). A pipeline can print the JSON output when the exit code is `1`.
 
 `crontinel:check` ships with the [Laravel package](/sdks/laravel/) and needs `php artisan`. If your job runs in another runtime, use an [HTTP check-in](/check-in/recipes/) and [register the schedule](/check-in/schedule/) instead; the hosted app does the alerting.
 
@@ -541,7 +556,23 @@ See the [pricing page](https://crontinel.com/pricing/) on the marketing site for
 
 ## Upgrading and cancelling
 
-Manage billing from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Cancel anytime; the subscription stays active until the end of the current period, then Free allowances apply.
+Manage billing from the [Billing page](https://app.crontinel.com/team/billing) in the dashboard. Only the organization owner can change the plan or payment details.
+
+- **Upgrades take effect now.** Moving to a higher plan, or from monthly to yearly billing, charges right away. You pay for the new plan, minus credit for the unused time on the old one. Monthly to yearly also moves your billing date to today.
+- **Downgrades wait for the renewal.** A lower plan, or yearly to monthly, starts at the end of the current period. No refund or negative balance is issued.
+- **Cancel anytime.** The subscription stays active until the end of the current period, then Free allowances apply.
+
+If your bank asks to confirm an upgrade payment (3D Secure), it can't be charged automatically. Contact support@crontinel.com and we will switch the plan.
+
+## Payment method and failed payments
+
+**Update payment method** on the Billing page opens Stripe's secure page, where you can change the card and download invoices.
+
+If a renewal payment fails:
+
+1. The owner gets an email, and the dashboard and Billing page show that the payment is past due.
+2. Stripe retries the card several times. Update the card and pay the open invoice from the Billing page to keep your plan.
+3. If every retry fails, the subscription ends and the organization moves to Free. The owner gets one more email.
 
 ## OSS
 
@@ -1342,12 +1373,12 @@ CRONTINEL_PATH=crontinel
 CRONTINEL_HORIZON=true
 CRONTINEL_HORIZON_CONNECTION=horizon
 
-# Alert channel (slack, email, webhook)
+# Alert channel (mail, slack, webhook)
 CRONTINEL_ALERT_CHANNEL=slack
 CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 CRONTINEL_ALERT_EMAIL=alerts@example.com
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
-# PagerDuty is on the alerts roadmap — see /alerts/channels
+# PagerDuty and other channels are hosted-only, see /alerts/channels
 
 # SaaS reporting (optional — omit for local-only monitoring)
 CRONTINEL_API_KEY=
@@ -1557,13 +1588,23 @@ URL: https://docs.crontinel.com/mcp/claude-code/
 The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/login) to get started.
 :::
 
-## 1. Get your API key
+## 1. Add the hosted server
 
-Log in to [app.crontinel.com](https://app.crontinel.com), go to your app, and copy the API key.
+```bash
+claude mcp add --transport http crontinel https://app.crontinel.com/mcp
+```
 
-## 2. Add to Claude Code config
+## 2. Sign in
 
-Edit `~/.claude/settings.json` (or use the Claude Code settings UI):
+Run `/mcp` in Claude Code, pick `crontinel`, and sign in. The OAuth consent screen shows which apps and scopes the connection gets. The default scopes are read-only.
+
+## 3. Check the tools
+
+The Crontinel tools appear in Claude Code's tool list. Manage or revoke the connection at [/settings/ai-connections](https://app.crontinel.com/settings/ai-connections).
+
+### Legacy: stdio package with an app API key
+
+The `@crontinel/mcp-server` package proxies to the older `app.crontinel.com/api/mcp` endpoint with an app API key (the key your jobs send data with, not a scoped MCP key). It has a different tool set. Use it only if you cannot use the hosted server:
 
 ```json
 {
@@ -1572,41 +1613,32 @@ Edit `~/.claude/settings.json` (or use the Claude Code settings UI):
       "command": "npx",
       "args": ["-y", "@crontinel/mcp-server"],
       "env": {
-        "CRONTINEL_API_KEY": "your-api-key-here"
+        "CRONTINEL_API_KEY": "your-app-key"
       }
     }
   }
 }
 ```
 
-## 3. Restart Claude Code
-
-The Crontinel tools will appear in Claude Code's tool list.
-
 ## 4. Try it
 
 Ask Claude Code:
 
 - "Did my cron jobs run last night?"
-- "What's the queue depth right now?"
-- "Is Horizon healthy?"
-- "Show me recent alerts"
+- "Which monitors are failing?"
+- "Show me open incidents"
 
 ## Troubleshooting
 
-If tools don't appear, check that Node.js 18+ is installed:
+If tools don't appear, run `/mcp` and check that the `crontinel` server is connected and signed in.
 
-```bash
-node --version
-```
-
-If the API key is wrong you'll see `401 Unauthorized` in the MCP server output.
+For the legacy stdio package, check that Node.js 18+ is installed (`node --version`). A wrong API key shows `401 Unauthorized` in the MCP server output.
 
 ## What Claude Code can read
 
-Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): scheduled jobs and their last runs, queue depth, Horizon state, and recent alerts. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
+Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): monitors, runs, deploys, incidents and their evidence on the hosted server. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
 
-For new setups, prefer OAuth from the app's connection screen over a pasted key; the API key above is the fallback. The [MCP overview](/mcp/overview/) explains how the stdio server proxies to `app.crontinel.com/api/mcp`.
+The [MCP overview](/mcp/overview/) explains the hosted server, its scopes, and the legacy stdio package.
 
 ## Related
 
@@ -1632,16 +1664,21 @@ In Claude Code:
 
 ## How it works
 
-1. The `@crontinel/mcp-server` npm package runs as a local stdio process
-2. Your AI assistant spawns it on startup
-3. It proxies tool calls to `app.crontinel.com/api/mcp` using your API key
-4. Results come back inline in your chat
+Point your assistant at the hosted MCP server:
+
+```
+https://app.crontinel.com/mcp
+```
+
+It signs in with OAuth 2.1 (PKCE and dynamic client registration), so most clients only need the URL. By default the connection gets the read scopes `monitor:read`, `run:read`, and `incident:read`. `investigation:run` and `monitor:write` are opt-in: the client must request them and the consent screen shows them. If your client cannot do OAuth, create a scoped key at [/settings/ai-connections](https://app.crontinel.com/settings/ai-connections) and send it as a bearer token.
+
+**Legacy:** the `@crontinel/mcp-server` npm package runs as a local stdio process and proxies to `app.crontinel.com/api/mcp` with an app API key. It has a different, older tool set. The app API key is the key your jobs use to send data; it is not a scoped MCP key.
 
 ## Requirements
 
-- Node.js 18+
-- A Crontinel account. Prefer OAuth from the app connection screen; a scoped API key is the fallback. MCP is on every tier, including Free. Hosted AI investigation starts are a separate allowance.
-- An AI assistant that supports MCP (Cursor, Claude Code, Codex, etc.)
+- A Crontinel account. MCP is on every tier, including Free. Hosted AI investigation starts are a separate allowance.
+- An AI assistant that supports remote MCP servers (Cursor, Claude Code, Codex, etc.)
+- Node.js 18+ only for the legacy stdio package
 
 ## What you can ask
 
@@ -1651,7 +1688,7 @@ The assistant mostly reads evidence that your jobs already sent to Crontinel. Ty
 - Is a queue backing up, or is Horizon paused?
 - Which alerts fired recently, and have they resolved?
 
-The tools behind these are listed on [Available Tools](/mcp/tools/). Two tools change state in Crontinel (`acknowledge_alert` and `create_alert`); nothing is written to your own app or servers.
+The tools behind these are listed on [Available Tools](/mcp/tools/). On the hosted server, the three `save_*` tools change configuration and need `monitor:write`; `start_investigation` and `cancel_investigation` need `investigation:run`. On the legacy server, `acknowledge_alert` and `create_alert` change state. Nothing is written to your own app or servers.
 
 ## Set up your client
 
@@ -1669,35 +1706,32 @@ The tools behind these are listed on [Available Tools](/mcp/tools/). Two tools c
 # Available MCP Tools
 URL: https://docs.crontinel.com/mcp/tools/
 
-| Tool | Description |
-|---|---|
-| `list_scheduled_jobs` | List the jobs Crontinel tracks (from any runtime) with last run status |
-| `get_cron_status` | Last run details for a specific command (exit code, duration, output) |
-| `list_runs` | Recent runs for an app, with outcome status and the AI quality grade when enabled |
-| `list_deploys` | Deploy markers for an app (version, environment, commit SHA, time). Hosted MCP, needs `run:read` |
-| `get_queue_status` | Laravel only. Depth, failed count, and wait time for all queues or a specific queue |
-| `get_horizon_status` | Laravel only. Horizon supervisor health snapshot (status, paused, failed/min) |
-| `list_recent_alerts` | Alerts fired in the last N hours |
-| `acknowledge_alert` | Dismiss an active alert by its key |
-| `create_alert` | Create a new alert channel (Slack, email, or webhook) for an app |
-| `save_cron_schedule` | Hosted MCP, needs `monitor:write`. Create or update the schedule monitor for one command |
-| `save_heartbeat` | Hosted MCP, needs `monitor:write`. Create or update a heartbeat monitor by name |
-| `save_outcome_rule` | Hosted MCP, needs `monitor:write`. Create or update the evidence a run must report to count as done |
+There are two MCP servers with different tools:
 
-## `list_scheduled_jobs`
+- **Hosted MCP** at `https://app.crontinel.com/mcp`. Connect with OAuth or a scoped key from `/settings/ai-connections`. This is the default.
+- **Legacy MCP** at `https://app.crontinel.com/api/mcp`, used by the `@crontinel/mcp-server` stdio package with an app API key. The tools act on the app the key belongs to.
 
-**Parameters:**
-- `app_slug` (required)  –  app slug from your Crontinel dashboard
+## Hosted MCP tools
 
-Returns all jobs tracked by Crontinel for that app with their most recent status. A job appears once it has sent a receipt or been [registered](/check-in/schedule/), whatever runtime runs it.
+Every hosted tool except `get_connection` takes a numeric `app_id`. The investigation tools appear only when hosted AI investigations are enabled.
 
-## `get_cron_status`
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-- `command` (required)  –  command name or partial match
-
-Returns: command name, last status, exit code, duration, started_at, output.
+| Tool | Scope | Description |
+|---|---|---|
+| `get_connection` | any | The organization, app restrictions and scopes of this connection |
+| `list_monitors` | `monitor:read` | Monitor status metadata for an app. Configurations and secrets are omitted |
+| `list_runs` | `run:read` | Recent runs, with outcome status and the AI quality grade when enabled |
+| `list_deploys` | `run:read` | Deploy markers (version, environment, commit SHA, time) |
+| `list_incidents` | `incident:read` | Incident start and resolution times |
+| `get_incident_evidence` | all three read scopes | A redacted evidence packet for one incident |
+| `get_fix_context` | all three read scopes | An evidence packet for a coding agent |
+| `check_monitoring_coverage` | all three read scopes | Saved monitors compared with the evidence actually received |
+| `explain_schedule` | `monitor:read` | Validate a saved cron monitor and preview up to five upcoming starts |
+| `start_investigation` | read scopes + `investigation:run` | Start a hosted AI investigation. Spends one AI start |
+| `get_investigation` | all three read scopes | Status and evidence of an investigation this connection started |
+| `cancel_investigation` | read scopes + `investigation:run` | Cancel a queued or running investigation |
+| `save_cron_schedule` | `monitor:write` | Create or update the schedule monitor for one command |
+| `save_heartbeat` | `monitor:write` | Create or update a heartbeat monitor by name |
+| `save_outcome_rule` | `monitor:write` | Create or update the evidence a run must report to count as done |
 
 ## `list_runs`
 
@@ -1707,70 +1741,6 @@ Returns: command name, last status, exit code, duration, started_at, output.
 - `after_id` (optional)  –  continue from `next_after_id` in the last response
 
 Returns per run: status, exit code, duration, times, attempt, `outcome_status`, `outcome_missing_keys`, and `quality`. `outcome_status` is `passed`, `failed`, `unknown`, or null when no outcome rule applies. `unknown` means the receipt did not include the evidence named in `outcome_missing_keys`; it is not a success. `quality` is null unless the job has an [AI quality check](/mcp/ai-agent-monitoring/#quality-check-ai-optional). When set, it holds `status`, `score`, `pass_score`, `graded_at`, and `advisory: true`. Output, command arguments, and the model's reasons are not returned.
-
-## `get_queue_status`
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-- `queue` (optional)  –  queue name. Returns all queues if omitted.
-
-Returns: queue name, depth, failed count, oldest job age in seconds. Queue data comes from the Laravel package. An app that never reports it has no queue data, which is not the same as an empty queue.
-
-## `get_horizon_status`
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-
-Returns: overall status, paused indicator, supervisors list, failed jobs per minute. Horizon is Laravel only. Missing data is not a stopped supervisor and not a healthy one.
-
-## `list_recent_alerts`
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-- `hours` (optional, default 24)  –  look-back window
-
-Returns: alert key, fired_at, fire_count, resolved_at (if resolved).
-
-## `acknowledge_alert`
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-- `alert_key` (required)  –  e.g. `horizon:paused`, `queue:emails:depth`
-
-Marks the alert as acknowledged.
-
-## `create_alert`
-
-:::note
-Not limited to a retired “Pro or Team” gate. Supported channel types follow the account’s plan features; some types stay paid-only. Ordinary evidence reads do not spend hosted AI starts.
-:::
-
-**Parameters:**
-- `app_slug` (required)  –  app slug
-- `type` (required)  –  `slack`, `email`, or `webhook`
-- `config` (required)  –  channel-specific config object (see below)
-
-**Config by type:**
-
-| type | required fields |
-|---|---|
-| `slack` | `webhook_url`  –  Incoming Webhook URL |
-| `email` | `address`  –  recipient email address |
-| `webhook` | `url`  –  endpoint URL, optionally `secret` for HMAC signing |
-
-**Example  –  create a Slack alert:**
-
-```json
-{
-  "app_slug": "my-app",
-  "type": "slack",
-  "config": {
-    "webhook_url": "https://hooks.slack.com/services/T000/B000/xxxx"
-  }
-}
-```
-
-Returns the new alert channel ID on success.
 
 ## Configuration writes (hosted MCP)
 
@@ -1782,6 +1752,83 @@ The three `save_*` tools appear only when the connection has `monitor:write`. It
 - Ping URLs are not returned over MCP. Copy them from the dashboard.
 - Each save returns a `version`. Pass it back as `if_version` on the next save, and the save is refused if someone changed the record in between.
 - Deleting monitors, muting and maintenance windows are not MCP tools. Use the dashboard or the Configuration API.
+
+## Legacy MCP tools
+
+| Tool | Description |
+|---|---|
+| `list_scheduled_jobs` | Commands that have reported runs, with their last run status |
+| `get_cron_status` | Last run details for a command (exit code, duration, output) |
+| `get_queue_status` | Laravel only. Depth, failed count, and oldest job age per queue |
+| `get_horizon_status` | Laravel only. Horizon status, paused flag, supervisors, failed jobs per minute |
+| `list_recent_alerts` | Alerts fired in the last N hours |
+| `acknowledge_alert` | Resolve an active alert by its key |
+| `create_alert` | Create an alert channel for the app |
+
+## `list_scheduled_jobs`
+
+No parameters. Returns the commands that have reported runs for the key's app, with their most recent status.
+
+## `get_cron_status`
+
+**Parameters:**
+- `command` (required)  –  command name or partial match
+
+Returns: command, status, exit code, duration, started_at, finished_at, output.
+
+## `get_queue_status`
+
+**Parameters:**
+- `queue` (optional)  –  queue name. Returns all queues if omitted.
+
+Returns: queue name, depth, failed count, oldest job age in seconds. Queue data comes from the Laravel package. An app that never reports it has no queue data, which is not the same as an empty queue.
+
+## `get_horizon_status`
+
+No parameters. Returns: overall status, paused indicator, supervisors list, failed jobs per minute. Horizon is Laravel only. Missing data is not a stopped supervisor and not a healthy one.
+
+## `list_recent_alerts`
+
+**Parameters:**
+- `hours` (optional, default 24)  –  look-back window
+
+Returns: alert key, state (`firing` or `resolved`), fired_at, fire_count, resolved_at.
+
+## `acknowledge_alert`
+
+**Parameters:**
+- `alert_key` (required)  –  the key from `list_recent_alerts`
+
+Marks the alert as resolved. It is not the same as acknowledging in the dashboard: the alert closes, and it opens as a new alert if the condition fires again.
+
+## `create_alert`
+
+**Parameters:**
+- `type` (required)  –  `slack`, `email`, `webhook`, `discord`, `teams`, `telegram`, `pagerduty`, `sms`, or `opsgenie`
+- One set of fields for the type, passed at the top level:
+
+| type | required fields |
+|---|---|
+| `slack`, `discord`, `teams` | `webhook_url` |
+| `email` | `to` |
+| `webhook` | `url` |
+| `telegram` | `bot_token` and `chat_id` |
+| `pagerduty` | `routing_key` |
+| `sms` | `phone_number` (E.164, such as `+15551234567`) |
+| `opsgenie` | `api_key` |
+
+`pagerduty`, `sms`, and `opsgenie` need a paid plan.
+
+**Example  –  create a Slack alert:**
+
+```json
+{
+  "type": "slack",
+  "webhook_url": "https://hooks.slack.com/services/T000/B000/xxxx"
+}
+```
+
+Returns `created`, `channel_id`, and `type` on success.
 
 ---
 
@@ -1811,7 +1858,7 @@ No code changes to your `schedule()` method are needed. Every command defined th
 | `command` | Artisan command name |
 | `exit_code` | 0 = success, non-zero = failure |
 | `duration_ms` | How long it ran |
-| `output` | Captured output (if any) |
+| `output` | Last 10,000 characters of the task's output file, only when `CRONTINEL_CAPTURE_OUTPUT=true` (default `false`), or text from `Outcome::output()` |
 | `started_at` | Exact start timestamp |
 | `status` | `completed`, `failed`, or `late` |
 
@@ -1855,10 +1902,12 @@ The Horizon monitor reads Horizon's Redis keys directly  –  the same data sour
 
 | Signal | How |
 |---|---|
-| Overall status | `horizon:status` Redis key |
-| Per-supervisor state | `horizon:{id}:supervisor` heartbeat timestamp |
-| Paused state | `horizon:status` = `paused` |
-| Failed jobs per minute | `horizon:{id}:{queue}:throughput` buckets |
+| Overall status | The newest master in the `masters` sorted set (refreshed within the last 14 seconds), then the `status` field of its `master:<name>` hash. No fresh master means stopped |
+| Per-supervisor state | Supervisors in the `supervisors` sorted set refreshed within the last 29 seconds, with each `supervisor:<name>` hash's status, processes and queues |
+| Paused state | The master's status is `paused`, or a supervisor's status is `paused` |
+| Failed jobs per minute | Entries in the `failed_jobs` sorted set from the last 60 seconds |
+
+Horizon stores these keys under its own Redis prefix on the `horizon.connection` connection.
 
 ## Configuration
 
@@ -1874,9 +1923,9 @@ The Horizon monitor reads Horizon's Redis keys directly  –  the same data sour
 
 ## What "supervisor down" means
 
-Crontinel tracks each supervisor separately via its heartbeat. If a supervisor's `lastHeartbeat` is more than `supervisor_alert_after_seconds` old, Crontinel considers it down  –  even if the top-level `horizon:status` key still says `running`.
+Crontinel compares the supervisors listed in `horizon.environments` for the current environment with the supervisors that are running. A configured supervisor that is not running for `supervisor_alert_after_seconds` is reported as down, while the master is running. Package v0.9.10 and later.
 
-This is the key difference from generic monitors: you get an alert for a supervisor crash in the `emails` queue while your `default` queue supervisor is still healthy.
+So you get an alert when the `emails` supervisor is gone while your `default` supervisor is still healthy. Supervisors are matched by name across hosts, and the check needs a cache store shared between runs (`file` or `redis`, not `array`).
 
 ## Disabling
 
@@ -1905,7 +1954,7 @@ URL: https://docs.crontinel.com/monitors/queues/
 ## What it monitors
 
 - **Depth**  –  number of pending jobs in each queue
-- **Failed count**  –  jobs in the failed jobs table or dead-letter list
+- **Failed count**  –  rows for that queue in Laravel's `failed_jobs` table
 - **Oldest job age**  –  how long the oldest waiting job has been sitting
 
 ## Supported drivers
@@ -1919,6 +1968,7 @@ URL: https://docs.crontinel.com/monitors/queues/
 'queues' => [
     'enabled' => true,
     'watch' => [],                    // empty = auto-discover all queues
+    'connections' => [],              // queues on other connections (v0.9.9+)
     'depth_alert_threshold' => 1000,
     'wait_time_alert_seconds' => 300,
 ],
@@ -1930,18 +1980,15 @@ To watch specific queues only:
 'watch' => ['default', 'emails', 'notifications'],
 ```
 
+From package v0.9.9, `queues.connections` reports queues on connections other than the default one, as `['connection' => ['queue', ...]]`. An empty list for a connection discovers its queues. These queues are reported as `connection:queue`. See the [configuration reference](/reference/configuration/#queuesconnections).
+
 ## Alert conditions
 
-An alert fires when any watched queue exceeds `depth_alert_threshold` jobs or `wait_time_alert_seconds` wait time. The alert auto-resolves when the queue drains.
+In the package, `depth_alert_threshold` and `wait_time_alert_seconds` drive local alerts only, which are sent when `crontinel:check` runs. They are not sent to the hosted app; the hosted app uses the per-app settings below.
 
 ## Per-app queue thresholds (SaaS)
 
-On [Crontinel SaaS](https://app.crontinel.com), you can override the depth threshold per app and per queue from the app settings page. This is useful when different apps have naturally different queue volumes.
-
-The lookup order for thresholds is:
-1. Per-queue override (`queue_thresholds.{queue_name}`)
-2. Per-app default (`queue_thresholds.default`)
-3. Global config value (`depth_alert_threshold`, default 1000)
+On [Crontinel SaaS](https://app.crontinel.com), the app settings page has one depth setting, **Queue depth (jobs)**, default 1000. It applies to every queue in that app.
 
 The same settings page has three optional thresholds. Each is off while blank, so an app gets no new alerts until you set one.
 
@@ -2502,7 +2549,7 @@ Errors are JSON with an `error` code and a `message`. Validation errors add `err
 
 ## Terraform
 
-Manage cron schedules, heartbeats and outcome rules as code with the [Crontinel Terraform provider](https://registry.terraform.io/providers/crontinel/crontinel/latest). It uses this API with a generated key (`monitor:read` and `monitor:write`), and refuses an update if the record changed in Crontinel after Terraform last read it.
+Manage cron schedules, heartbeats, outcome rules, maintenance windows and the escalation policy as code with the [Crontinel Terraform provider](https://registry.terraform.io/providers/crontinel/crontinel/latest). It uses this API with a generated key (`monitor:read` and `monitor:write`), and refuses an update if the record changed in Crontinel after Terraform last read it.
 
 ```hcl
 terraform {
@@ -2554,6 +2601,11 @@ This page documents every configuration option for the Laravel package. Options 
 | `CRONTINEL_WEBHOOK_TIMEOUT` | `alerts.webhook.timeout` | `10` | Webhook request timeout in seconds |
 | `CRONTINEL_API_KEY` | `saas_key` | _(none)_ | API key for the hosted dashboard |
 | `CRONTINEL_API_URL` | `saas_url` | `https://app.crontinel.com` | SaaS endpoint URL |
+| `CRONTINEL_DURABLE_REPORTING` | `reporting.durable` | `false` | Write cron reports to a local spool before sending |
+| `CRONTINEL_REPORT_SPOOL_PATH` | `reporting.spool_path` | `storage/app/crontinel-spool` | Spool directory for durable reporting |
+| `CRONTINEL_BACKGROUND_CORRELATION` | `cron.background_correlation` | `false` | Send start/completion pairs for `runInBackground()` tasks |
+| `CRONTINEL_CAPTURE_OUTPUT` | `cron.capture_output` | `false` | Send the tail of a task's output file |
+| `CRONTINEL_AGENT_ENABLED` | `agent.enabled` | `false` | Agent daemon setting (see [Agent](#agent-daemon)) |
 
 ---
 
@@ -2613,7 +2665,7 @@ Redis connection name that Horizon uses. Default: `horizon`
 'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
 ```
 
-This must match the connection name in your `config/horizon.php`. Most apps leave it as `horizon`.
+This must be a Redis connection defined under `redis` in `config/database.php` (see [Redis](#redis)). If it is not defined there, Crontinel cannot read Horizon's state. Most apps leave it as `horizon`.
 
 ### `horizon.supervisor_alert_after_seconds`
 
@@ -2632,16 +2684,6 @@ Alert when the failed jobs-per-minute rate exceeds this. Default: `5`
 ```php
 'failed_jobs_per_minute_threshold' => 5,
 ```
-
-### Horizon gate — `ADMIN_EMAILS`
-
-Access to the Horizon panel within Crontinel is gated by the `ADMIN_EMAILS` env var (checked via `Gate::before()` in `HorizonServiceProvider`). Set it to a comma-separated list of admin email addresses:
-
-```env
-ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
-```
-
-Users whose logged-in email matches one of these addresses can access Horizon. If `ADMIN_EMAILS` is not set, access is denied to everyone.
 
 ---
 
@@ -2708,7 +2750,7 @@ On the hosted dashboard, threshold lookups resolve in this order:
 
 1. Per-queue override: `queue_thresholds.{queue_name}`
 2. Per-app default: `queue_thresholds.default`
-3. Global config value: `depth_alert_threshold` (default 1000)
+3. Fixed fallback: 1000. The package's `depth_alert_threshold` is not sent to the hosted app; it only applies to local alerts.
 
 ---
 
@@ -2736,6 +2778,26 @@ Mark a cron run as `late` if it didn't execute within this many seconds of its e
 
 Bump this higher if you have tasks that legitimately take a few minutes to start.
 
+### `cron.background_correlation`
+
+Send start and completion pairs for `runInBackground()` tasks. Default: `false`
+
+```php
+'background_correlation' => env('CRONTINEL_BACKGROUND_CORRELATION', false),
+```
+
+Each launch carries its own run key and start time through the child process environment to Laravel's `schedule:finish`. Rebuild the config cache and restart long-running schedulers after changing it.
+
+### `cron.capture_output`
+
+Send the last 10,000 characters of a task's output file. Default: `false`
+
+```php
+'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),
+```
+
+The task needs an output file from `sendOutputTo()`, `appendOutputTo()` or `storeOutput()`. Off by default because output may hold sensitive data.
+
 ### `cron.retain_days`
 
 How long to keep cron run history in the database. Default: `30`
@@ -2744,7 +2806,7 @@ How long to keep cron run history in the database. Default: `30`
 'retain_days' => 30,
 ```
 
-Crontinel prunes old records automatically. Schedule the prune command daily:
+Nothing prunes old records automatically. Schedule the prune command yourself; it deletes runs older than `retain_days` (or `--days=N`):
 
 ```php
 $schedule->command('crontinel:prune')->daily();
@@ -2755,17 +2817,24 @@ $schedule->command('crontinel:prune')->daily();
 | Field | Description |
 |---|---|
 | `command` | Artisan command name |
+| `ran_at` | When the run was recorded |
 | `exit_code` | 0 = success, non-zero = failure |
 | `duration_ms` | Execution time in milliseconds |
-| `output` | Captured output (if enabled) |
-| `started_at` | Exact start timestamp |
-| `status` | `completed`, `failed`, or `late` |
+| `output` | Captured output (nullable) |
+
+These rows live in the `crontinel_runs` table.
 
 ---
 
 ## Alert channels
 
 Crontinel supports three alert channels: `slack`, `mail`, and `webhook`. Set the active channel via `CRONTINEL_ALERT_CHANNEL`.
+
+Local alerts are evaluated only when `crontinel:check` runs. The service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler:
+
+```php
+$schedule->command('crontinel:check')->everyMinute();
+```
 
 ### `alerts.channel`
 
@@ -2849,11 +2918,11 @@ CRONTINEL_WEBHOOK_TIMEOUT=30
 
 ### Alert deduplication
 
-The same alert condition won't re-fire for 5 minutes. If a queue stays above threshold for an hour, you get one alert at the start — not one every poll cycle.
+The same alert condition won't re-fire for 5 minutes. If a queue stays above threshold, the next `crontinel:check` after those 5 minutes sends the alert again, so an hour-long breach sends about 12 alerts.
 
 ### Auto-resolution
 
-When the condition clears, Crontinel sends a "resolved" notification with `"resolved": true`. You get clear start and end signals for every incident.
+When the condition clears within 5 minutes of the last alert, Crontinel sends a "resolved" notification (`"resolved": true` on the webhook). The open alert is kept in your cache for 5 minutes, so a condition that clears later does not send a resolved notification.
 
 ---
 
@@ -2876,6 +2945,33 @@ Set `CRONTINEL_API_KEY` to your dashboard API key. When set, Crontinel reports c
 ```
 
 Override the SaaS endpoint for self-hosted dashboard instances.
+
+### `reporting.durable` and `reporting.spool_path`
+
+```php
+'reporting' => [
+    'durable' => env('CRONTINEL_DURABLE_REPORTING', false),
+    'spool_path' => env('CRONTINEL_REPORT_SPOOL_PATH', storage_path('app/crontinel-spool')),
+],
+```
+
+With `durable` on, cron start and completion reports are written to the spool directory first. The every-minute `crontinel:report` run drains them, and `php artisan crontinel:flush-reports` drains one batch by hand. Use a private, persistent local directory.
+
+---
+
+## Agent daemon
+
+```php
+'agent' => [
+    'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+    'heartbeat_interval' => 60,
+    'max_reconnect_delay' => 60,
+    'default_command_timeout' => 300,
+    'allowed_commands' => [],
+],
+```
+
+Settings for `php artisan crontinel:agent`. `allowed_commands` lists the commands the agent may run, matched with `fnmatch()`. The default empty list allows no commands. The Laravel agent cannot connect to the hosted app today; see the [agent guide](/agent/guide/).
 
 ---
 
@@ -2963,14 +3059,44 @@ declare(strict_types=1);
 use Laravel\Horizon\Horizon;
 
 return [
-
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Path
+    |--------------------------------------------------------------------------
+    | The URI path where the Crontinel dashboard is accessible.
+    */
     'path' => env('CRONTINEL_PATH', 'crontinel'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Middleware
+    |--------------------------------------------------------------------------
+    */
     'middleware' => ['web', 'auth'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SaaS Reporting
+    |--------------------------------------------------------------------------
+    | Set CRONTINEL_API_KEY to connect this app to the hosted SaaS at
+    | app.crontinel.com. When set, status is reported every minute and
+    | cron run events are pushed after each scheduled task completes.
+    */
     'saas_key' => env('CRONTINEL_API_KEY'),
     'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
 
+    // Opt-in disk-backed cron reports. Use persistent private local storage.
+    'reporting' => [
+        'durable' => env('CRONTINEL_DURABLE_REPORTING', false),
+        'spool_path' => env('CRONTINEL_REPORT_SPOOL_PATH', storage_path('app/crontinel-spool')),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Horizon Integration
+    |--------------------------------------------------------------------------
+    | Set to false if you are not using Laravel Horizon.
+    */
     'horizon' => [
         'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
         'supervisor_alert_after_seconds' => 60,
@@ -2978,31 +3104,51 @@ return [
         'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Monitoring
+    |--------------------------------------------------------------------------
+    */
     'queues' => [
         'enabled' => true,
         'watch' => [],
+        // Queues on other connections than queue.default, as ['connection' => ['queue', ...]]; an empty list finds them.
+        // They are reported as "connection:queue", so alerts and thresholds for them use that name.
         'connections' => [],
         'depth_alert_threshold' => 1000,
         'wait_time_alert_seconds' => 300,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cron / Scheduled Command Monitoring
+    |--------------------------------------------------------------------------
+    */
     'cron' => [
         'enabled' => true,
+        'background_correlation' => env('CRONTINEL_BACKGROUND_CORRELATION', false),
+        // Send the last 10,000 characters of a task's output file (sendOutputTo, appendOutputTo,
+        // storeOutput). Off by default because output may hold sensitive data.
+        'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),
         'late_alert_after_seconds' => 120,
         'retain_days' => 30,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Alert Channels
+    |--------------------------------------------------------------------------
+    | Supported: "mail", "slack", "webhook", null
+    | Set CRONTINEL_ALERT_CHANNEL to enable alerts.
+    */
     'alerts' => [
         'channel' => env('CRONTINEL_ALERT_CHANNEL'),
-
         'mail' => [
             'to' => env('CRONTINEL_ALERT_EMAIL'),
         ],
-
         'slack' => [
             'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
         ],
-
         'webhook' => [
             'url' => env('CRONTINEL_WEBHOOK_URL'),
             'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),
@@ -3010,6 +3156,34 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Agent Daemon (php artisan crontinel:agent)
+    |--------------------------------------------------------------------------
+    | Settings for the remote command execution agent that connects to the
+    | Crontinel SaaS via SSE to receive and execute commands.
+    */
+    'agent' => [
+        'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+        'heartbeat_interval' => 60,
+        'max_reconnect_delay' => 60,
+        'default_command_timeout' => 300,
+
+        /*
+        |----------------------------------------------------------------------
+        | Allowed Commands
+        |----------------------------------------------------------------------
+        | Commands received from the Crontinel SaaS are only executed if they
+        | match one of these patterns. Patterns are matched with fnmatch(),
+        | so "*" is a wildcard and any other string must match exactly.
+        |
+        | IMPORTANT: the default is an empty array, which means NO commands
+        | are permitted. This is a fail-closed default — you must explicitly
+        | opt in to the exact commands (or patterns) you want the agent to be
+        | able to run. An empty list is NOT "allow everything".
+        */
+        'allowed_commands' => [],
+    ],
 ];
 ```
 
@@ -3034,7 +3208,7 @@ Get from zero to your first ping in under 2 minutes.
 
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -3070,7 +3244,7 @@ docker pull ghcr.io/crontinel/cli:latest
 Set your API key:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 ```
 
 Add it to `~/.bashrc` or `~/.zshrc` to persist across sessions.
@@ -3233,7 +3407,7 @@ Get from zero to your first data in under 3 minutes.
 - .NET 8.0+ or .NET Standard 2.0
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -3269,7 +3443,7 @@ Console.WriteLine("Data sent to Crontinel!");
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 dotnet run
 ```
 
@@ -3427,7 +3601,7 @@ Get from zero to your first data in under 3 minutes.
 - Go 1.21+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -3461,7 +3635,7 @@ func main() {
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 go run quickstart.go
 ```
 
@@ -3716,7 +3890,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 - Node.js 18+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -3759,7 +3933,7 @@ console.log('Data sent to Crontinel!');
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 node quickstart.mjs
 ```
 
@@ -3889,7 +4063,7 @@ Get from zero to your first data in under 3 minutes.
 - PHP 8.1+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -3919,7 +4093,7 @@ echo "Data sent to Crontinel!\n";
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 php quickstart.php
 ```
 
@@ -4011,7 +4185,7 @@ $crontinel->wrap(function (array $payload) use ($handler) {
 
 ## Laravel
 
-For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) instead — it auto-instruments Horizon, the scheduler, and queue workers with zero code changes.
+For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) instead. It records scheduled command runs and reports Horizon and queue state every minute through `crontinel:report`.
 
 ---
 
@@ -4031,7 +4205,7 @@ Historical package install steps below. Prefer [check-in recipes](/check-in/reci
 - Python 3.9+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -4071,7 +4245,7 @@ print("Data sent to Crontinel!")
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 python quickstart.py
 ```
 
@@ -4206,7 +4380,7 @@ Get from zero to your first data in under 3 minutes.
 - Rails 6.1+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -4235,7 +4409,7 @@ Set the environment variable:
 
 ```bash
 # .env or export
-CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+CRONTINEL_API_KEY=your-app-key
 ```
 
 ### 4. Add to a job
@@ -4297,7 +4471,7 @@ Set the environment variable:
 
 ```bash
 # .env
-CRONTINEL_API_KEY=crn_live_...
+CRONTINEL_API_KEY=your-app-key
 ```
 
 ## ActiveJob integration
@@ -4386,7 +4560,7 @@ Get from zero to your first data in under 3 minutes.
 - Ruby 3.0+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -4417,7 +4591,7 @@ puts "Data sent to Crontinel!"
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 ruby quickstart.rb
 ```
 
@@ -4516,7 +4690,7 @@ end
 
 ## Rails
 
-For Ruby on Rails applications, use [`crontinel-rails`](https://github.com/crontinel/ruby-on-rails) instead — it auto-instruments ActiveJob and ActiveScheduler.
+For Ruby on Rails applications, send an HTTP check-in from your jobs. See the [check-in recipes](/check-in/recipes/).
 
 ---
 
@@ -4538,7 +4712,7 @@ Get from zero to your first data in under 3 minutes.
 - Rust 1.75+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -4571,7 +4745,7 @@ fn main() {
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 cargo run --bin quickstart
 ```
 
@@ -4726,46 +4900,31 @@ If you operate in an air-gapped or restricted environment, omit `CRONTINEL_API_K
 
 ---
 
-## Webhook HMAC signing
+## Authenticating webhook alerts
 
-When Crontinel fires an outbound webhook alert, it signs the request body with HMAC-SHA256 using a secret you define. This lets your endpoint verify the request came from Crontinel and wasn't tampered with.
-
-### Configuring the secret
+The package does not sign webhook alerts. To let your endpoint check that a request came from your app, send a shared secret in a header with `CRONTINEL_WEBHOOK_HEADERS`. The value must be a JSON object:
 
 ```env
-CRONTINEL_WEBHOOK_SECRET=your-signing-secret
+CRONTINEL_WEBHOOK_URL=https://example.com/hooks/crontinel
+CRONTINEL_WEBHOOK_HEADERS='{"Authorization": "Bearer your-shared-secret"}'
 ```
+
+This maps to `alerts.webhook.headers` in `config/crontinel.php`. If the value is not valid JSON, the package logs a warning and sends the request without the extra headers.
+
+Check the header in your endpoint and compare it with `hash_equals()`:
 
 ```php
-// config/crontinel.php
-'webhook' => [
-    'url'    => env('CRONTINEL_WEBHOOK_URL'),
-    'secret' => env('CRONTINEL_WEBHOOK_SECRET'),
-],
-```
+// Load the same secret from your receiver's own config.
+$expected = 'Bearer ' . $sharedSecret;
+$received = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
-### Verifying the signature
-
-Crontinel adds an `X-Crontinel-Signature` header to every webhook request:
-
-```
-X-Crontinel-Signature: sha256=<hex_digest>
-```
-
-Verify it in your endpoint:
-
-```php
-$payload   = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_CRONTINEL_SIGNATURE'] ?? '';
-$expected  = 'sha256=' . hash_hmac('sha256', $payload, env('CRONTINEL_WEBHOOK_SECRET'));
-
-if (! hash_equals($expected, $signature)) {
+if (! hash_equals($expected, $received)) {
     http_response_code(401);
-    exit('Invalid signature');
+    exit('Unauthorized');
 }
 ```
 
-Use `hash_equals()` to prevent timing attacks.
+Use an HTTPS URL so the header is not sent in clear text.
 
 ---
 
@@ -4792,10 +4951,10 @@ Self-hosted Crontinel works fully standalone. You do not need a crontinel.com ac
 
 | Component | Minimum version |
 |---|---|
-| PHP | 8.5 |
+| PHP | 8.4 |
 | PostgreSQL | 15 |
 | Node.js | 20 |
-| Redis | Optional — queue driver can be `database` or `sync` instead |
+| Redis | Required. The app uses Laravel Horizon, and `.env.example` sets `QUEUE_CONNECTION=redis` and `CACHE_STORE=redis` |
 
 ## 1. Clone and install
 
@@ -4832,10 +4991,6 @@ REDIS_HOST=127.0.0.1
 
 MAIL_MAILER=resend
 MAIL_FROM_ADDRESS=alerts@your-domain.com
-
-# Alert channels (email and webhook both work in self-hosted mode)
-CRONTINEL_ALERT_CHANNEL=email
-CRONTINEL_ALERT_EMAIL=alerts@your-domain.com
 ```
 
 ## 3. Database
@@ -4900,7 +5055,7 @@ Create a Supervisor config at `/etc/supervisor/conf.d/crontinel.conf`:
 
 ```ini
 [program:crontinel-worker]
-command=php /var/www/crontinel-app/artisan queue:work redis --queue=crontinel,default --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/crontinel-app/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
 directory=/var/www/crontinel-app
 user=www-data
 numprocs=2
@@ -4909,9 +5064,20 @@ autorestart=true
 stopasgroup=true
 killasgroup=true
 stdout_logfile=/var/log/crontinel/worker.log
+
+[program:crontinel-alerts]
+command=php /var/www/crontinel-app/artisan queue:work cron-alerts --queue=cron-alerts --sleep=3 --max-time=3600
+directory=/var/www/crontinel-app
+user=www-data
+numprocs=1
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stdout_logfile=/var/log/crontinel/alerts.log
 ```
 
-The `--queue=crontinel,default` flag is important. Without it, workers only process the `default` queue and won't pick up alert evaluation or ping processing jobs that Crontinel dispatches to the `crontinel` queue. The order matters: `crontinel` is listed first so those jobs get priority.
+Cron run, missed-run and quality alerts are dispatched on the `cron-alerts` connection and queue, a database queue defined in `config/queue.php`. A worker on the default Redis connection does not process them, so run the second program. AI investigations and output grading use a separate `ai-investigations` database connection and queue; run a worker for it too if you use those features.
 
 Then:
 
@@ -4940,7 +5106,17 @@ Check `/health` returns `200` -- that endpoint is always unauthenticated.
 
 ## Access the dashboard
 
-After install, visit `/crontinel` on your domain to open the monitoring dashboard. The dashboard shows Horizon status, queue throughput, and cron job data once the scheduler and queue workers are running.
+After install, sign in and open `/dashboard` on your domain. Data appears once the scheduler and queue workers are running.
+
+### Horizon access
+
+Access to `/horizon` is limited by the `viewHorizon` gate in the app's `HorizonServiceProvider`. It allows signed-in users whose email is in `ADMIN_EMAILS`, a comma-separated list:
+
+```env
+ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
+```
+
+If `ADMIN_EMAILS` is not set, nobody can open Horizon outside the local environment. This is separate from the Laravel package's dashboard, which uses the `crontinel.view` gate.
 
 ## Upgrades
 
@@ -4968,63 +5144,25 @@ When something breaks, users often want a single URL. That product surface is se
 
 ## How it works
 
-Your status page is served from your own domain via CNAME. Users visit `status.yourdomain.com` and see your status page, while the URL stays `status.yourdomain.com` in their browser.
+Each status page has a slug. The public page is at:
+
+```
+https://app.crontinel.com/status/<slug>
+```
+
+Custom domains are not available in the app UI.
 
 ## Creating your first status page
 
-Create a status page from the dashboard under **Status Pages → Create**. Each page gets:
+Create a status page from the dashboard under **Status Pages → Create**.
 
-- A unique domain identifier (your main domain, e.g. `yourdomain.com`)
-- A CNAME target to add to your DNS
+## Adding endpoints
 
-## Setting up your CNAME
+A status page lists probed endpoints, not monitors. Add them on the page's **Endpoints** screen. Each endpoint has a name, a URL, and a probe interval. The shortest interval you can set depends on your plan.
 
-After creating a status page, you'll see a CNAME target: `app.crontinel.com`.
+## Incidents
 
-Add this DNS record to your domain:
-
-| Type | Name | Target |
-|------|------|--------|
-| CNAME | `status` | `app.crontinel.com` |
-
-Once added, your status page will be live at `status.yourdomain.com`.
-
-It can take a few minutes for DNS to propagate.
-
-## Your status page URL
-
-After setup, your status page is available at:
-
-```
-https://status.yourdomain.com
-```
-
-Where `yourdomain.com` is the domain you specified when creating the page.
-
-## Adding monitors
-
-From **Status Pages → Edit**, select which monitors appear on the page. Each monitor shows as a row with:
-
-- Current status indicator
-- Response time
-- Last checked time
-
-Only the monitors you choose are visible. Internal or sensitive checks stay private.
-
-## Incident management
-
-Post incidents manually from **Status Pages → Incidents → New Incident**. Each incident moves through four stages:
-
-1. **Investigating** – you're aware and looking into it
-2. **Identified** – root cause found
-3. **Monitoring** – fix deployed, watching for recurrence
-4. **Resolved** – back to normal
-
-Updates appear on the status page in reverse chronological order.
-
-## Custom domains
-
-Custom domains may exist in the app UI. They are not a Starter/Pro/Max launch entitlement. Status pages remain out of the current offer.
+Incidents are opened and resolved automatically. When an endpoint fails two probes in a row, Crontinel opens an incident with the status **Investigating**. When the endpoint recovers, the incident is resolved. There is no screen for posting incidents by hand.
 
 ---
 
@@ -5104,7 +5242,7 @@ Crontinel stores cron run history in a database table. If the table doesn't exis
 php artisan migrate
 ```
 
-Check that the `crontinel_cron_runs` table exists in your database.
+Check that the `crontinel_runs` table exists in your database.
 
 ### 3. Is the cron monitor enabled?
 
@@ -5170,13 +5308,13 @@ Crontinel needs to connect to the same Redis instance Horizon uses. By default i
 ],
 ```
 
-Here's the thing: if `horizon:status` returns `null` from Redis, Crontinel can't determine Horizon's state. Run `redis-cli` and check manually:
+Crontinel reads Horizon's state from the `masters` sorted set and the `master:<name>` hash on that connection. Horizon stores these keys under its own Redis prefix, so list the masters with the full prefixed key name, for example:
 
 ```bash
-redis-cli -n 0 GET horizon:status
+redis-cli -n 0 ZRANGE <your-horizon-prefix>masters 0 -1
 ```
 
-If that returns nothing but Horizon is definitely running, you're connected to the wrong Redis database.
+If that returns nothing but Horizon is definitely running, you're connected to the wrong Redis database or using the wrong prefix.
 
 ## Alerts not firing
 
@@ -5200,9 +5338,17 @@ CRONTINEL_ALERT_EMAIL=ops@yourapp.com
 
 If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn't send notifications anywhere.
 
+### `crontinel:check` is not scheduled
+
+The package evaluates local alerts only when `crontinel:check` runs. Its service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler yourself:
+
+```php
+$schedule->command('crontinel:check')->everyMinute();
+```
+
 ### Deduplication window
 
-The same alert won't re-fire for 5 minutes. So if a queue breached its threshold, Crontinel fired the alert, and you missed it, you won't see another one until the dedup window resets. Check your Slack channel's history or your email spam folder for the initial alert.
+The same alert won't re-fire for 5 minutes. If the condition is still active after that, the next `crontinel:check` sends it again. So if you missed an alert, wait for the next one or look back through your history. Check your Slack channel's history or your email spam folder for the initial alert.
 
 ### Slack webhook URL invalid
 
@@ -5230,7 +5376,7 @@ php artisan crontinel:check --format=json
 
 This prints the full status payload so you can see exactly which monitor is unhealthy and why. Common surprises:
 
-The Horizon monitor reports unhealthy because a supervisor heartbeat is stale, even though `horizon:status` says `running`. Crontinel tracks each supervisor independently. A single dead supervisor triggers the unhealthy state. Restart Horizon to clear it:
+The Horizon check fails even though Horizon's master is running. Crontinel checks each supervisor: one that `horizon.environments` lists but is not running (see [supervisor not running](#horizon-says-a-supervisor-is-not-running)) makes `crontinel:check` exit non-zero. Restart Horizon to clear it:
 
 ```bash
 php artisan horizon:terminate
@@ -5252,10 +5398,10 @@ If you're using the hosted version at app.crontinel.com and your app isn't showi
 Your `.env` needs the API key from your Crontinel SaaS dashboard:
 
 ```env
-CRONTINEL_API_KEY=cnt_live_xxxxxxxxxxxxxxxx  # Required environment variable
+CRONTINEL_API_KEY=your-app-key  # Required environment variable
 ```
 
-If the key is missing or wrong, the package falls back to local-only mode silently. No errors in your logs, just no data on the SaaS dashboard.
+If the key is missing, the package does not report to the SaaS at all and logs nothing. If the key is wrong, the hosted app rejects the reports. Each rejected cron run report logs the warning `Crontinel: failed to report cron run to SaaS`; the per-minute status report is not logged.
 
 ### Network and firewall
 
@@ -5334,13 +5480,13 @@ Crontinel only fires a "late cron" alert when a task exceeds the `late_alert_aft
 
 Lower the value if you need tighter alerting. For example, setting it to `60` will fire alerts for tasks that are more than one minute late.
 
-### Failed-run alerts require the alert channel
+### Failed-run alerts require the alert channel and `crontinel:check`
 
-Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured. If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
+Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured and `crontinel:check` runs on a schedule (`$schedule->command('crontinel:check')->everyMinute();`). If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
 
 ### Dedup window hiding repeated failures
 
-If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; subsequent failures within that window are suppressed. If you missed the initial alert, check your Slack channel history or email spam folder. The next alert will fire after the dedup window expires.
+If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; later checks within that window are suppressed. If the task is still failing when the window expires, the next check fires the alert again.
 
 ## Still stuck?
 
@@ -5350,7 +5496,7 @@ Run the full diagnostics:
 php artisan crontinel:check --format=json
 ```
 
-If the output doesn't point you to the issue, open a GitHub issue on [crontinel/app](https://github.com/crontinel/app/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.
+If the output doesn't point you to the issue, open a GitHub issue on [crontinel/laravel](https://github.com/crontinel/laravel/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.
 
 ---
 
@@ -5372,7 +5518,7 @@ php artisan crontinel:check
 1. **Update the package** via Composer.
 2. **Run migrations.** New releases may add or modify database tables. The package uses its own migration files, so this is safe to run alongside your app migrations.
 3. **Clear config and cache.** This ensures Laravel picks up any new config defaults or service provider changes.
-4. **Run the health check.** Confirms your database tables are current, the API key is valid (if configured), and monitors are responding.
+4. **Run the health check.** Reads Horizon, queue and cron state and shows whether each monitor is healthy. It does not check the API key.
 
 ### Config changes between versions
 
@@ -5421,7 +5567,7 @@ Released: April 8, 2026
 - **SaaS reporting:** When `CRONTINEL_API_KEY` is set, the package automatically sends a status ping to `app.crontinel.com` every minute via the `crontinel:report` scheduled command. Individual cron run events are also pushed after each task completes or fails.
 - **Webhook alert channel:** A new `webhook` alert channel sends structured JSON POST payloads (both fire and resolve events) to any URL you specify.
 - **`crontinel:report` command:** Manually trigger a SaaS status ping at any time.
-- **`crontinel:prune` command:** Delete old `cron_runs` records beyond the retention window. Accepts `--days=N` to override the configured value.
+- **`crontinel:prune` command:** Delete old `crontinel_runs` records beyond the retention window. Accepts `--days=N` to override the configured value.
 
 ### Bug fixes
 
@@ -5478,7 +5624,7 @@ This is the first stable release. No upgrade path needed; install from scratch u
 - Queue monitor (depth, failed count, oldest job age for Redis and database drivers)
 - Cron monitor (automatic run recording via scheduler events)
 - Dashboard at `/crontinel` with dark theme and 30-second auto-refresh
-- `crontinel:check` CLI command with `--json` and `--no-alerts` flags
+- `crontinel:check` CLI command with `--format=json` and `--no-alerts` flags
 - `crontinel:install` CLI command
 - Alert channels: Slack webhook and email, with 5-minute deduplication
 - JSON API at `/crontinel/api/status`

@@ -22,6 +22,11 @@ This page documents every configuration option for the Laravel package. Options 
 | `CRONTINEL_WEBHOOK_TIMEOUT` | `alerts.webhook.timeout` | `10` | Webhook request timeout in seconds |
 | `CRONTINEL_API_KEY` | `saas_key` | _(none)_ | API key for the hosted dashboard |
 | `CRONTINEL_API_URL` | `saas_url` | `https://app.crontinel.com` | SaaS endpoint URL |
+| `CRONTINEL_DURABLE_REPORTING` | `reporting.durable` | `false` | Write cron reports to a local spool before sending |
+| `CRONTINEL_REPORT_SPOOL_PATH` | `reporting.spool_path` | `storage/app/crontinel-spool` | Spool directory for durable reporting |
+| `CRONTINEL_BACKGROUND_CORRELATION` | `cron.background_correlation` | `false` | Send start/completion pairs for `runInBackground()` tasks |
+| `CRONTINEL_CAPTURE_OUTPUT` | `cron.capture_output` | `false` | Send the tail of a task's output file |
+| `CRONTINEL_AGENT_ENABLED` | `agent.enabled` | `false` | Agent daemon setting (see [Agent](#agent-daemon)) |
 
 ---
 
@@ -81,7 +86,7 @@ Redis connection name that Horizon uses. Default: `horizon`
 'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
 ```
 
-This must match the connection name in your `config/horizon.php`. Most apps leave it as `horizon`.
+This must be a Redis connection defined under `redis` in `config/database.php` (see [Redis](#redis)). If it is not defined there, Crontinel cannot read Horizon's state. Most apps leave it as `horizon`.
 
 ### `horizon.supervisor_alert_after_seconds`
 
@@ -100,16 +105,6 @@ Alert when the failed jobs-per-minute rate exceeds this. Default: `5`
 ```php
 'failed_jobs_per_minute_threshold' => 5,
 ```
-
-### Horizon gate — `ADMIN_EMAILS`
-
-Access to the Horizon panel within Crontinel is gated by the `ADMIN_EMAILS` env var (checked via `Gate::before()` in `HorizonServiceProvider`). Set it to a comma-separated list of admin email addresses:
-
-```env
-ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
-```
-
-Users whose logged-in email matches one of these addresses can access Horizon. If `ADMIN_EMAILS` is not set, access is denied to everyone.
 
 ---
 
@@ -176,7 +171,7 @@ On the hosted dashboard, threshold lookups resolve in this order:
 
 1. Per-queue override: `queue_thresholds.{queue_name}`
 2. Per-app default: `queue_thresholds.default`
-3. Global config value: `depth_alert_threshold` (default 1000)
+3. Fixed fallback: 1000. The package's `depth_alert_threshold` is not sent to the hosted app; it only applies to local alerts.
 
 ---
 
@@ -204,6 +199,26 @@ Mark a cron run as `late` if it didn't execute within this many seconds of its e
 
 Bump this higher if you have tasks that legitimately take a few minutes to start.
 
+### `cron.background_correlation`
+
+Send start and completion pairs for `runInBackground()` tasks. Default: `false`
+
+```php
+'background_correlation' => env('CRONTINEL_BACKGROUND_CORRELATION', false),
+```
+
+Each launch carries its own run key and start time through the child process environment to Laravel's `schedule:finish`. Rebuild the config cache and restart long-running schedulers after changing it.
+
+### `cron.capture_output`
+
+Send the last 10,000 characters of a task's output file. Default: `false`
+
+```php
+'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),
+```
+
+The task needs an output file from `sendOutputTo()`, `appendOutputTo()` or `storeOutput()`. Off by default because output may hold sensitive data.
+
 ### `cron.retain_days`
 
 How long to keep cron run history in the database. Default: `30`
@@ -212,7 +227,7 @@ How long to keep cron run history in the database. Default: `30`
 'retain_days' => 30,
 ```
 
-Crontinel prunes old records automatically. Schedule the prune command daily:
+Nothing prunes old records automatically. Schedule the prune command yourself; it deletes runs older than `retain_days` (or `--days=N`):
 
 ```php
 $schedule->command('crontinel:prune')->daily();
@@ -223,17 +238,24 @@ $schedule->command('crontinel:prune')->daily();
 | Field | Description |
 |---|---|
 | `command` | Artisan command name |
+| `ran_at` | When the run was recorded |
 | `exit_code` | 0 = success, non-zero = failure |
 | `duration_ms` | Execution time in milliseconds |
-| `output` | Captured output (if enabled) |
-| `started_at` | Exact start timestamp |
-| `status` | `completed`, `failed`, or `late` |
+| `output` | Captured output (nullable) |
+
+These rows live in the `crontinel_runs` table.
 
 ---
 
 ## Alert channels
 
 Crontinel supports three alert channels: `slack`, `mail`, and `webhook`. Set the active channel via `CRONTINEL_ALERT_CHANNEL`.
+
+Local alerts are evaluated only when `crontinel:check` runs. The service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler:
+
+```php
+$schedule->command('crontinel:check')->everyMinute();
+```
 
 ### `alerts.channel`
 
@@ -317,11 +339,11 @@ CRONTINEL_WEBHOOK_TIMEOUT=30
 
 ### Alert deduplication
 
-The same alert condition won't re-fire for 5 minutes. If a queue stays above threshold for an hour, you get one alert at the start — not one every poll cycle.
+The same alert condition won't re-fire for 5 minutes. If a queue stays above threshold, the next `crontinel:check` after those 5 minutes sends the alert again, so an hour-long breach sends about 12 alerts.
 
 ### Auto-resolution
 
-When the condition clears, Crontinel sends a "resolved" notification with `"resolved": true`. You get clear start and end signals for every incident.
+When the condition clears within 5 minutes of the last alert, Crontinel sends a "resolved" notification (`"resolved": true` on the webhook). The open alert is kept in your cache for 5 minutes, so a condition that clears later does not send a resolved notification.
 
 ---
 
@@ -344,6 +366,33 @@ Set `CRONTINEL_API_KEY` to your dashboard API key. When set, Crontinel reports c
 ```
 
 Override the SaaS endpoint for self-hosted dashboard instances.
+
+### `reporting.durable` and `reporting.spool_path`
+
+```php
+'reporting' => [
+    'durable' => env('CRONTINEL_DURABLE_REPORTING', false),
+    'spool_path' => env('CRONTINEL_REPORT_SPOOL_PATH', storage_path('app/crontinel-spool')),
+],
+```
+
+With `durable` on, cron start and completion reports are written to the spool directory first. The every-minute `crontinel:report` run drains them, and `php artisan crontinel:flush-reports` drains one batch by hand. Use a private, persistent local directory.
+
+---
+
+## Agent daemon
+
+```php
+'agent' => [
+    'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+    'heartbeat_interval' => 60,
+    'max_reconnect_delay' => 60,
+    'default_command_timeout' => 300,
+    'allowed_commands' => [],
+],
+```
+
+Settings for `php artisan crontinel:agent`. `allowed_commands` lists the commands the agent may run, matched with `fnmatch()`. The default empty list allows no commands. The Laravel agent cannot connect to the hosted app today; see the [agent guide](/agent/guide/).
 
 ---
 
@@ -431,14 +480,44 @@ declare(strict_types=1);
 use Laravel\Horizon\Horizon;
 
 return [
-
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Path
+    |--------------------------------------------------------------------------
+    | The URI path where the Crontinel dashboard is accessible.
+    */
     'path' => env('CRONTINEL_PATH', 'crontinel'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Middleware
+    |--------------------------------------------------------------------------
+    */
     'middleware' => ['web', 'auth'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SaaS Reporting
+    |--------------------------------------------------------------------------
+    | Set CRONTINEL_API_KEY to connect this app to the hosted SaaS at
+    | app.crontinel.com. When set, status is reported every minute and
+    | cron run events are pushed after each scheduled task completes.
+    */
     'saas_key' => env('CRONTINEL_API_KEY'),
     'saas_url' => env('CRONTINEL_API_URL', 'https://app.crontinel.com'),
 
+    // Opt-in disk-backed cron reports. Use persistent private local storage.
+    'reporting' => [
+        'durable' => env('CRONTINEL_DURABLE_REPORTING', false),
+        'spool_path' => env('CRONTINEL_REPORT_SPOOL_PATH', storage_path('app/crontinel-spool')),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Horizon Integration
+    |--------------------------------------------------------------------------
+    | Set to false if you are not using Laravel Horizon.
+    */
     'horizon' => [
         'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
         'supervisor_alert_after_seconds' => 60,
@@ -446,31 +525,51 @@ return [
         'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Monitoring
+    |--------------------------------------------------------------------------
+    */
     'queues' => [
         'enabled' => true,
         'watch' => [],
+        // Queues on other connections than queue.default, as ['connection' => ['queue', ...]]; an empty list finds them.
+        // They are reported as "connection:queue", so alerts and thresholds for them use that name.
         'connections' => [],
         'depth_alert_threshold' => 1000,
         'wait_time_alert_seconds' => 300,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cron / Scheduled Command Monitoring
+    |--------------------------------------------------------------------------
+    */
     'cron' => [
         'enabled' => true,
+        'background_correlation' => env('CRONTINEL_BACKGROUND_CORRELATION', false),
+        // Send the last 10,000 characters of a task's output file (sendOutputTo, appendOutputTo,
+        // storeOutput). Off by default because output may hold sensitive data.
+        'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),
         'late_alert_after_seconds' => 120,
         'retain_days' => 30,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Alert Channels
+    |--------------------------------------------------------------------------
+    | Supported: "mail", "slack", "webhook", null
+    | Set CRONTINEL_ALERT_CHANNEL to enable alerts.
+    */
     'alerts' => [
         'channel' => env('CRONTINEL_ALERT_CHANNEL'),
-
         'mail' => [
             'to' => env('CRONTINEL_ALERT_EMAIL'),
         ],
-
         'slack' => [
             'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
         ],
-
         'webhook' => [
             'url' => env('CRONTINEL_WEBHOOK_URL'),
             'headers' => env('CRONTINEL_WEBHOOK_HEADERS'),
@@ -478,6 +577,34 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Agent Daemon (php artisan crontinel:agent)
+    |--------------------------------------------------------------------------
+    | Settings for the remote command execution agent that connects to the
+    | Crontinel SaaS via SSE to receive and execute commands.
+    */
+    'agent' => [
+        'enabled' => env('CRONTINEL_AGENT_ENABLED', false),
+        'heartbeat_interval' => 60,
+        'max_reconnect_delay' => 60,
+        'default_command_timeout' => 300,
+
+        /*
+        |----------------------------------------------------------------------
+        | Allowed Commands
+        |----------------------------------------------------------------------
+        | Commands received from the Crontinel SaaS are only executed if they
+        | match one of these patterns. Patterns are matched with fnmatch(),
+        | so "*" is a wildcard and any other string must match exactly.
+        |
+        | IMPORTANT: the default is an empty array, which means NO commands
+        | are permitted. This is a fail-closed default — you must explicitly
+        | opt in to the exact commands (or patterns) you want the agent to be
+        | able to run. An empty list is NOT "allow everything".
+        */
+        'allowed_commands' => [],
+    ],
 ];
 ```
 

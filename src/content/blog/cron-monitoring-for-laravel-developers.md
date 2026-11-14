@@ -45,7 +45,7 @@ A good cron monitoring setup gives you visibility into three things: task execut
 
 **Duration** — How long did the task take? If a task that normally takes 30 seconds suddenly takes 20 minutes, something is wrong. It might be a slow database query, an external API hanging, or a resource constraint. Duration tracking helps you catch degradation before it becomes a failure.
 
-Crontinel provides all three. You can see your scheduled tasks in the dashboard, set alert thresholds per task, and receive notifications through Slack, PagerDuty, or webhooks when something goes wrong.
+Crontinel records each run's exit code and duration, and alerts when a task fails or misses its schedule. Hosted alerts go to the channels you add in the Crontinel app, such as Slack, a webhook, or PagerDuty on paid plans.
 
 ## Common Causes of Silent Cron Failures in Laravel
 
@@ -72,49 +72,46 @@ php artisan crontinel:install
 
 The installer publishes a config file and runs the necessary migrations. After installation, the Crontinel dashboard at `/crontinel` shows every scheduled task your app knows about.
 
-```php
-// config/crontinel.php
-return [
-    'enabled' => true,
-    'heartbeat' => [
-        // Crontinel sends a heartbeat ping to your app every 60s.
-        // If the app doesn't respond within 90s, we alert you.
-        'timeout' => 90,
-    ],
-    'monitors' => [
-        // Per-task configuration
-        'invoices:process' => [
-            'timeout' => 300,    // Alert if this takes longer than 5 minutes
-            'alert_on_failure' => true,
-        ],
-    ],
-];
+To report runs to Crontinel, add your app's API key to `.env`:
+
+```bash
+CRONTINEL_API_KEY=your-app-key
 ```
 
-Each task in your scheduler can have its own monitoring configuration. Tasks that process payments or send transactional email get tight timeouts. Tasks that run bulk operations get more breathing room.
+Each run is then sent to Crontinel when it finishes. To get an alert when a task does not run on time, register your schedule with Crontinel:
 
-## Alerting That Actually Reaches You
+```bash
+php artisan crontinel:schedule
+```
 
-Monitoring without alerting is just a dashboard. Crontinel integrates with the tools your operations team already uses.
+This lists your scheduled tasks and sends them to Crontinel, which turns on missed-run alerts for them. The cron settings in `config/crontinel.php`:
 
 ```php
 // config/crontinel.php
-'alerts' => [
-    'slack' => [
-        'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
-        'channel' => '#alerts',
-    ],
-    'pagerduty' => [
-        'integration_key' => env('CRONTINEL_PAGERDUTY_KEY'),
-    ],
-    'webhook' => [
-        'url' => env('CRONTINEL_WEBHOOK_URL'),
-        'events' => ['task_failed', 'task_timeout', 'scheduler_down'],
-    ],
+'cron' => [
+    'enabled' => true,
+    'background_correlation' => env('CRONTINEL_BACKGROUND_CORRELATION', false),
+    'capture_output' => env('CRONTINEL_CAPTURE_OUTPUT', false),
+    'late_alert_after_seconds' => 120,
+    'retain_days' => 30,
 ],
 ```
 
-When a task fails or your scheduler misses a heartbeat, the alert fires immediately. You can configure different notification channels for different severity levels. A missed heartbeat gets a Slack message. A repeated failure escalates to PagerDuty.
+## Alerting That Actually Reaches You
+
+Monitoring without alerting is just a dashboard. With an API key set, a failed run raises an alert in Crontinel as soon as the run is reported. A task that misses its schedule raises a missed-run alert once you have run `crontinel:schedule`.
+
+The package can also alert on its own, without the hosted app. Pick a channel (`mail`, `slack` or `webhook`) and schedule `crontinel:check`, which checks for failed and late tasks:
+
+```bash
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
+```
+
+```php
+// routes/console.php
+Schedule::command('crontinel:check')->everyMinute();
+```
 
 ## Why Laravel Developers Specifically Need This
 
@@ -126,8 +123,8 @@ Laravel's queue system (Horizon) has its own monitoring because its failures are
 
 ## Getting Started
 
-The [quick start guide](/docs/quick-start) walks through installation and first alert in under five minutes. If you already use Laravel Horizon, Crontinel shares your Redis connection and starts monitoring immediately after installation.
+The [quick start guide](/quick-start/) walks through installation and first alert in under five minutes. If you already use Laravel Horizon, Crontinel shares your Redis connection and starts monitoring immediately after installation.
 
 Your scheduler has been running silently in the background this whole time. It is time to give it a voice.
 
-[Start monitoring your Laravel cron jobs →](/docs/quick-start)
+[Start monitoring your Laravel cron jobs →](/quick-start/)

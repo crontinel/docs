@@ -49,63 +49,55 @@ Effective Horizon monitoring covers the same dimensions as general queue monitor
 
 ## Setting Up Crontinel to Monitor Horizon
 
-Crontinel connects directly to Horizon's Redis metrics, so you do not need to instrument your jobs or modify your application code.
+Crontinel reads Horizon's state from Redis, so you do not need to instrument your jobs or modify your application code.
 
 ```bash
 composer require crontinel/laravel
-php artisan crontinel:install --horizon
+php artisan crontinel:install
 ```
 
-The `--horizon` flag configures Crontinel to read from Horizon's metric tags rather than the generic Laravel queue interface. After installation, Crontinel automatically discovers your Horizon-supervised queues and begins collecting metrics.
+`crontinel:install` publishes `config/crontinel.php` and runs the migrations. It takes no options. Add your app's API key to `.env`:
+
+```bash
+CRONTINEL_API_KEY=your-app-key
+```
+
+With a key set, the package schedules `crontinel:report` every minute. Each run reads Horizon's master status, its supervisors and the failed jobs of the last minute, plus the depth and failed count of your queues, and sends them to Crontinel. The Horizon settings live in `config/crontinel.php`:
 
 ```php
 // config/crontinel.php
-return [
+'horizon' => [
+    'enabled' => env('CRONTINEL_HORIZON', class_exists(Horizon::class)),
+    'supervisor_alert_after_seconds' => 60,
+    'failed_jobs_per_minute_threshold' => 5,
+    'connection' => env('CRONTINEL_HORIZON_CONNECTION', 'horizon'),
+],
+'queues' => [
     'enabled' => true,
-    'horizon' => [
-        'enabled' => true,
-        'redis_connection' => 'default',
-        'metrics_ttl' => 3600,       // How long to retain metrics in Redis
-    ],
-    'queues' => [
-        'emails' => [
-            'alert_threshold' => 50,
-            'slow_job_threshold' => 15,
-            'failure_alert_threshold' => 3,
-        ],
-        'default' => [
-            'alert_threshold' => 200,
-            'slow_job_threshold' => 30,
-            'failure_alert_threshold' => 10,
-        ],
-        'notifications' => [
-            'alert_threshold' => 100,
-            'failure_alert_threshold' => 5,
-        ],
-    ],
-];
-```
-
-## Alerting on Horizon Failures
-
-Crontinel uses Horizon's event system to detect failures in real time, without polling.
-
-```php
-// config/crontinel.php
-'alerts' => [
-    'slack' => [
-        'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
-        'channel' => '#horizon-alerts',
-        'throttle_minutes' => 5,
-    ],
-    'pagerduty' => [
-        'integration_key' => env('PAGERDUTY_KEY'),
-        'severity' => 'error',
-    ],
+    'watch' => [],
+    'connections' => [],
+    'depth_alert_threshold' => 1000,
+    'wait_time_alert_seconds' => 300,
 ],
 ```
 
-The alert payload includes the job name, exception type, the queue it was dispatched to, and a link directly to the failed job in Horizon's dashboard. This means whoever gets paged can go straight to the context, not spend ten minutes reproducing the error.
+The `connection` must name a Redis connection defined in `database.redis`, the one Horizon uses.
+
+## Alerting on Horizon Failures
+
+Crontinel alerts when Horizon stops, is paused, or a supervisor it should run is missing. It also alerts when failed jobs per minute or a queue's depth or failed count cross the thresholds you set on the app's settings page. Alerts go to the channels you add in the Crontinel app.
+
+The package can also send alerts on its own, without the hosted app. Pick a channel (`mail`, `slack` or `webhook`) and schedule `crontinel:check`, which evaluates the local thresholds:
+
+```bash
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
+```
+
+```php
+// routes/console.php
+Schedule::command('crontinel:check')->everyMinute();
+```
 
 ## Investigating Failures Through Horizon
 
@@ -161,15 +153,7 @@ The `balance => 'auto'` setting lets Horizon scale worker processes up and down 
 
 Horizon is a PHP process running on your server. Like any process, it can consume too much memory, leak connections, or get OOM-killed by the OS. When Horizon goes down, your queues stop being processed and no failures are recorded — the jobs just sit in Redis.
 
-Crontinel monitors Horizon process health separately from job health:
-
-```php
-// config/crontinel.php
-'horizon' => [
-    'monitor_process' => true,
-    'process_down_alert_minutes' => 2,  // Alert within 2 minutes if Horizon stops
-],
-```
+Crontinel checks Horizon's process health separately from job health. Every minute, `crontinel:report` reads Horizon's master record from Redis. If no master has checked in recently, Crontinel reports Horizon as stopped and alerts. A supervisor listed in `horizon.environments` that has not been running for `supervisor_alert_after_seconds` (60 by default) raises its own alert.
 
 A process-down alert is the most urgent notification you can receive. Unlike a job failure, which means some work did not complete, a Horizon-down event means all queue processing has halted. Every minute counts.
 
@@ -183,14 +167,14 @@ A few practices keep Horizon healthy and reduce firefighting in production.
 
 **Monitor Redis, not just Horizon** — Horizon uses Redis to store jobs, tags, and metrics. If Redis becomes unavailable or reaches connection limits, Horizon cannot dispatch or process jobs. Redis monitoring is a prerequisite for Horizon reliability.
 
-**Use Crontinel's trend view** — Queue depth trends tell you whether your queues are growing over time even when individual measurements look acceptable. A queue that grows 20% per week is heading toward an incident even if today's numbers look fine.
+**Watch queue depth over time.** A queue that grows 20% per week is heading toward an incident even if today's numbers look fine.
 
 ## Get Started
 
 Horizon gives you the tools to manage complex queue workloads. Monitoring makes sure you know when those tools need your attention.
 
-The [quick start guide](/docs/quick-start) covers installing Crontinel alongside Horizon and configuring your first alerts in under ten minutes. If you are already running Horizon, the integration takes about five minutes — it reads from the same Redis connection Horizon uses, with no code changes required.
+The [quick start guide](/quick-start/) covers installing Crontinel alongside Horizon and configuring your first alerts in under ten minutes. If you are already running Horizon, the integration takes about five minutes. It reads from the same Redis connection Horizon uses, with no code changes required.
 
 Your queues have been running in the background this whole time. It is time to start listening.
 
-[Start monitoring Horizon in production →](/docs/quick-start)
+[Start monitoring Horizon in production →](/quick-start/)

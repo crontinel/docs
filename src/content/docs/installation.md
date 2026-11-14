@@ -133,12 +133,12 @@ CRONTINEL_PATH=crontinel
 CRONTINEL_HORIZON=true
 CRONTINEL_HORIZON_CONNECTION=horizon
 
-# Alert channel (slack, email, webhook)
+# Alert channel (mail, slack, webhook)
 CRONTINEL_ALERT_CHANNEL=slack
 CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 CRONTINEL_ALERT_EMAIL=alerts@example.com
 CRONTINEL_WEBHOOK_URL=https://your-endpoint.example.com/crontinel
-# PagerDuty is on the alerts roadmap — see /alerts/channels
+# PagerDuty and other channels are hosted-only, see /alerts/channels
 
 # SaaS reporting (optional — omit for local-only monitoring)
 CRONTINEL_API_KEY=

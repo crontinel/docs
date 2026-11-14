@@ -74,46 +74,31 @@ If you operate in an air-gapped or restricted environment, omit `CRONTINEL_API_K
 
 ---
 
-## Webhook HMAC signing
+## Authenticating webhook alerts
 
-When Crontinel fires an outbound webhook alert, it signs the request body with HMAC-SHA256 using a secret you define. This lets your endpoint verify the request came from Crontinel and wasn't tampered with.
-
-### Configuring the secret
+The package does not sign webhook alerts. To let your endpoint check that a request came from your app, send a shared secret in a header with `CRONTINEL_WEBHOOK_HEADERS`. The value must be a JSON object:
 
 ```env
-CRONTINEL_WEBHOOK_SECRET=your-signing-secret
+CRONTINEL_WEBHOOK_URL=https://example.com/hooks/crontinel
+CRONTINEL_WEBHOOK_HEADERS='{"Authorization": "Bearer your-shared-secret"}'
 ```
+
+This maps to `alerts.webhook.headers` in `config/crontinel.php`. If the value is not valid JSON, the package logs a warning and sends the request without the extra headers.
+
+Check the header in your endpoint and compare it with `hash_equals()`:
 
 ```php
-// config/crontinel.php
-'webhook' => [
-    'url'    => env('CRONTINEL_WEBHOOK_URL'),
-    'secret' => env('CRONTINEL_WEBHOOK_SECRET'),
-],
-```
+// Load the same secret from your receiver's own config.
+$expected = 'Bearer ' . $sharedSecret;
+$received = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
-### Verifying the signature
-
-Crontinel adds an `X-Crontinel-Signature` header to every webhook request:
-
-```
-X-Crontinel-Signature: sha256=<hex_digest>
-```
-
-Verify it in your endpoint:
-
-```php
-$payload   = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_CRONTINEL_SIGNATURE'] ?? '';
-$expected  = 'sha256=' . hash_hmac('sha256', $payload, env('CRONTINEL_WEBHOOK_SECRET'));
-
-if (! hash_equals($expected, $signature)) {
+if (! hash_equals($expected, $received)) {
     http_response_code(401);
-    exit('Invalid signature');
+    exit('Unauthorized');
 }
 ```
 
-Use `hash_equals()` to prevent timing attacks.
+Use an HTTPS URL so the header is not sent in clear text.
 
 ---
 

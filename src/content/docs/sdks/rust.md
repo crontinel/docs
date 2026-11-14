@@ -20,7 +20,7 @@ Get from zero to your first data in under 3 minutes.
 - Rust 1.75+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -53,7 +53,7 @@ fn main() {
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 cargo run --bin quickstart
 ```
 

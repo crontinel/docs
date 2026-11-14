@@ -11,60 +11,22 @@ When something breaks, users often want a single URL. That product surface is se
 
 ## How it works
 
-Your status page is served from your own domain via CNAME. Users visit `status.yourdomain.com` and see your status page, while the URL stays `status.yourdomain.com` in their browser.
+Each status page has a slug. The public page is at:
+
+```
+https://app.crontinel.com/status/<slug>
+```
+
+Custom domains are not available in the app UI.
 
 ## Creating your first status page
 
-Create a status page from the dashboard under **Status Pages → Create**. Each page gets:
+Create a status page from the dashboard under **Status Pages → Create**.
 
-- A unique domain identifier (your main domain, e.g. `yourdomain.com`)
-- A CNAME target to add to your DNS
+## Adding endpoints
 
-## Setting up your CNAME
+A status page lists probed endpoints, not monitors. Add them on the page's **Endpoints** screen. Each endpoint has a name, a URL, and a probe interval. The shortest interval you can set depends on your plan.
 
-After creating a status page, you'll see a CNAME target: `app.crontinel.com`.
+## Incidents
 
-Add this DNS record to your domain:
-
-| Type | Name | Target |
-|------|------|--------|
-| CNAME | `status` | `app.crontinel.com` |
-
-Once added, your status page will be live at `status.yourdomain.com`.
-
-It can take a few minutes for DNS to propagate.
-
-## Your status page URL
-
-After setup, your status page is available at:
-
-```
-https://status.yourdomain.com
-```
-
-Where `yourdomain.com` is the domain you specified when creating the page.
-
-## Adding monitors
-
-From **Status Pages → Edit**, select which monitors appear on the page. Each monitor shows as a row with:
-
-- Current status indicator
-- Response time
-- Last checked time
-
-Only the monitors you choose are visible. Internal or sensitive checks stay private.
-
-## Incident management
-
-Post incidents manually from **Status Pages → Incidents → New Incident**. Each incident moves through four stages:
-
-1. **Investigating** – you're aware and looking into it
-2. **Identified** – root cause found
-3. **Monitoring** – fix deployed, watching for recurrence
-4. **Resolved** – back to normal
-
-Updates appear on the status page in reverse chronological order.
-
-## Custom domains
-
-Custom domains may exist in the app UI. They are not a Starter/Pro/Max launch entitlement. Status pages remain out of the current offer.
+Incidents are opened and resolved automatically. When an endpoint fails two probes in a row, Crontinel opens an incident with the status **Investigating**. When the endpoint recovers, the incident is resolved. There is no screen for posting incidents by hand.

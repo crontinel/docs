@@ -7,13 +7,23 @@ description: Add the Crontinel MCP server to Claude Code so the assistant can re
 The Crontinel SaaS is now in early access. [Create a free account](https://app.crontinel.com/login) to get started.
 :::
 
-## 1. Get your API key
+## 1. Add the hosted server
 
-Log in to [app.crontinel.com](https://app.crontinel.com), go to your app, and copy the API key.
+```bash
+claude mcp add --transport http crontinel https://app.crontinel.com/mcp
+```
 
-## 2. Add to Claude Code config
+## 2. Sign in
 
-Edit `~/.claude/settings.json` (or use the Claude Code settings UI):
+Run `/mcp` in Claude Code, pick `crontinel`, and sign in. The OAuth consent screen shows which apps and scopes the connection gets. The default scopes are read-only.
+
+## 3. Check the tools
+
+The Crontinel tools appear in Claude Code's tool list. Manage or revoke the connection at [/settings/ai-connections](https://app.crontinel.com/settings/ai-connections).
+
+### Legacy: stdio package with an app API key
+
+The `@crontinel/mcp-server` package proxies to the older `app.crontinel.com/api/mcp` endpoint with an app API key (the key your jobs send data with, not a scoped MCP key). It has a different tool set. Use it only if you cannot use the hosted server:
 
 ```json
 {
@@ -22,41 +32,32 @@ Edit `~/.claude/settings.json` (or use the Claude Code settings UI):
       "command": "npx",
       "args": ["-y", "@crontinel/mcp-server"],
       "env": {
-        "CRONTINEL_API_KEY": "your-api-key-here"
+        "CRONTINEL_API_KEY": "your-app-key"
       }
     }
   }
 }
 ```
 
-## 3. Restart Claude Code
-
-The Crontinel tools will appear in Claude Code's tool list.
-
 ## 4. Try it
 
 Ask Claude Code:
 
 - "Did my cron jobs run last night?"
-- "What's the queue depth right now?"
-- "Is Horizon healthy?"
-- "Show me recent alerts"
+- "Which monitors are failing?"
+- "Show me open incidents"
 
 ## Troubleshooting
 
-If tools don't appear, check that Node.js 18+ is installed:
+If tools don't appear, run `/mcp` and check that the `crontinel` server is connected and signed in.
 
-```bash
-node --version
-```
-
-If the API key is wrong you'll see `401 Unauthorized` in the MCP server output.
+For the legacy stdio package, check that Node.js 18+ is installed (`node --version`). A wrong API key shows `401 Unauthorized` in the MCP server output.
 
 ## What Claude Code can read
 
-Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): scheduled jobs and their last runs, queue depth, Horizon state, and recent alerts. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
+Once connected, Claude Code calls the tools listed on [Available Tools](/mcp/tools/): monitors, runs, deploys, incidents and their evidence on the hosted server. Ordinary reads from your own assistant do not spend hosted AI starts (see [billing and plans](/billing/) for the allowances).
 
-For new setups, prefer OAuth from the app's connection screen over a pasted key; the API key above is the fallback. The [MCP overview](/mcp/overview/) explains how the stdio server proxies to `app.crontinel.com/api/mcp`.
+The [MCP overview](/mcp/overview/) explains the hosted server, its scopes, and the legacy stdio package.
 
 ## Related
 

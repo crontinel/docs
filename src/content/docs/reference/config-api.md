@@ -281,7 +281,7 @@ Errors are JSON with an `error` code and a `message`. Validation errors add `err
 
 ## Terraform
 
-Manage cron schedules, heartbeats and outcome rules as code with the [Crontinel Terraform provider](https://registry.terraform.io/providers/crontinel/crontinel/latest). It uses this API with a generated key (`monitor:read` and `monitor:write`), and refuses an update if the record changed in Crontinel after Terraform last read it.
+Manage cron schedules, heartbeats, outcome rules, maintenance windows and the escalation policy as code with the [Crontinel Terraform provider](https://registry.terraform.io/providers/crontinel/crontinel/latest). It uses this API with a generated key (`monitor:read` and `monitor:write`), and refuses an update if the record changed in Crontinel after Terraform last read it.
 
 ```hcl
 terraform {
