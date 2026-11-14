@@ -12,30 +12,24 @@ By default the agent refuses to run **any** command. You must explicitly configu
 ## How It Works
 
 1. The agent connects to Crontinel Cloud using your API key
-2. It connects to receive commands — see [Connection Method](#connection-method) below, since this differs by runtime
+2. It polls for new commands every 5 seconds (see [Connection Method](#connection-method))
 3. When a trigger is scheduled from the dashboard, the agent checks the command against your configured allowlist
-4. If allowed, it executes the command and reports the result (success/failure, output, duration) back to the cloud; if not allowed, it reports a rejection and does **not** run it
+4. If allowed, it executes the command and reports the result (success or failure, exit code, output) back to the cloud; if not allowed, it reports a rejection and does **not** run it
 5. A heartbeat is sent every 60 seconds to confirm the agent is alive
 
 ### Connection Method
 
-The Laravel agent and the Node.js/Python agents use different transports to receive commands:
-
-- **Laravel** expects a persistent SSE (Server-Sent Events) connection. The hosted app does not offer it yet; see the warning in [Laravel Agent](#laravel-agent).
-- **Node.js and Python** poll `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds, and send heartbeats via `/api/v1/agents/heartbeat` every 60 seconds.
+Every agent registers at `/api/v1/agents/register`, polls `app.crontinel.com/api/v1/agents/{id}/commands` every 5 seconds, and sends heartbeats to `/api/v1/agents/heartbeat` every 60 seconds.
 
 ## Laravel Agent
-
-:::caution[Cannot connect to the hosted app yet]
-The Laravel agent uses SSE endpoints that the hosted app at `app.crontinel.com` does not serve. The hosted app only has the polling endpoints the Node.js and Python agents use. Until that changes, `php artisan crontinel:agent` cannot receive commands from the hosted app.
-:::
 
 The Laravel package (`crontinel/laravel`) includes a built-in agent command.
 
 ### Prerequisites
 
-- `crontinel/laravel` installed via Composer
+- `crontinel/laravel` v0.9.11 or later. Earlier versions could not connect to the hosted app.
 - `CRONTINEL_API_KEY` set in `.env`
+- The commands it may run listed in `crontinel.agent.allowed_commands` (see the [configuration reference](/reference/configuration/)). The default empty list rejects every command and reports it as failed.
 
 ### Start the Agent
 
