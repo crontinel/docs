@@ -15,10 +15,10 @@ Self-hosted Crontinel works fully standalone. You do not need a crontinel.com ac
 
 | Component | Minimum version |
 |---|---|
-| PHP | 8.5 |
+| PHP | 8.4 |
 | PostgreSQL | 15 |
 | Node.js | 20 |
-| Redis | Optional — queue driver can be `database` or `sync` instead |
+| Redis | Required. The app uses Laravel Horizon, and `.env.example` sets `QUEUE_CONNECTION=redis` and `CACHE_STORE=redis` |
 
 ## 1. Clone and install
 
@@ -55,10 +55,6 @@ REDIS_HOST=127.0.0.1
 
 MAIL_MAILER=resend
 MAIL_FROM_ADDRESS=alerts@your-domain.com
-
-# Alert channels (email and webhook both work in self-hosted mode)
-CRONTINEL_ALERT_CHANNEL=email
-CRONTINEL_ALERT_EMAIL=alerts@your-domain.com
 ```
 
 ## 3. Database
@@ -123,7 +119,7 @@ Create a Supervisor config at `/etc/supervisor/conf.d/crontinel.conf`:
 
 ```ini
 [program:crontinel-worker]
-command=php /var/www/crontinel-app/artisan queue:work redis --queue=crontinel,default --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/crontinel-app/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
 directory=/var/www/crontinel-app
 user=www-data
 numprocs=2
@@ -132,9 +128,20 @@ autorestart=true
 stopasgroup=true
 killasgroup=true
 stdout_logfile=/var/log/crontinel/worker.log
+
+[program:crontinel-alerts]
+command=php /var/www/crontinel-app/artisan queue:work cron-alerts --queue=cron-alerts --sleep=3 --max-time=3600
+directory=/var/www/crontinel-app
+user=www-data
+numprocs=1
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stdout_logfile=/var/log/crontinel/alerts.log
 ```
 
-The `--queue=crontinel,default` flag is important. Without it, workers only process the `default` queue and won't pick up alert evaluation or ping processing jobs that Crontinel dispatches to the `crontinel` queue. The order matters: `crontinel` is listed first so those jobs get priority.
+Cron run, missed-run and quality alerts are dispatched on the `cron-alerts` connection and queue, a database queue defined in `config/queue.php`. A worker on the default Redis connection does not process them, so run the second program. AI investigations and output grading use a separate `ai-investigations` database connection and queue; run a worker for it too if you use those features.
 
 Then:
 
@@ -163,7 +170,17 @@ Check `/health` returns `200` -- that endpoint is always unauthenticated.
 
 ## Access the dashboard
 
-After install, visit `/crontinel` on your domain to open the monitoring dashboard. The dashboard shows Horizon status, queue throughput, and cron job data once the scheduler and queue workers are running.
+After install, sign in and open `/dashboard` on your domain. Data appears once the scheduler and queue workers are running.
+
+### Horizon access
+
+Access to `/horizon` is limited by the `viewHorizon` gate in the app's `HorizonServiceProvider`. It allows signed-in users whose email is in `ADMIN_EMAILS`, a comma-separated list:
+
+```env
+ADMIN_EMAILS=admin@yourcompany.com,ops@yourcompany.com
+```
+
+If `ADMIN_EMAILS` is not set, nobody can open Horizon outside the local environment. This is separate from the Laravel package's dashboard, which uses the `crontinel.view` gate.
 
 ## Upgrades
 

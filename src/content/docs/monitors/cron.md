@@ -26,7 +26,7 @@ No code changes to your `schedule()` method are needed. Every command defined th
 | `command` | Artisan command name |
 | `exit_code` | 0 = success, non-zero = failure |
 | `duration_ms` | How long it ran |
-| `output` | Captured output (if any) |
+| `output` | Last 10,000 characters of the task's output file, only when `CRONTINEL_CAPTURE_OUTPUT=true` (default `false`), or text from `Outcome::output()` |
 | `started_at` | Exact start timestamp |
 | `status` | `completed`, `failed`, or `late` |
 

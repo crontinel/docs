@@ -21,7 +21,7 @@ Get from zero to your first data in under 3 minutes.
 - Rails 6.1+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -50,7 +50,7 @@ Set the environment variable:
 
 ```bash
 # .env or export
-CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+CRONTINEL_API_KEY=your-app-key
 ```
 
 ### 4. Add to a job
@@ -112,7 +112,7 @@ Set the environment variable:
 
 ```bash
 # .env
-CRONTINEL_API_KEY=crn_live_...
+CRONTINEL_API_KEY=your-app-key
 ```
 
 ## ActiveJob integration

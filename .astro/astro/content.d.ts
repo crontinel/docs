@@ -209,6 +209,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"check-in/deploy-markers.md": {
+	id: "check-in/deploy-markers.md";
+  slug: "check-in/deploy-markers";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "check-in/ping-urls.md": {
 	id: "check-in/ping-urls.md";
   slug: "check-in/ping-urls";
@@ -317,6 +324,13 @@ declare module 'astro:content' {
 "reference/api.md": {
 	id: "reference/api.md";
   slug: "reference/api";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"reference/config-api.md": {
+	id: "reference/config-api.md";
+  slug: "reference/config-api";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

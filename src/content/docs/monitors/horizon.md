@@ -9,10 +9,12 @@ The Horizon monitor reads Horizon's Redis keys directly  –  the same data sour
 
 | Signal | How |
 |---|---|
-| Overall status | `horizon:status` Redis key |
-| Per-supervisor state | `horizon:{id}:supervisor` heartbeat timestamp |
-| Paused state | `horizon:status` = `paused` |
-| Failed jobs per minute | `horizon:{id}:{queue}:throughput` buckets |
+| Overall status | The newest master in the `masters` sorted set (refreshed within the last 14 seconds), then the `status` field of its `master:<name>` hash. No fresh master means stopped |
+| Per-supervisor state | Supervisors in the `supervisors` sorted set refreshed within the last 29 seconds, with each `supervisor:<name>` hash's status, processes and queues |
+| Paused state | The master's status is `paused`, or a supervisor's status is `paused` |
+| Failed jobs per minute | Entries in the `failed_jobs` sorted set from the last 60 seconds |
+
+Horizon stores these keys under its own Redis prefix on the `horizon.connection` connection.
 
 ## Configuration
 
@@ -28,9 +30,9 @@ The Horizon monitor reads Horizon's Redis keys directly  –  the same data sour
 
 ## What "supervisor down" means
 
-Crontinel tracks each supervisor separately via its heartbeat. If a supervisor's `lastHeartbeat` is more than `supervisor_alert_after_seconds` old, Crontinel considers it down  –  even if the top-level `horizon:status` key still says `running`.
+Crontinel compares the supervisors listed in `horizon.environments` for the current environment with the supervisors that are running. A configured supervisor that is not running for `supervisor_alert_after_seconds` is reported as down, while the master is running. Package v0.9.10 and later.
 
-This is the key difference from generic monitors: you get an alert for a supervisor crash in the `emails` queue while your `default` queue supervisor is still healthy.
+So you get an alert when the `emails` supervisor is gone while your `default` supervisor is still healthy. Supervisors are matched by name across hosts, and the check needs a cache store shared between runs (`file` or `redis`, not `array`).
 
 ## Disabling
 

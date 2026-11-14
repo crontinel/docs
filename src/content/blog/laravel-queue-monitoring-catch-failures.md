@@ -43,79 +43,57 @@ Queue monitoring is not just watching for failures. A complete monitoring setup 
 
 **Retry exhaustion** — Laravel lets you specify how many times a job should be retried before it is moved to the failed_jobs table. When a job exhausts its retries, it is a signal that something fundamental is broken — not a transient error.
 
-Crontinel monitors all of these dimensions. The dashboard shows your queues in real time, and you can configure alert thresholds so you know about problems within minutes rather than hours.
+Crontinel covers the first and fourth of these: queue depth, the failed job count, and, with Horizon, whether Horizon and its supervisors are running. You set alert thresholds so you know about problems within minutes rather than hours.
 
 ## Setting Up Laravel Queue Monitoring with Crontinel
 
-Crontinel integrates with your Laravel queue system through a service provider that hooks into Laravel's queue events.
+Crontinel does not hook into queue events. It reads each queue's state once a minute.
 
 ```bash
 composer require crontinel/laravel
 php artisan crontinel:install
 ```
 
-The installer publishes a config file and sets up the necessary database tables. After installation, Crontinel automatically tracks all jobs dispatched through Laravel's queue system.
+The installer publishes `config/crontinel.php` and runs the migrations. Add your app's API key to `.env`:
+
+```bash
+CRONTINEL_API_KEY=your-app-key
+```
+
+With a key set, the package schedules `crontinel:report` every minute. It reads the depth and failed count of each queue on your default connection and sends them to Crontinel. The queue settings in `config/crontinel.php`:
 
 ```php
 // config/crontinel.php
-return [
+'queues' => [
     'enabled' => true,
-    'queues' => [
-        'default' => [
-            'alert_threshold' => 100,       // Alert when 100+ jobs are waiting
-            'slow_job_threshold' => 30,    // Alert when a job takes longer than 30s
-            'failure_alert_threshold' => 5, // Alert after 5+ consecutive failures
-        ],
-        'emails' => [
-            'alert_threshold' => 50,
-            'slow_job_threshold' => 10,
-            'failure_alert_threshold' => 3,
-        ],
-    ],
-];
+    'watch' => [],                     // empty: find the queues automatically
+    'connections' => [],               // queues on other connections, as ['connection' => ['queue', ...]]
+    'depth_alert_threshold' => 1000,   // local alerts only
+    'wait_time_alert_seconds' => 300,  // local alerts only
+],
 ```
 
-You can configure different thresholds for different queues. Your email queue might need stricter monitoring than your analytics queue, because failed emails mean users do not get receipts, confirmations, or password resets.
+You set the hosted alert thresholds (queue depth, failed jobs) on the app's settings page in Crontinel.
 
 ## Monitoring Failed Jobs
 
-Laravel stores failed jobs in the `failed_jobs` table by default. Crontinel reads this table and surfaces failures in a dedicated view, so you do not have to dig through logs or run raw SQL queries.
-
-```php
-// config/crontinel.php
-'failed_jobs' => [
-    'retention_days' => 30,          // Keep failed job records for 30 days
-    'alert_on_new_failure' => true, // Alert immediately when a job fails
-    'notify_after_retries' => 3,     // Only alert after 3 retry attempts
-],
-```
-
-You can also configure Crontinel to alert only after a job has exhausted its retry attempts, which reduces noise from transient failures that resolve themselves on the next try.
+Laravel stores failed jobs in the `failed_jobs` table by default. Crontinel counts the rows for each queue in that table and reports the count with the queue's depth. Set a failed jobs threshold on the app's settings page to get an alert when the count crosses it.
 
 ## Alerting That Reaches the Right People
 
-A failed job alert that arrives two hours later is nearly useless. Crontinel sends alerts through channels your team actually watches.
+A failed job alert that arrives two hours later is nearly useless. Hosted alerts go to the channels you add in the Crontinel app, such as Slack, email or a webhook. An alert that stays active is not re-sent on every check, so a 10-minute outage does not mean 10,000 Slack messages.
 
-```php
-// config/crontinel.php
-'alerts' => [
-    'slack' => [
-        'webhook_url' => env('CRONTINEL_SLACK_WEBHOOK'),
-        'channel' => '#queue-alerts',
-        'throttle_minutes' => 5,  // Do not spam more than once per 5 minutes
-    ],
-    'email' => [
-        'to' => ['devops@yourcompany.com'],
-        'only_critical' => true,
-    ],
-    'webhook' => [
-        'url' => env('CRONTINEL_WEBHOOK_URL'),
-        'events' => ['job_failed', 'queue_backed_up', 'worker_down'],
-    ],
-],
+The package can also send alerts on its own. Pick a channel (`mail`, `slack` or `webhook`) and schedule `crontinel:check`, which evaluates the local thresholds above:
+
+```bash
+CRONTINEL_ALERT_CHANNEL=slack
+CRONTINEL_SLACK_WEBHOOK=https://hooks.slack.com/services/...
 ```
 
-The throttle setting is important for queues that process thousands of jobs per minute. If your email provider goes down for 10 minutes, you do not want 10,000 Slack messages. Throttling ensures you get one alert with context, not an overwhelming flood.
+```php
+// routes/console.php
+Schedule::command('crontinel:check')->everyMinute();
+```
 
 ## Common Queue Failure Patterns
 
@@ -143,7 +121,7 @@ Once you understand the failure mode, you have a few options. If the issue is fi
 php artisan queue:retry --failed
 ```
 
-If the failure is systemic and retrying would just cause the same failures, you need to fix the root cause first. If jobs have been failing for a while and you need to replay them in batches, Crontinel's dashboard lets you selectively retry ranges rather than all failed jobs at once.
+If the failure is systemic and retrying would just cause the same failures, you need to fix the root cause first.
 
 ## Preventing Future Failures
 
@@ -161,8 +139,8 @@ Monitoring catches problems, but prevention is better. A few practices reduce qu
 
 Queue failures are inevitable. Prolonged, user-visible queue failures are not. With proper monitoring, you find out about problems minutes after they start, not days later when a customer files a complaint.
 
-The [quick start guide](/docs/quick-start) walks through installing Crontinel and configuring your first queue alert in under five minutes. If you use Laravel Horizon, Crontinel shares your Redis connection and begins monitoring immediately after installation.
+The [quick start guide](/quick-start/) walks through installing Crontinel and configuring your first queue alert in under five minutes. If you use Laravel Horizon, Crontinel shares your Redis connection and begins monitoring immediately after installation.
 
 Your queue has been running in the background this whole time. It is time to start listening to what it is telling you.
 
-[Start monitoring your Laravel queues →](/docs/quick-start)
+[Start monitoring your Laravel queues →](/quick-start/)

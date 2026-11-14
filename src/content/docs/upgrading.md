@@ -18,7 +18,7 @@ php artisan crontinel:check
 1. **Update the package** via Composer.
 2. **Run migrations.** New releases may add or modify database tables. The package uses its own migration files, so this is safe to run alongside your app migrations.
 3. **Clear config and cache.** This ensures Laravel picks up any new config defaults or service provider changes.
-4. **Run the health check.** Confirms your database tables are current, the API key is valid (if configured), and monitors are responding.
+4. **Run the health check.** Reads Horizon, queue and cron state and shows whether each monitor is healthy. It does not check the API key.
 
 ### Config changes between versions
 
@@ -67,7 +67,7 @@ Released: April 8, 2026
 - **SaaS reporting:** When `CRONTINEL_API_KEY` is set, the package automatically sends a status ping to `app.crontinel.com` every minute via the `crontinel:report` scheduled command. Individual cron run events are also pushed after each task completes or fails.
 - **Webhook alert channel:** A new `webhook` alert channel sends structured JSON POST payloads (both fire and resolve events) to any URL you specify.
 - **`crontinel:report` command:** Manually trigger a SaaS status ping at any time.
-- **`crontinel:prune` command:** Delete old `cron_runs` records beyond the retention window. Accepts `--days=N` to override the configured value.
+- **`crontinel:prune` command:** Delete old `crontinel_runs` records beyond the retention window. Accepts `--days=N` to override the configured value.
 
 ### Bug fixes
 
@@ -124,7 +124,7 @@ This is the first stable release. No upgrade path needed; install from scratch u
 - Queue monitor (depth, failed count, oldest job age for Redis and database drivers)
 - Cron monitor (automatic run recording via scheduler events)
 - Dashboard at `/crontinel` with dark theme and 30-second auto-refresh
-- `crontinel:check` CLI command with `--json` and `--no-alerts` flags
+- `crontinel:check` CLI command with `--format=json` and `--no-alerts` flags
 - `crontinel:install` CLI command
 - Alert channels: Slack webhook and email, with 5-minute deduplication
 - JSON API at `/crontinel/api/status`

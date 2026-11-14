@@ -17,17 +17,14 @@ Prints a table of all monitor statuses and exits:
 php artisan crontinel:check --format=json
 ```
 
-Returns:
+Returns an object with four keys:
 
-```json
-{
-  "status": "healthy",
-  "horizon": {"status": "running", "paused": false},
-  "queues": [{"name": "default", "depth": 5, "status": "ok"}],
-  "crons": [{"command": "inspire", "last_exit_code": 0, "status": "ok"}],
-  "alerts": []
-}
-```
+- `horizon`: the Horizon status, or `null` when Horizon monitoring is off
+- `missing_supervisors`: configured Horizon supervisors that are not running
+- `queues`: one entry per watched queue
+- `crons`: one entry per scheduled command
+
+The exit code is the same as the table output. There is no overall `status` key; use the exit code.
 
 ## CI/CD usage
 
@@ -44,7 +41,7 @@ php artisan crontinel:check || echo "Warning: monitors unhealthy after deploy"
 
 ## No-alert mode
 
-Run the check without firing alerts (useful for health endpoints):
+By default the command also evaluates and sends [local alerts](/alerts/channels/). Run the check without firing alerts (useful for health endpoints):
 
 ```bash
 php artisan crontinel:check --no-alerts
@@ -52,7 +49,7 @@ php artisan crontinel:check --no-alerts
 
 ## What the check covers
 
-The command reads the same three monitors as the dashboard: Horizon (running or paused), each watched queue (depth against its threshold), and the latest run of each scheduled command (exit code). The `alerts` array in the JSON output lists whatever is currently firing, so a pipeline can print it when the exit code is `1`.
+The command reads the same three monitors as the dashboard: Horizon (running, paused, failed jobs per minute, missing supervisors), each watched queue (depth against its threshold), and the latest run of each scheduled command (exit code, late). A pipeline can print the JSON output when the exit code is `1`.
 
 `crontinel:check` ships with the [Laravel package](/sdks/laravel/) and needs `php artisan`. If your job runs in another runtime, use an [HTTP check-in](/check-in/recipes/) and [register the schedule](/check-in/schedule/) instead; the hosted app does the alerting.
 

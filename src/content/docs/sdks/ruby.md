@@ -20,7 +20,7 @@ Get from zero to your first data in under 3 minutes.
 - Ruby 3.0+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -51,7 +51,7 @@ puts "Data sent to Crontinel!"
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 ruby quickstart.rb
 ```
 
@@ -150,4 +150,4 @@ end
 
 ## Rails
 
-For Ruby on Rails applications, use [`crontinel-rails`](https://github.com/crontinel/ruby-on-rails) instead — it auto-instruments ActiveJob and ActiveScheduler.
+For Ruby on Rails applications, send an HTTP check-in from your jobs. See the [check-in recipes](/check-in/recipes/).

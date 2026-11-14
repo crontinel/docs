@@ -76,7 +76,7 @@ Crontinel stores cron run history in a database table. If the table doesn't exis
 php artisan migrate
 ```
 
-Check that the `crontinel_cron_runs` table exists in your database.
+Check that the `crontinel_runs` table exists in your database.
 
 ### 3. Is the cron monitor enabled?
 
@@ -142,13 +142,13 @@ Crontinel needs to connect to the same Redis instance Horizon uses. By default i
 ],
 ```
 
-Here's the thing: if `horizon:status` returns `null` from Redis, Crontinel can't determine Horizon's state. Run `redis-cli` and check manually:
+Crontinel reads Horizon's state from the `masters` sorted set and the `master:<name>` hash on that connection. Horizon stores these keys under its own Redis prefix, so list the masters with the full prefixed key name, for example:
 
 ```bash
-redis-cli -n 0 GET horizon:status
+redis-cli -n 0 ZRANGE <your-horizon-prefix>masters 0 -1
 ```
 
-If that returns nothing but Horizon is definitely running, you're connected to the wrong Redis database.
+If that returns nothing but Horizon is definitely running, you're connected to the wrong Redis database or using the wrong prefix.
 
 ## Alerts not firing
 
@@ -172,9 +172,17 @@ CRONTINEL_ALERT_EMAIL=ops@yourapp.com
 
 If `CRONTINEL_ALERT_CHANNEL` is empty, Crontinel collects health data but doesn't send notifications anywhere.
 
+### `crontinel:check` is not scheduled
+
+The package evaluates local alerts only when `crontinel:check` runs. Its service provider schedules `crontinel:report`, not `crontinel:check`, so add it to your scheduler yourself:
+
+```php
+$schedule->command('crontinel:check')->everyMinute();
+```
+
 ### Deduplication window
 
-The same alert won't re-fire for 5 minutes. So if a queue breached its threshold, Crontinel fired the alert, and you missed it, you won't see another one until the dedup window resets. Check your Slack channel's history or your email spam folder for the initial alert.
+The same alert won't re-fire for 5 minutes. If the condition is still active after that, the next `crontinel:check` sends it again. So if you missed an alert, wait for the next one or look back through your history. Check your Slack channel's history or your email spam folder for the initial alert.
 
 ### Slack webhook URL invalid
 
@@ -202,7 +210,7 @@ php artisan crontinel:check --format=json
 
 This prints the full status payload so you can see exactly which monitor is unhealthy and why. Common surprises:
 
-The Horizon monitor reports unhealthy because a supervisor heartbeat is stale, even though `horizon:status` says `running`. Crontinel tracks each supervisor independently. A single dead supervisor triggers the unhealthy state. Restart Horizon to clear it:
+The Horizon check fails even though Horizon's master is running. Crontinel checks each supervisor: one that `horizon.environments` lists but is not running (see [supervisor not running](#horizon-says-a-supervisor-is-not-running)) makes `crontinel:check` exit non-zero. Restart Horizon to clear it:
 
 ```bash
 php artisan horizon:terminate
@@ -224,10 +232,10 @@ If you're using the hosted version at app.crontinel.com and your app isn't showi
 Your `.env` needs the API key from your Crontinel SaaS dashboard:
 
 ```env
-CRONTINEL_API_KEY=cnt_live_xxxxxxxxxxxxxxxx  # Required environment variable
+CRONTINEL_API_KEY=your-app-key  # Required environment variable
 ```
 
-If the key is missing or wrong, the package falls back to local-only mode silently. No errors in your logs, just no data on the SaaS dashboard.
+If the key is missing, the package does not report to the SaaS at all and logs nothing. If the key is wrong, the hosted app rejects the reports. Each rejected cron run report logs the warning `Crontinel: failed to report cron run to SaaS`; the per-minute status report is not logged.
 
 ### Network and firewall
 
@@ -306,13 +314,13 @@ Crontinel only fires a "late cron" alert when a task exceeds the `late_alert_aft
 
 Lower the value if you need tighter alerting. For example, setting it to `60` will fire alerts for tasks that are more than one minute late.
 
-### Failed-run alerts require the alert channel
+### Failed-run alerts require the alert channel and `crontinel:check`
 
-Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured. If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
+Even if a cron task exits with a non-zero code, Crontinel only sends a notification if `CRONTINEL_ALERT_CHANNEL` is configured and `crontinel:check` runs on a schedule (`$schedule->command('crontinel:check')->everyMinute();`). If you see failed runs in the dashboard but get no alerts, go back to the [alerts not firing](#alerts-not-firing) section and verify your channel setup.
 
 ### Dedup window hiding repeated failures
 
-If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; subsequent failures within that window are suppressed. If you missed the initial alert, check your Slack channel history or email spam folder. The next alert will fire after the dedup window expires.
+If the same task fails repeatedly, Crontinel deduplicates alerts within a 5-minute window. The first failure fires an alert; later checks within that window are suppressed. If the task is still failing when the window expires, the next check fires the alert again.
 
 ## Still stuck?
 
@@ -322,4 +330,4 @@ Run the full diagnostics:
 php artisan crontinel:check --format=json
 ```
 
-If the output doesn't point you to the issue, open a GitHub issue on [crontinel/app](https://github.com/crontinel/app/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.
+If the output doesn't point you to the issue, open a GitHub issue on [crontinel/laravel](https://github.com/crontinel/laravel/issues) with the JSON output and your Laravel version. Don't paste your API key or webhook URLs.

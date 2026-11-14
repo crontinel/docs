@@ -19,7 +19,7 @@ Get from zero to your first ping in under 2 minutes.
 
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -55,7 +55,7 @@ docker pull ghcr.io/crontinel/cli:latest
 Set your API key:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 ```
 
 Add it to `~/.bashrc` or `~/.zshrc` to persist across sessions.

@@ -20,7 +20,7 @@ Get from zero to your first data in under 3 minutes.
 - PHP 8.1+
 - A Crontinel account ([sign up free](https://app.crontinel.com/login))
 - An app created in the dashboard
-- Your API key (`crn_live_...`) from app settings
+- Your app's API key from app settings
 
 ### 2. Install
 
@@ -50,7 +50,7 @@ echo "Data sent to Crontinel!\n";
 Set your API key and run it:
 
 ```bash
-export CRONTINEL_API_KEY=crn_live_xxxxxxxxxxxx
+export CRONTINEL_API_KEY=your-app-key
 php quickstart.php
 ```
 
@@ -142,4 +142,4 @@ $crontinel->wrap(function (array $payload) use ($handler) {
 
 ## Laravel
 
-For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) instead — it auto-instruments Horizon, the scheduler, and queue workers with zero code changes.
+For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) instead. It records scheduled command runs and reports Horizon and queue state every minute through `crontinel:report`.
