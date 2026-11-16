@@ -92,7 +92,6 @@ require "crontinel"
 
 client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
 
-client.task_started(name: "send-daily-summary")
 result = send_daily_summary
 client.task_finished(name: "send-daily-summary", duration_ms: 520)
 ```
@@ -103,7 +102,6 @@ client.task_finished(name: "send-daily-summary", duration_ms: 520)
 client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
 
 begin
-  client.task_started(name: "process-invoices")
   process_invoices
   client.task_finished(name: "process-invoices", duration_ms: 3200)
 rescue => e
@@ -117,21 +115,20 @@ end
 ```ruby
 require "crontinel"
 
-Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
-
 # In your worker
 class MyJob
   include Sidekiq::Worker
 
   def perform(*args)
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    client = Crontinel.client(api_key: ENV["CRONTINEL_API_KEY"])
     do_work(*args)
-    Crontinel.client.task_finished(
+    client.task_finished(
       name: "MyJob",
       duration_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
     )
   rescue => e
-    Crontinel.client.task_failed(
+    client.task_failed(
       name: "MyJob",
       error: e.message,
       duration_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).to_i
@@ -143,10 +140,13 @@ end
 
 ## Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+`Crontinel.client` reads none: calling it without `api_key:` raises `api_key is required`. Pass the key, and pass `endpoint:` for a self-hosted URL.
+
+Do not call `task_started`. In 0.1.0 it records a finished run, so the examples above send only `task_finished` or `task_failed`.
+
+## What it sends
+
+Each call is a JSON-RPC request to `/api/mcp` (`notify/schedule_run`), not the run receipt at `POST /api/v1/ingest/cron`, so it carries no outcome metrics.
 
 ## Rails
 
