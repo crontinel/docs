@@ -40,7 +40,7 @@
 - [Python](https://docs.crontinel.com/sdks/python/): Send the outcome receipt from Python with the standard-library check-in script. The crontinel package is not on PyPI.
 - [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Send the outcome receipt from Rails jobs with Net::HTTP. The crontinel-rails gem does not reach Crontinel with its defaults.
 - [Ruby](https://docs.crontinel.com/sdks/ruby/): Prefer the HTTP check-in recipes for Ruby / Sidekiq. The Ruby gem is not a supported outcome-receipt path until it has a maintenance owner.
-- [Rust](https://docs.crontinel.com/sdks/rust/): Send the outcome receipt from Rust with an HTTP client. The crontinel crate on crates.io does not record runs.
+- [Rust](https://docs.crontinel.com/sdks/rust/): The crontinel crate (0.1.1+) records runs from Rust. For outcome metrics, send the HTTP check-in receipt.
 
 ## Monitors
 
