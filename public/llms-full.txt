@@ -55,41 +55,9 @@ Or a supervisor config:
 php artisan crontinel:agent --supervisor
 ```
 
-## Node.js Agent
+## Other runtimes
 
-The Node package (`@crontinel/node`) includes a CLI agent.
-
-### Prerequisites
-
-- `@crontinel/node` installed via npm
-- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
-
-### Start the Agent
-
-```bash
-npx crontinel agent
-```
-
-Or with environment variables inline:
-
-```bash
-CRONTINEL_API_KEY=your-key CRONTINEL_APP_ID=your-app npx crontinel agent
-```
-
-## Python Agent
-
-The Python package includes an agent CLI (requires PyPI installation when available).
-
-### Prerequisites
-
-- `crontinel` package installed
-- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
-
-### Start the Agent
-
-```bash
-crontinel agent
-```
+The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package is not on PyPI.
 
 ## Check-in alerts
 
@@ -119,17 +87,9 @@ Patterns support exact string matches and `*` as a wildcard (e.g. `php artisan q
 ],
 ```
 
-**Node.js and Python** — set the `CRONTINEL_AGENT_ALLOWED_COMMANDS` environment variable to a comma-separated list of patterns:
-
-```bash
-CRONTINEL_AGENT_ALLOWED_COMMANDS="php artisan queue:restart,php artisan horizon:terminate,queue:*" npx crontinel agent
-```
-
-The Node.js and Python agents also accept an equivalent `allowedCommands` / `allowed_commands` option when constructing the agent programmatically.
-
 A rejected command is reported back to the dashboard as failed with the reason "Command rejected: not in allowlist," so you can see rejections in your trigger history and adjust the allowlist as needed.
 
-## Systemd Service (All Runtimes)
+## Systemd Service
 
 Create `/etc/systemd/system/crontinel-agent.service`:
 
@@ -158,7 +118,7 @@ sudo systemctl enable crontinel-agent
 sudo systemctl start crontinel-agent
 ```
 
-## Supervisor Config (All Runtimes)
+## Supervisor Config
 
 Create `/etc/supervisor/conf.d/crontinel-agent.conf`:
 
@@ -187,9 +147,7 @@ sudo supervisorctl start crontinel-agent
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `CRONTINEL_API_KEY` | Yes | — | Your API key from app.crontinel.com/settings |
-| `CRONTINEL_APP_ID` | Node/Python only | none | Your app ID. The Laravel agent does not read it |
 | `CRONTINEL_API_URL` | No | `https://app.crontinel.com` | API base URL (change only for self-hosted) |
-| `CRONTINEL_AGENT_ALLOWED_COMMANDS` | Node/Python only | — (fail-closed) | Comma-separated allowlist patterns. Laravel uses `allowed_commands` in `config/crontinel.php` instead — see [Command Allowlisting](#command-allowlisting) |
 
 ## Testing
 
@@ -2072,14 +2030,9 @@ URL: https://docs.crontinel.com/reference/api/
 
 Authenticated endpoints require a Bearer API key. Plan features still apply where the app enforces them; this is not the retired Free/Pro/Team table.
 
-## SDK transport: REST vs. MCP
+## What calls this API
 
-Not every Crontinel SDK talks to this REST API directly. Two SDKs use a different transport:
-
-- **REST to `/api/v1`** — `crontinel/php`, `crontinel/go`, `crontinel/rust`, `@crontinel/node`, and `crontinel/python` send plain HTTPS requests to the endpoints documented on this page.
-- **MCP protocol** — `crontinel/ruby` and `crontinel/cli` instead speak the [Model Context Protocol](https://modelcontextprotocol.io), using `notify/*` notifications and `tools/call` requests over the MCP transport rather than calling `/api/v1` REST routes directly.
-
-Both transports report the same underlying data (runs, alerts, status), so nothing in this split changes what you can monitor — it only changes what's on the wire. If you're switching between SDKs and a request you expected to see in HTTP logs isn't there, check whether that language's SDK uses the MCP transport instead.
+The [HTTP check-in recipes](/check-in/recipes/) and the Laravel package send runs to `POST /api/v1/ingest/cron`, documented below. The `crontinel/node`, `crontinel/python`, `crontinel/ruby` and `crontinel/cli` repos instead speak the [Model Context Protocol](https://modelcontextprotocol.io) to `POST /api/mcp`, so their requests do not show up as `/api/v1` calls.
 
 ## Authentication
 
@@ -3187,201 +3140,69 @@ Run `php artisan config:clear` after changing the config file in production.
 
 ---
 
-# CLI / Docker
+# CLI
 URL: https://docs.crontinel.com/sdks/cli/
 
-<Aside type="caution">
-For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/). This language package is **not** a supported path for the current offer until it sends the outcome receipt and has a maintenance owner. Prefer curl, Node `fetch`, `outcome_checkin.py`, Sidekiq/`Net::HTTP`, or GitHub Actions.
+<Aside>
+The CLI only reads. To report a job's runs and outcomes, use the [HTTP check-in recipes](/check-in/recipes/) (curl in a cron wrapper, a Kubernetes CronJob, or a CI step).
 </Aside>
 
-## Quickstart
+## Install
 
-Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
-
-Get from zero to your first ping in under 2 minutes.
-
-### 1. Prerequisites
-
-- A Crontinel account ([sign up free](https://app.crontinel.com/login))
-- An app created in the dashboard
-- Your app's API key from app settings
-
-### 2. Install
-
-**macOS (Homebrew):**
+With Homebrew (macOS or Linux):
 
 ```bash
-brew tap crontinel/cli
-brew install crontinel
+brew install crontinel/tap/crontinel
 ```
 
-**Linux / macOS (curl):**
+Or download the archive for your platform from the [v0.1.1 release](https://github.com/crontinel/cli/releases/tag/v0.1.1) (`darwin` or `linux`, `amd64` or `arm64`), unpack it and put `crontinel` on your `PATH`:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/crontinel/cli/main/install.sh | sh
+curl -fsSL https://github.com/crontinel/cli/releases/download/v0.1.1/crontinel_0.1.1_linux_amd64.tar.gz | tar xz
+sudo mv crontinel_0.1.1_linux_amd64/crontinel /usr/local/bin/
 ```
 
-**Or download the binary directly:**
+## Authenticate
 
-```bash
-curl -L https://github.com/crontinel/cli/releases/latest/download/crontinel -o crontinel
-chmod +x crontinel
-mv crontinel /usr/local/bin/
-```
-
-**Docker:**
-
-```bash
-docker pull ghcr.io/crontinel/cli:latest
-```
-
-### 3. Configure
-
-Set your API key:
+The CLI uses your app's key, the same one the check-in uses. Pass it as `--key` or set it in the environment:
 
 ```bash
 export CRONTINEL_API_KEY=your-app-key
 ```
 
-Add it to `~/.bashrc` or `~/.zshrc` to persist across sessions.
-
-### 4. First ping
-
-```bash
-crontinel ping
-```
-
-Expected output:
-
-```
-OK — connected to app.crontinel.com
-```
-
-### 5. Wrap a command
-
-Run any command and report its outcome automatically:
-
-```bash
-crontinel run -- echo "hello world"
-```
-
-You'll see output with the exit code and duration.
-
-### 6. Dashboard verification
-
-1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
-2. Check the **Events** section — you should see the `crontinel run` command with its exit code and duration
-3. Your first data is now on the dashboard!
-
-<Aside>
-The CLI reports each wrapped command as a cron job run. You'll see every command you run with `crontinel run -- <cmd>` in the dashboard's cron section.
-</Aside>
-
----
-
-## Install
-
-### macOS / Linux
-
-```bash
-curl -sSL https://raw.githubusercontent.com/crontinel/cli/main/install.sh | sh
-```
-
-### Download binary
-
-```bash
-curl -L https://github.com/crontinel/cli/releases/latest/download/crontinel -o crontinel
-chmod +x crontinel
-mv crontinel /usr/local/bin/
-```
-
-### Docker
-
-```bash
-docker pull ghcr.io/crontinel/cli:latest
-```
-
-## Setup
-
-```bash
-export CRONTINEL_API_KEY=your_key_here
-crontinel ping
-# OK — connected to app.crontinel.com
-```
-
-## Usage
-
-### Wrap a command
-
-Reports the exit code and duration automatically:
-
-```bash
-crontinel run -- my-cron-job --option
-```
-
-### Send a custom event
-
-```bash
-crontinel event \
-  --key deploy-success \
-  --message "Deployed OK" \
-  --state resolved
-```
-
-## Docker examples
-
-### Wrap any Docker command
-
-```bash
-docker run --rm \
-  -e CRONTINEL_API_KEY=$CRONTINEL_API_KEY \
-  ghcr.io/crontinel/cli:latest \
-  run -- docker-health-check
-```
-
-### Kubernetes CronJob
-
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: my-cron
-spec:
-  schedule: "0 9 * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: crontinel
-            image: ghcr.io/crontinel/cli:latest
-            command: ["crontinel", "run", "--", "./run.sh"]
-            env:
-            - name: CRONTINEL_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: crontinel
-                  key: api-key
-```
-
 ## Commands
 
-| Command | Description |
-|---|---|
-| `crontinel run -- <cmd>` | Run a command and report outcome |
-| `crontinel event --key <key> --message <msg> --state <state>` | Send a custom event |
-| `crontinel ping` | Test connectivity |
-| `crontinel monitors` | List all monitors |
-| `crontinel events` | View recent firing/resolved events |
+```bash
+crontinel ping       # check the key and connection
+crontinel monitors   # jobs that reported to this app, with their last status
+crontinel alerts     # recent alerts for this app
+crontinel events     # alerts from the last 72 hours
+```
+
+`ping` prints:
+
+```text
+✓ Connected to Crontinel
+  Available tools: 7
+```
+
+`monitors` prints one line per job:
+
+```text
+Scheduled jobs (2):
+  ✗ nightly-import (last: failed)
+  ● orders-sync (last: completed)
+```
+
+`health` is an alias for `ping`, and `list` for `monitors`.
 
 ## Options
 
-| Flag | Default | Description |
-|---|---|---|
-| `--key <key>` | env `CRONTINEL_API_KEY` | API key |
-| `--url <url>` | `https://app.crontinel.com` | API endpoint |
-| `--app <name>` | hostname | App/service name |
-| `--json` | — | Raw JSON output |
+| Option | Meaning |
+|---|---|
+| `--key <key>` | App key. Defaults to `CRONTINEL_API_KEY`. |
+| `--url <url>` | API URL. Defaults to `https://app.crontinel.com`. |
+| `--json` | Print the raw JSON response. |
 
 ---
 
@@ -3873,171 +3694,17 @@ Review `config/crontinel.php` after install. Full options: [configuration refere
 # Node.js / TypeScript
 URL: https://docs.crontinel.com/sdks/node/
 
-<Aside type="caution" title="Not the supported outcome path">
-For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/) (`fetch` with the same JSON body). Do not treat `npm install @crontinel/node` as parity with the Laravel package until this repo sends the outcome receipt and has a maintenance owner.
-</Aside>
+Use the [HTTP check-in recipe](/check-in/recipes/) for Node. It is one `fetch` call at the end of your job with the app ingest key, and it needs no package.
 
-## Quickstart
+## Why not `@crontinel/node`
 
-Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+The npm package is not a supported path:
 
-### 1. Prerequisites
+- npm has only version 0.1.0, from April. Its ESM import fails with `Crontinel is not a constructor`, and `require` fails because the CommonJS build it points at is not shipped.
+- The newer code in [crontinel/node](https://github.com/crontinel/node) is not published to npm, and it talks to the MCP endpoint rather than the run receipt (`POST /api/v1/ingest/cron`).
+- It has no `crontinel agent` command. The remote command agent is in the [Laravel package](/agent/guide/).
 
-- Node.js 18+
-- A Crontinel account ([sign up free](https://app.crontinel.com/login))
-- An app created in the dashboard
-- Your app's API key from app settings
-
-### 2. Install
-
-```bash
-npm install @crontinel/node
-```
-
-Or with your preferred package manager:
-
-```bash
-# yarn
-yarn add @crontinel/node
-
-# pnpm
-pnpm add @crontinel/node
-```
-
-### 3. Configure
-
-Create a `quickstart.mjs` file:
-
-```javascript
-
-
-const crontinel = new Crontinel({
-  apiKey: process.env.CRONTINEL_API_KEY,
-  appName: 'my-first-app',
-});
-
-// Report a cron job run
-await crontinel.scheduleRun({
-  command: 'hello-from-node',
-  duration_ms: 100,
-  exit_code: 0,
-});
-
-console.log('Data sent to Crontinel!');
-```
-
-Set your API key and run it:
-
-```bash
-export CRONTINEL_API_KEY=your-app-key
-node quickstart.mjs
-```
-
-### 4. Dashboard verification
-
-1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
-2. Check the **Cron** section — you should see the `hello-from-node` job with exit code `0` and `100ms` duration
-3. Your first data is on the dashboard!
-
-<Aside>
-If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
-</Aside>
-
----
-
-## Requirements
-
-- Node.js 18+
-
-## Install
-
-```bash
-npm install @crontinel/node
-# or
-yarn add @crontinel/node
-# or
-pnpm add @crontinel/node
-```
-
-## Quick Start
-
-```typescript
-
-
-const crontinel = new Crontinel({
-  apiKey: process.env.CRONTINEL_API_KEY!,
-  appName: 'my-service',
-});
-
-// Report a cron job run
-await crontinel.scheduleRun({
-  command: 'reports:generate',
-  duration_ms: 2340,
-  exit_code: 0, // 0 = success, 1 = failure
-});
-
-// Report queue worker activity
-await crontinel.queueProcessed({
-  queue: 'emails',
-  processed: 12,
-  failed: 0,
-  duration_ms: 8901,
-});
-```
-
-## `monitorSchedule` helper
-
-Wrap any async function and automatically report its outcome:
-
-```typescript
-const result = await crontinel.monitorSchedule('reports:generate', async () => {
-  const sent = await sendDailyReports();
-  return { sent, failed: 0 };
-});
-// { result: { sent: 142, failed: 0 }, duration_ms: 1840, exit_code: 0 }
-```
-
-## BullMQ integration
-
-```typescript
-
-
-
-const crontinel = new Crontinel({ apiKey: process.env.CRONTINEL_API_KEY! });
-
-const worker = new Worker('emails', async (job) => {
-  const start = Date.now();
-  try {
-    const result = await processJob(job);
-    await crontinel.queueProcessed({ queue: 'emails', processed: 1, failed: 0, duration_ms: Date.now() - start });
-    return result;
-  } catch (err) {
-    await crontinel.queueProcessed({ queue: 'emails', processed: 0, failed: 1, duration_ms: Date.now() - start });
-    throw err;
-  }
-}, { connection: redisConnection });
-```
-
-## node-cron integration
-
-```typescript
-
-
-
-const crontinel = new Crontinel({ apiKey: process.env.CRONTINEL_API_KEY! });
-
-cron.schedule('0 9 * * *', async () => {
-  const result = await crontinel.monitorSchedule('send-daily-reports', dailyReportTask);
-  console.log('Report sent:', result.exit_code === 0 ? 'OK' : 'FAILED');
-});
-```
-
-## Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+This page will cover the package again once it is published, sends the run receipt and has a maintainer.
 
 ---
 
@@ -4188,172 +3855,17 @@ For Laravel, use [`crontinel/laravel`](https://github.com/crontinel/laravel) ins
 # Python
 URL: https://docs.crontinel.com/sdks/python/
 
-<Aside type="caution" title="Not the supported outcome path">
-For outcome monitoring, use the [HTTP check-in recipes](/check-in/recipes/) (`outcome_checkin.py` or the same JSON body). Do not treat `pip install crontinel` as parity with the Laravel package until this repo sends the outcome receipt and has a maintenance owner.
-</Aside>
+Use the [HTTP check-in recipe](/check-in/recipes/) for Python. It shows `outcome_checkin.py` and a plain `urllib` version; both send the run receipt with the app ingest key and need no package.
 
-## Quickstart
+## Why not `pip install crontinel`
 
-Historical package install steps below. Prefer [check-in recipes](/check-in/recipes/) for new setups.
+The package is not a supported path:
 
-### 1. Prerequisites
+- `crontinel` is not published on PyPI, so `pip install crontinel` fails.
+- The code in [crontinel/python](https://github.com/crontinel/python) talks to the MCP endpoint rather than the run receipt (`POST /api/v1/ingest/cron`). Its default client also needs `requests`, which it does not declare as a dependency.
+- It has no agent you can install. The remote command agent is in the [Laravel package](/agent/guide/).
 
-- Python 3.9+
-- A Crontinel account ([sign up free](https://app.crontinel.com/login))
-- An app created in the dashboard
-- Your app's API key from app settings
-
-### 2. Install
-
-```bash
-pip install crontinel
-```
-
-For async support with httpx:
-
-```bash
-pip install "crontinel[httpx]"
-```
-
-### 3. Configure
-
-Create a `quickstart.py` file:
-
-```python
-from crontinel import Crontinel
-
-
-client = Crontinel(
-    api_key=os.environ["CRONTINEL_API_KEY"],
-    app_name="my-first-app",
-)
-
-# Report a cron job run
-client.schedule_run(
-    command="hello-from-python",
-    duration_ms=100,
-    exit_code=0,
-)
-
-print("Data sent to Crontinel!")
-```
-
-Set your API key and run it:
-
-```bash
-export CRONTINEL_API_KEY=your-app-key
-python quickstart.py
-```
-
-### 4. Dashboard verification
-
-1. Go to [app.crontinel.com](https://app.crontinel.com) → **Apps** → your app
-2. Check the **Cron** section — you should see the `hello-from-python` job with exit code `0` and `100ms` duration
-3. Your first data is on the dashboard!
-
-<Aside>
-If the cron section shows "no data yet", give it a few seconds and refresh. The API ingests data in near-real-time.
-</Aside>
-
----
-
-## Requirements
-
-- Python 3.9+
-
-## Install
-
-```bash
-pip install crontinel
-# with httpx for async support:
-pip install "crontinel[httpx]"
-```
-
-## Quick Start
-
-```python
-from crontinel import Crontinel
-
-
-client = Crontinel(
-    api_key=os.environ["CRONTINEL_API_KEY"],
-    app_name="my-worker",
-)
-
-# Report a cron job run
-client.schedule_run(
-    command="reports:generate",
-    duration_ms=2340,
-    exit_code=0,  # 0 = success, 1 = failure
-)
-
-# Report queue worker activity
-client.queue_processed(
-    queue="emails",
-    processed=12,
-    failed=0,
-    duration_ms=8901,
-)
-```
-
-## `monitor_schedule` helper
-
-Wrap any function and automatically report its outcome:
-
-```python
-result, duration_ms, exit_code = client.monitor_schedule(
-    "reports:generate",
-    generate_daily_reports,
-)
-print(f"Completed in {duration_ms}ms, exit_code={exit_code}")
-```
-
-## Celery integration
-
-```python
-from celery import Celery
-from crontinel import Crontinel
-
-
-app = Celery('tasks')
-client = Crontinel(api_key=os.environ["CRONTINEL_API_KEY"])
-
-@app.task
-def send_emails(recipients):
-    start = time.time()
-    try:
-        result = _send_emails(recipients)
-        client.queue_processed(queue="emails", processed=len(recipients), failed=0,
-                              duration_ms=int((time.time()-start)*1000))
-        return result
-    except Exception as e:
-        client.queue_processed(queue="emails", processed=0, failed=len(recipients),
-                              duration_ms=int((time.time()-start)*1000))
-        raise
-```
-
-## APScheduler integration
-
-```python
-from apscheduler.schedulers.blocking import BlockingScheduler
-from crontinel import Crontinel
-
-client = Crontinel(api_key=os.environ["CRONTINEL_API_KEY"])
-scheduler = BlockingScheduler()
-
-@scheduler.scheduled_job("cron", hour=9, minute=0)
-def daily_reports():
-    duration_ms, exit_code = client.monitor_schedule("reports:generate", generate_reports)
-
-scheduler.start()
-```
-
-## Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_API_KEY` | — | Your Crontinel API key (required) |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+This page will cover the package again once it is published, sends the run receipt and has a maintainer.
 
 ---
 
