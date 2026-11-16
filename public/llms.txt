@@ -30,7 +30,7 @@
 
 ## SDKs
 
-- [SDKs & Packages](https://docs.crontinel.com/sdks/): HTTP check-in works from every runtime. The Laravel package is the maintained deep integration; other language repos are not a supported path yet.
+- [SDKs & Packages](https://docs.crontinel.com/sdks/): HTTP check-in works from every runtime. The Laravel package is the deep integration; Go, Ruby, Rust and Rails packages record runs without outcome metrics.
 - [CLI](https://docs.crontinel.com/sdks/cli/): The crontinel CLI reads your app's jobs and alerts from the terminal with the app key. To report runs, use the HTTP check-in.
 - [.NET](https://docs.crontinel.com/sdks/dotnet/): Send the outcome receipt from .NET with HttpClient. There is no Crontinel package on NuGet.
 - [Go](https://docs.crontinel.com/sdks/go/): Prefer the HTTP check-in recipes for Go. The Go package is not a supported outcome-receipt path until it has a maintenance owner.
