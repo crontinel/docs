@@ -115,7 +115,7 @@ import "github.com/crontinel/go"
 func HandleTask(ctx context.Context, t *asynq.Task) error {
     start := time.Now()
     err := processTask(t.Payload())
-    durationMs := time.Since(start).Milliseconds()
+    durationMs := int(time.Since(start).Milliseconds())
     if err != nil {
         client.QueueProcessed("default", 0, 1, durationMs)
         return err
@@ -131,13 +131,14 @@ func HandleTask(ctx context.Context, t *asynq.Task) error {
 client := crontinel.NewClient("key",
     crontinel.WithAPIURL("https://custom.example.com"),
     crontinel.WithAppName("my-worker"),
-    crontinel.WithTimeout(30*time.Second),
+    crontinel.WithHTTPClient(&http.Client{Timeout: 30 * time.Second}),
 )
 ```
 
 ## Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `CRONTINEL_API_KEY` | — | Your Crontinel API key |
-| `CRONTINEL_API_URL` | `https://app.crontinel.com` | SaaS or self-hosted endpoint |
+The client reads none. Pass the key to `NewClient` and set a self-hosted URL with `WithAPIURL`, as the examples do.
+
+## What it sends
+
+Each call is a JSON-RPC request to `/api/mcp` (for example `notify/schedule_run`), not the run receipt at `POST /api/v1/ingest/cron`, so it carries no outcome metrics. Every method returns an `error`; check it, because a rejected call does not panic.
