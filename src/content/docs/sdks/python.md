@@ -1,9 +1,9 @@
 ---
 title: Python
-description: Send the outcome receipt from Python with the check-in script or a few lines of urllib. The crontinel package is not on PyPI.
+description: Send the outcome receipt from Python with the standard-library check-in script. The crontinel package is not on PyPI.
 ---
 
-Use the [HTTP check-in recipe](/check-in/recipes/) for Python. It shows `outcome_checkin.py` and a plain `urllib` version; both send the run receipt with the app ingest key and need no package.
+Use the [HTTP check-in recipe](/check-in/recipes/) for Python. It uses `outcome_checkin.py`, which needs only the standard library, and shows wrappers for APScheduler and Celery. All of them send the run receipt with the app ingest key, with no package to install.
 
 ## Why not `pip install crontinel`
 

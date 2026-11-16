@@ -37,7 +37,7 @@
 - [Laravel](https://docs.crontinel.com/sdks/laravel/): Deep Laravel package for schedule attach, queue depth, and Horizon. Outcome receipts still use the same HTTP body as every other runtime.
 - [Node.js / TypeScript](https://docs.crontinel.com/sdks/node/): Send the outcome receipt from Node with fetch. The @crontinel/node package on npm is not a working install path.
 - [PHP](https://docs.crontinel.com/sdks/php/): Prefer the HTTP check-in recipes or the Laravel package. crontinel/php is not a supported outcome-receipt path until it has a maintenance owner.
-- [Python](https://docs.crontinel.com/sdks/python/): Send the outcome receipt from Python with the check-in script or a few lines of urllib. The crontinel package is not on PyPI.
+- [Python](https://docs.crontinel.com/sdks/python/): Send the outcome receipt from Python with the standard-library check-in script. The crontinel package is not on PyPI.
 - [Ruby on Rails](https://docs.crontinel.com/sdks/rails/): Prefer the HTTP check-in recipes for Rails jobs. The Rails gem is not a supported outcome-receipt path until it has a maintenance owner.
 - [Ruby](https://docs.crontinel.com/sdks/ruby/): Prefer the HTTP check-in recipes for Ruby / Sidekiq. The Ruby gem is not a supported outcome-receipt path until it has a maintenance owner.
 - [Rust](https://docs.crontinel.com/sdks/rust/): Prefer the HTTP check-in recipes for Rust. The Rust package is not a supported outcome-receipt path until it has a maintenance owner.
