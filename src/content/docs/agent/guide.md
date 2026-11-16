@@ -51,41 +51,9 @@ Or a supervisor config:
 php artisan crontinel:agent --supervisor
 ```
 
-## Node.js Agent
+## Other runtimes
 
-The Node package (`@crontinel/node`) includes a CLI agent.
-
-### Prerequisites
-
-- `@crontinel/node` installed via npm
-- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
-
-### Start the Agent
-
-```bash
-npx crontinel agent
-```
-
-Or with environment variables inline:
-
-```bash
-CRONTINEL_API_KEY=your-key CRONTINEL_APP_ID=your-app npx crontinel agent
-```
-
-## Python Agent
-
-The Python package includes an agent CLI (requires PyPI installation when available).
-
-### Prerequisites
-
-- `crontinel` package installed
-- `CRONTINEL_API_KEY` and `CRONTINEL_APP_ID` environment variables set
-
-### Start the Agent
-
-```bash
-crontinel agent
-```
+The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package is not on PyPI.
 
 ## Check-in alerts
 
@@ -115,17 +83,9 @@ Patterns support exact string matches and `*` as a wildcard (e.g. `php artisan q
 ],
 ```
 
-**Node.js and Python** — set the `CRONTINEL_AGENT_ALLOWED_COMMANDS` environment variable to a comma-separated list of patterns:
-
-```bash
-CRONTINEL_AGENT_ALLOWED_COMMANDS="php artisan queue:restart,php artisan horizon:terminate,queue:*" npx crontinel agent
-```
-
-The Node.js and Python agents also accept an equivalent `allowedCommands` / `allowed_commands` option when constructing the agent programmatically.
-
 A rejected command is reported back to the dashboard as failed with the reason "Command rejected: not in allowlist," so you can see rejections in your trigger history and adjust the allowlist as needed.
 
-## Systemd Service (All Runtimes)
+## Systemd Service
 
 Create `/etc/systemd/system/crontinel-agent.service`:
 
@@ -154,7 +114,7 @@ sudo systemctl enable crontinel-agent
 sudo systemctl start crontinel-agent
 ```
 
-## Supervisor Config (All Runtimes)
+## Supervisor Config
 
 Create `/etc/supervisor/conf.d/crontinel-agent.conf`:
 
@@ -183,9 +143,7 @@ sudo supervisorctl start crontinel-agent
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `CRONTINEL_API_KEY` | Yes | — | Your API key from app.crontinel.com/settings |
-| `CRONTINEL_APP_ID` | Node/Python only | none | Your app ID. The Laravel agent does not read it |
 | `CRONTINEL_API_URL` | No | `https://app.crontinel.com` | API base URL (change only for self-hosted) |
-| `CRONTINEL_AGENT_ALLOWED_COMMANDS` | Node/Python only | — (fail-closed) | Comma-separated allowlist patterns. Laravel uses `allowed_commands` in `config/crontinel.php` instead — see [Command Allowlisting](#command-allowlisting) |
 
 ## Testing
 
