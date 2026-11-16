@@ -17,3 +17,43 @@ const jsonLd = {
 
 <Default {...Astro.props}><slot /></Default>
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+<script is:inline>
+  // Same consent flow as crontinel.com: GA loads only after Accept. Consent is per site (localStorage).
+  (function () {
+    var gaId = 'G-KJDPL4R7LZ';
+    function loadGA() {
+      if (document.getElementById('ga-script')) return;
+      var s = document.createElement('script');
+      s.id = 'ga-script';
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', gaId);
+    }
+    var consent = null;
+    try { consent = localStorage.getItem('cookie_consent'); } catch (e) {}
+    if (consent === 'accepted') return loadGA();
+    if (consent) return;
+    document.addEventListener('DOMContentLoaded', function () {
+      var b = document.createElement('div');
+      b.id = 'cookie-banner';
+      b.setAttribute('role', 'region');
+      b.setAttribute('aria-label', 'Cookie consent');
+      b.style.cssText = 'position:fixed;inset:auto 0 0 0;z-index:1000;background:#111827;border-top:1px solid #1f2937;padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;font-size:14px;color:#d1d5db';
+      b.innerHTML = '<p style="margin:0">We use cookies to understand how visitors use our docs. <a href="https://crontinel.com/legal/privacy/" style="color:#e5e7eb;text-decoration:underline">Privacy Policy</a></p>'
+        + '<div style="display:flex;gap:12px"><button type="button" data-c="declined" style="background:none;border:0;color:#9ca3af;padding:6px 12px;cursor:pointer;font:inherit">Decline</button>'
+        + '<button type="button" data-c="accepted" style="background:#22c55e;border:0;font:inherit;font-weight:500;color:#000;padding:6px 16px;border-radius:4px;cursor:pointer">Accept</button></div>';
+      b.addEventListener('click', function (e) {
+        var c = e.target.getAttribute && e.target.getAttribute('data-c');
+        if (!c) return;
+        try { localStorage.setItem('cookie_consent', c); } catch (err) {}
+        b.remove();
+        if (c === 'accepted') loadGA();
+      });
+      document.body.appendChild(b);
+    });
+  })();
+</script>
