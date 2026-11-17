@@ -18,10 +18,11 @@ Pick one path. Full recipes: [Check-in from any runtime](/check-in/recipes/).
 **curl**
 
 ```bash
+STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
   -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
+  -d "{\"request_key\":\"run-$(date +%s)\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"started_at\":\"$STARTED\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":12}}}"
 ```
 
 **Python** — download [outcome_checkin.py](https://docs.crontinel.com/outcome_checkin.py) (standard library only, no supported PyPI package on this path).
