@@ -140,9 +140,9 @@ end
 
 ## Environment variables
 
-`Crontinel.client` reads none: calling it without `api_key:` raises `api_key is required`. Pass the key, and pass `endpoint:` for a self-hosted URL.
+`Crontinel.client` reads `CRONTINEL_API_KEY` and `CRONTINEL_API_URL` (default `https://app.crontinel.com`) when you pass no `api_key:` or `endpoint:`. Arguments win over the environment. With no key anywhere it raises `api_key is required`. This needs 0.1.1 or later.
 
-Do not call `task_started`. In 0.1.0 it records a finished run, so the examples above send only `task_finished` or `task_failed`.
+`task_started` sends nothing: Crontinel records a run when it ends. Call `task_finished` or `task_failed`. (In 0.1.0 `task_started` recorded a finished run, so upgrade or leave it out.)
 
 ## What it sends
 
