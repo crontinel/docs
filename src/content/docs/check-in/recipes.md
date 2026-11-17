@@ -17,10 +17,11 @@ The examples under **Universal receipt** show the receipt itself. To catch a job
 
 ```bash
 export CRONTINEL_INGEST_KEY=your-app-ingest-key
+STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 curl -sS -X POST "https://app.crontinel.com/api/v1/ingest/cron" \
   -H "Authorization: Bearer $CRONTINEL_INGEST_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"request_key":"run-1","command":"reports:generate","status":"completed","exit_code":0,"started_at":"2026-10-06T12:00:00Z","finished_at":"2026-10-06T12:00:05Z","outcomes":{"metrics":{"processed_records":0}}}'
+  -d "{\"request_key\":\"run-$(date +%s)\",\"command\":\"reports:generate\",\"status\":\"completed\",\"exit_code\":0,\"started_at\":\"$STARTED\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"outcomes\":{\"metrics\":{\"processed_records\":12}}}"
 ```
 
 ### Python
@@ -40,11 +41,11 @@ python3 -c "import urllib.request as u; r = u.Request('https://docs.crontinel.co
 ```bash
 python3 outcome_checkin.py \
   --command reports:generate \
-  --request-key run-1 \
+  --request-key "run-$(date +%s)" \
   --exit-code 0 \
-  --started-at 2026-10-06T12:00:00Z \
-  --finished-at 2026-10-06T12:00:05Z \
-  --records 0 \
+  --started-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --finished-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --records 12 \
   --url https://app.crontinel.com \
   --api-key "$CRONTINEL_INGEST_KEY"
 ```
@@ -59,13 +60,13 @@ await fetch("https://app.crontinel.com/api/v1/ingest/cron", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    request_key: "run-1",
+    request_key: `run-${Date.now()}`,
     command: "reports:generate",
     status: "completed",
     exit_code: 0,
-    started_at: "2026-10-06T12:00:00Z",
-    finished_at: "2026-10-06T12:00:05Z",
-    outcomes: { metrics: { processed_records: 0 } },
+    started_at: new Date().toISOString(),
+    finished_at: new Date().toISOString(),
+    outcomes: { metrics: { processed_records: 12 } },
   }),
 });
 ```
