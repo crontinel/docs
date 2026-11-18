@@ -53,7 +53,7 @@ php artisan crontinel:agent --supervisor
 
 ## Other runtimes
 
-The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package is not on PyPI.
+The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package (on PyPI) has no agent command.
 
 ## Check-in alerts
 
