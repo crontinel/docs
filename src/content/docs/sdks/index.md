@@ -26,11 +26,11 @@ Each package below was installed and run against app.crontinel.com on 2026-11-16
 |---|---|---|
 | Laravel | [`crontinel/laravel`](/sdks/laravel/) | Works, including the outcome receipt |
 | Go | [`github.com/crontinel/go`](/sdks/go/) | Records runs (v0.1.1) |
-| Ruby | [`crontinel` gem](/sdks/ruby/) | Records runs (0.1.0) |
+| Ruby | [`crontinel` gem](/sdks/ruby/) | Records runs (0.1.1) |
 | Rails | [`crontinel-rails`](/sdks/rails/) | Records Active Job and Sidekiq runs (0.1.1+) |
 | Rust | [`crontinel` crate](/sdks/rust/) | Records runs (0.1.1+) |
 | Node.js | [`@crontinel/node`](/sdks/node/) | Not usable from npm yet; use the HTTP check-in |
-| Python | [`crontinel`](/sdks/python/) | Not on PyPI yet; use the HTTP check-in |
+| Python | [`crontinel`](/sdks/python/) | Records runs (0.2.1+) |
 | PHP | [`crontinel/php`](/sdks/php/) | No client; use the HTTP check-in |
 | .NET | [.NET](/sdks/dotnet/) | No package; use the HTTP check-in |
 | CLI | [`crontinel` CLI](/sdks/cli/) | Reads status and alerts (v0.1.1) |
