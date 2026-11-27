@@ -59,7 +59,7 @@ The agent ships only in the Laravel package. The Node and Python packages have n
 
 Set how often an agent should check in from **Configure** on its row in the dashboard: an expected interval and a grace period.
 
-- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert waits at least 15 minutes.
+- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert follows the [alert ladder](/alerts/channels/#alert-deduplication): 15 minutes, 1 hour, 6 hours, 24 hours, then quiet until it recovers or is acknowledged.
 - **Late:** turn on **Alert when late** to also get a separate alert once a check-in is past its interval. It is off by default and recovers when the agent is on time.
 
 To silence one agent for a while, use the mute control on its row. See [muting alerts](/alerts/channels/#muting-alerts-saas).
