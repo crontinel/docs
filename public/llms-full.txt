@@ -68,6 +68,12 @@ Set how often an agent should check in from **Configure** on its row in the dash
 
 To silence one agent for a while, use the mute control on its row. See [muting alerts](/alerts/channels/#muting-alerts-saas).
 
+The **AI Agents** card counts an agent as connected only while it has sent a heartbeat in the last 15 minutes. A registered agent that went silent stays listed with an amber dot, and its missed check-in alerts still fire if you configured an expected interval.
+
+## Removing an agent
+
+Remove an agent that will not come back from **Remove** on its row. You need configure access to the app. Its open schedule alerts close without a notification, schedule monitoring for it stops, and the trigger history it produced stays visible. The same removal is available to an app API key as `DELETE /api/v1/agents/{id}`.
+
 ## Command Allowlisting
 
 The agent will only execute commands that match an entry in your allowlist. An unconfigured or empty allowlist means **no commands are permitted** — this is the default, fail-closed behavior.
