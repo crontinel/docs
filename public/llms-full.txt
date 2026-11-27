@@ -57,13 +57,13 @@ php artisan crontinel:agent --supervisor
 
 ## Other runtimes
 
-The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package is not on PyPI.
+The agent ships only in the Laravel package. The Node and Python packages have no installable agent: `@crontinel/node` on npm has no `crontinel agent` command, and the Python package (on PyPI) has no agent command.
 
 ## Check-in alerts
 
 Set how often an agent should check in from **Configure** on its row in the dashboard: an expected interval and a grace period.
 
-- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert waits at least 15 minutes.
+- **Missed:** when an agent misses its expected check-in, Crontinel sends an alert. When it checks in on time again, you get a recovery notice. A repeat of the same alert follows the [alert ladder](/alerts/channels/#alert-deduplication): 15 minutes, 1 hour, 6 hours, 24 hours, then quiet until it recovers or is acknowledged.
 - **Late:** turn on **Alert when late** to also get a separate alert once a check-in is past its interval. It is off by default and recovers when the agent is on time.
 
 To silence one agent for a while, use the mute control on its row. See [muting alerts](/alerts/channels/#muting-alerts-saas).
@@ -276,7 +276,11 @@ The hosted payload also includes `delivery_id`, `dashboard_url`, `run_id`, `comm
 
 ## Alert deduplication
 
-In the hosted app, an alert that stays active re-fires once per cooldown, not on every check. The default cooldown is 5 minutes. Set it per app from 1 to 60 minutes. Missed-run, never-finished, and agent schedule alerts use a fixed 15 minutes.
+In the hosted app, a repeat of the same alert follows one ladder for every alert type. The first notification goes out when the incident opens, then reminders follow 15 minutes, 1 hour, 6 hours and 24 hours later. After that the incident stays open in the dashboard and escalation still applies, but it sends no more email until it recovers or someone acknowledges it. One incident never sends more than five firing notifications.
+
+The app's cooldown (default 5 minutes, set per app from 1 to 60) is a floor: a job that fails repeatedly cannot race ahead of the ladder. Missed-run, never-finished and agent schedule alerts use the same ladder.
+
+A condition that clears and returns within 10 minutes is treated as the same outage: the incident reopens without a second email. A failure after that window is a new incident and emails again.
 
 In the Laravel package, an active condition re-fires every 5 minutes while `crontinel:check` keeps finding it.
 
@@ -320,6 +324,8 @@ Acknowledge an open alert to say someone is on it. It stops escalation for that 
 - **Email and Slack:** firing alerts include an **Acknowledge this alert** link. It works without signing in, covers that one incident, and expires after 24 hours. The link opens a confirm page; nothing changes until you press **Acknowledge**.
 
 Each open alert shows who acknowledged it and when. Every acknowledgement is in the audit log, with the user or the channel link as the actor. The recovery notification still goes to every channel that was notified. If the alert fires again after it recovered, that is a new incident and starts unacknowledged.
+
+**Close** on the dashboard resolves an incident and sends the usual recovery notice. For an app heartbeat or a monitor that never recovered, closing it keeps it quiet until that condition has cleared at least once: the check will not reopen it on the next minute, and a later failure is a new incident.
 
 ## Escalation (SaaS)
 
@@ -3386,11 +3392,11 @@ Each package below was installed and run against app.crontinel.com on 2026-11-16
 |---|---|---|
 | Laravel | [`crontinel/laravel`](/sdks/laravel/) | Works, including the outcome receipt |
 | Go | [`github.com/crontinel/go`](/sdks/go/) | Records runs (v0.1.1) |
-| Ruby | [`crontinel` gem](/sdks/ruby/) | Records runs (0.1.0) |
+| Ruby | [`crontinel` gem](/sdks/ruby/) | Records runs (0.1.1) |
 | Rails | [`crontinel-rails`](/sdks/rails/) | Records Active Job and Sidekiq runs (0.1.1+) |
 | Rust | [`crontinel` crate](/sdks/rust/) | Records runs (0.1.1+) |
 | Node.js | [`@crontinel/node`](/sdks/node/) | Not usable from npm yet; use the HTTP check-in |
-| Python | [`crontinel`](/sdks/python/) | Not on PyPI yet; use the HTTP check-in |
+| Python | [`crontinel`](/sdks/python/) | Records runs (0.2.1+) |
 | PHP | [`crontinel/php`](/sdks/php/) | No client; use the HTTP check-in |
 | .NET | [.NET](/sdks/dotnet/) | No package; use the HTTP check-in |
 | CLI | [`crontinel` CLI](/sdks/cli/) | Reads status and alerts (v0.1.1) |
@@ -3553,17 +3559,53 @@ For Laravel, use the [Laravel package](/sdks/laravel/). For any other PHP job, u
 # Python
 URL: https://docs.crontinel.com/sdks/python/
 
-Use the [HTTP check-in recipe](/check-in/recipes/) for Python. It uses `outcome_checkin.py`, which needs only the standard library, and shows wrappers for APScheduler and Celery. All of them send the run receipt with the app ingest key, with no package to install.
+The `crontinel` package records that a job ran, how long it took and its exit code. It does not send outcome metrics, so it cannot catch a job that finished but did nothing. For that, send the [HTTP check-in receipt](/check-in/recipes/) with a count from inside the job; `outcome_checkin.py` there needs only the standard library and has wrappers for APScheduler and Celery.
 
-## Why not `pip install crontinel`
+Use 0.2.1 or later. It has no required dependencies: without `requests` installed it uses the standard library.
 
-The package is not a supported path:
+## Install
 
-- `crontinel` is not published on PyPI, so `pip install crontinel` fails.
-- The code in [crontinel/python](https://github.com/crontinel/python) talks to the MCP endpoint rather than the run receipt (`POST /api/v1/ingest/cron`). Its default client also needs `requests`, which it does not declare as a dependency.
-- It has no agent you can install. The remote command agent is in the [Laravel package](/agent/guide/).
+```bash
+pip install crontinel
+```
 
-This page will cover the package again once it is published, sends the run receipt and has a maintainer.
+## Quickstart
+
+```python
+from crontinel import Crontinel
+
+client = Crontinel()  # reads CRONTINEL_API_KEY, and CRONTINEL_API_URL if set
+
+client.schedule_run("hello-from-python", duration_ms=100, exit_code=0)
+```
+
+Use your app's ingest key. `hello-from-python` then shows on the dashboard as a completed run.
+
+To time a function and report it, including a failure if it raises:
+
+```python
+result, duration_ms, exit_code = client.monitor_schedule("reports:build", build_reports)
+```
+
+`monitor_schedule` re-raises your function's exception, and never fails your job if reporting fails.
+
+## Options
+
+```python
+client = Crontinel(
+    api_key="...",                 # or CRONTINEL_API_KEY
+    api_url="https://app.crontinel.com",  # or CRONTINEL_API_URL
+    app_name="my-worker",
+)
+```
+
+Arguments win over the environment variables.
+
+## What it sends
+
+Each call is a JSON-RPC request to `/api/mcp` (for example `notify/schedule_run`), not the run receipt at `POST /api/v1/ingest/cron`. A rejected call raises an HTTP error (or `RuntimeError` for an RPC error) from `schedule_run`, `queue_processed` and `event`.
+
+With an outcome rule set on the job, these runs show as "unknown (no evidence)", because the package sends no metrics. Use the HTTP receipt for jobs with a minimum.
 
 ---
 
@@ -3759,9 +3801,9 @@ end
 
 ## Environment variables
 
-`Crontinel.client` reads none: calling it without `api_key:` raises `api_key is required`. Pass the key, and pass `endpoint:` for a self-hosted URL.
+`Crontinel.client` reads `CRONTINEL_API_KEY` and `CRONTINEL_API_URL` (default `https://app.crontinel.com`) when you pass no `api_key:` or `endpoint:`. Arguments win over the environment. With no key anywhere it raises `api_key is required`. This needs 0.1.1 or later.
 
-Do not call `task_started`. In 0.1.0 it records a finished run, so the examples above send only `task_finished` or `task_failed`.
+`task_started` sends nothing: Crontinel records a run when it ends. Call `task_finished` or `task_failed`. (In 0.1.0 `task_started` recorded a finished run, so upgrade or leave it out.)
 
 ## What it sends
 

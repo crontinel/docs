@@ -92,7 +92,11 @@ The hosted payload also includes `delivery_id`, `dashboard_url`, `run_id`, `comm
 
 ## Alert deduplication
 
-In the hosted app, an alert that stays active re-fires once per cooldown, not on every check. The default cooldown is 5 minutes. Set it per app from 1 to 60 minutes. Missed-run, never-finished, and agent schedule alerts use a fixed 15 minutes.
+In the hosted app, a repeat of the same alert follows one ladder for every alert type. The first notification goes out when the incident opens, then reminders follow 15 minutes, 1 hour, 6 hours and 24 hours later. After that the incident stays open in the dashboard and escalation still applies, but it sends no more email until it recovers or someone acknowledges it. One incident never sends more than five firing notifications.
+
+The app's cooldown (default 5 minutes, set per app from 1 to 60) is a floor: a job that fails repeatedly cannot race ahead of the ladder. Missed-run, never-finished and agent schedule alerts use the same ladder.
+
+A condition that clears and returns within 10 minutes is treated as the same outage: the incident reopens without a second email. A failure after that window is a new incident and emails again.
 
 In the Laravel package, an active condition re-fires every 5 minutes while `crontinel:check` keeps finding it.
 
@@ -136,6 +140,8 @@ Acknowledge an open alert to say someone is on it. It stops escalation for that 
 - **Email and Slack:** firing alerts include an **Acknowledge this alert** link. It works without signing in, covers that one incident, and expires after 24 hours. The link opens a confirm page; nothing changes until you press **Acknowledge**.
 
 Each open alert shows who acknowledged it and when. Every acknowledgement is in the audit log, with the user or the channel link as the actor. The recovery notification still goes to every channel that was notified. If the alert fires again after it recovered, that is a new incident and starts unacknowledged.
+
+**Close** on the dashboard resolves an incident and sends the usual recovery notice. For an app heartbeat or a monitor that never recovered, closing it keeps it quiet until that condition has cleared at least once: the check will not reopen it on the next minute, and a later failure is a new incident.
 
 ## Escalation (SaaS)
 
